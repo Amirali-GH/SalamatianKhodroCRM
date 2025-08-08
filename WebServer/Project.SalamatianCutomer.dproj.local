@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<BorlandProject>
+	<Transactions>
+    <Transaction>2025/06/07 13:04:40.000.169,=C:\Users\amira\OneDrive\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>2025/07/02 11:10:16.782,=C:\Users\amira\OneDrive\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>2025/07/02 11:10:17.107,=C:\Users\amira\OneDrive\Documents\Embarcadero\Studio\Projects\Unit2.pas</Transaction>
+    <Transaction>2025/07/02 11:10:17.155,=C:\Users\amira\OneDrive\Documents\Embarcadero\Studio\Projects\Unit3.pas</Transaction>
+    <Transaction>2025/07/02 11:10:17.330,=C:\Users\amira\OneDrive\Documents\Embarcadero\Studio\Projects\Unit4.pas</Transaction>
+    <Transaction>2025/07/02 11:14:32.940,D:\MyProject\SalamatSaleDepartment\Source\WebModule\WebModule.SalamtCustomer.pas=C:\Users\amira\OneDrive\Documents\Embarcadero\Studio\Projects\Unit4.pas</Transaction>
+    <Transaction>2025/07/02 11:14:32.940,D:\MyProject\SalamatSaleDepartment\Source\WebModule\WebModule.SalamtCustomer.dfm=C:\Users\amira\OneDrive\Documents\Embarcadero\Studio\Projects\Unit4.dfm</Transaction>
+    <Transaction>2025/07/02 11:15:44.787,D:\MyProject\SalamatSaleDepartment\Source\Controller\Controller.Goftino.pas=C:\Users\amira\OneDrive\Documents\Embarcadero\Studio\Projects\Unit3.pas</Transaction>
+    <Transaction>2025/07/02 11:16:03.169,D:\MyProject\SalamatSaleDepartment\Source\Controller\Service.Goftino.pas=C:\Users\amira\OneDrive\Documents\Embarcadero\Studio\Projects\Unit2.pas</Transaction>
+    <Transaction>2025/07/02 11:19:45.601,D:\MyProject\SalamatSaleDepartment\Source\Model\Model.Goftino.pas=C:\Users\amira\OneDrive\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>2025/07/02 11:21:08.701,D:\MyProject\SalamatSaleDepartment\Project\Project.SalamatianCutomer.dproj=C:\Users\amira\OneDrive\Documents\Embarcadero\Studio\Projects\Project1.dproj</Transaction>
+  </Transactions>
+</BorlandProject>
