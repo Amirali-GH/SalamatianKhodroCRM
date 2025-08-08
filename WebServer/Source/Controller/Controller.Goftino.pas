@@ -4,7 +4,7 @@ Interface
 
 Uses
     MVCFramework, MVCFramework.Commons, MVCFramework.Nullables,
-    Unit1, Unit2, MVCFramework.Serializer.Commons, System.Generics.Collections;
+    Model.Goftino, Service.Goftino, MVCFramework.Serializer.Commons, System.Generics.Collections;
 
 Type
   [MVCPath('/api')]

@@ -147,10 +147,10 @@
         <DelphiCompile Include="$(MainSource)">
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
-        <DCCReference Include="..\Source\Model\Model.Goftino.pas"/>
-        <DCCReference Include="..\Source\Controller\Service.Goftino.pas"/>
-        <DCCReference Include="..\Source\Controller\Controller.Goftino.pas"/>
-        <DCCReference Include="..\Source\WebModule\WebModule.SalamtCustomer.pas">
+        <DCCReference Include="Source\Model\Model.Goftino.pas"/>
+        <DCCReference Include="Source\Controller\Controller.Goftino.pas"/>
+        <DCCReference Include="Source\Service\Service.Goftino.pas"/>
+        <DCCReference Include="Source\WebModule\WebModule.SalamtCRM.pas">
             <Form>WMSalamtCustomer</Form>
             <FormType>dfm</FormType>
             <DesignClass>TWebModule</DesignClass>

@@ -16,10 +16,10 @@ uses
   MVCFramework.Serializer.Commons,
   MVCFramework.Container,
   MVCFramework.Signal,
-  Model.Goftino in '..\Source\Model\Model.Goftino.pas',
-  Service.Goftino in '..\Source\Controller\Service.Goftino.pas',
-  Controller.Goftino in '..\Source\Controller\Controller.Goftino.pas',
-  WebModule.SalamtCustomer in '..\Source\WebModule\WebModule.SalamtCustomer.pas' {WMSalamtCustomer: TWebModule};
+  Model.Goftino in 'Source\Model\Model.Goftino.pas',
+  Controller.Goftino in 'Source\Controller\Controller.Goftino.pas',
+  Service.Goftino in 'Source\Service\Service.Goftino.pas',
+  WebModule.SalamtCRM in 'Source\WebModule\WebModule.SalamtCRM.pas' {WMSalamtCustomer: TWebModule};
 
 {$R *.res}
 
