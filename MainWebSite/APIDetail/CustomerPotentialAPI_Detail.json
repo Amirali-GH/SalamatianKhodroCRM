@@ -1,0 +1,196 @@
+[
+  {
+    "request": "GET http://127.0.0.1:8435/api/v1/potential-level?page=1&status=active&context=lead",
+    "output": {
+      "meta": {
+        "page": {
+          "page_num": "1",
+          "default_page_size": "20",
+          "page_size": "2"
+        },
+        "data_type": "list<model_lead_potential_level>",
+        "count": 2,
+        "is_success": true,
+        "description": "لیست تمام سطوح پتانسیل ثبت شده"
+      },
+      "data": [
+        {
+          "potentiallevelid": 1,
+          "code": "HIGH",
+          "name": "High Potential",
+          "color": "#FF0000",
+          "priority": 1,
+          "isactive": true,
+          "issystemic": false,
+          "description": "Leads with very high chance",
+          "createdat": "2025-09-10T10:00:00.000+03:30",
+          "links": [
+            {
+              "href": "/api/v1/potential-level/1",
+              "type": "application/json",
+              "rel": "self"
+            }
+          ]
+        },
+        {
+          "potentiallevelid": 2,
+          "code": "MED",
+          "name": "Medium Potential",
+          "color": "#FFA500",
+          "priority": 2,
+          "isactive": true,
+          "issystemic": false,
+          "description": "Average chance leads",
+          "createdat": "2025-09-10T11:00:00.000+03:30",
+          "links": [
+            {
+              "href": "/api/v1/potential-level/2",
+              "type": "application/json",
+              "rel": "self"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "request": "POST http://127.0.0.1:8435/api/v1/potential-level",
+    "body": {
+      "code": "LOW",
+      "name": "Low Potential",
+      "color": "#00FF00",
+      "priority": 3,
+      "isactive": true,
+      "description": "کمترین احتمال تبدیل"
+    },
+    "output_201": {
+      "meta": {
+        "data_type": "model_lead_potential_level",
+        "count": 1,
+        "is_success": true,
+        "url": "/api/v1/potential-level/3",
+        "description": "سطح پتانسیل با موفقیت ذخیره شد."
+      },
+      "data": {
+        "potentiallevelid": 3,
+        "code": "LOW",
+        "name": "Low Potential",
+        "color": "#00FF00",
+        "priority": 3,
+        "isactive": true,
+        "issystemic": false,
+        "description": "کمترین احتمال تبدیل",
+        "createdat": "2025-09-10T12:00:00.000+03:30"
+      }
+    },
+    "output_409": {
+      "meta": {
+        "data_type": "model_lead_potential_level",
+        "count": 0,
+        "is_success": false,
+        "description": "کد سطح پتانسیل تکراری است"
+      },
+      "data": {}
+    }
+  },
+  {
+    "request": "GET http://127.0.0.1:8435/api/v1/potential-level/1",
+    "output_200": {
+      "meta": {
+        "data_type": "model_lead_potential_level",
+        "count": 1,
+        "is_success": true,
+        "description": "سطح پتانسیل با کد HIGH یافت شد."
+      },
+      "data": {
+        "potentiallevelid": 1,
+        "code": "HIGH",
+        "name": "High Potential",
+        "color": "#FF0000",
+        "priority": 1,
+        "isactive": true,
+        "issystemic": false,
+        "description": "Leads with very high chance",
+        "createdat": "2025-09-10T10:00:00.000+03:30"
+      }
+    },
+    "output_404": {
+      "meta": {
+        "data_type": "model_lead_potential_level",
+        "count": 0,
+        "is_success": false,
+        "description": "سطح پتانسیل یافت نشد"
+      },
+      "data": {}
+    }
+  },
+  {
+    "request": "PUT http://127.0.0.1:8435/api/v1/potential-level/2",
+    "body": {
+      "name": "Medium Potential Updated",
+      "priority": 4,
+      "isactive": false,
+      "description": "ویرایش سطح پتانسیل متوسط"
+    },
+    "output_200": {
+      "meta": {
+        "data_type": "model_lead_potential_level",
+        "count": 1,
+        "is_success": true,
+        "description": "سطح پتانسیل با موفقیت بروزرسانی شد."
+      },
+      "data": {
+        "potentiallevelid": 2,
+        "code": "MED",
+        "name": "Medium Potential Updated",
+        "color": "#FFA500",
+        "priority": 4,
+        "isactive": false,
+        "issystemic": false,
+        "description": "ویرایش سطح پتانسیل متوسط",
+        "createdat": "2025-09-10T11:00:00.000+03:30"
+      }
+    },
+    "output_404": {
+      "meta": {
+        "data_type": "model_lead_potential_level",
+        "count": 0,
+        "is_success": false,
+        "description": "سطح پتانسیل یافت نشد"
+      },
+      "data": {}
+    },
+    "output_409": {
+      "meta": {
+        "data_type": "model_lead_potential_level",
+        "count": 0,
+        "is_success": false,
+        "description": "کد پتانسیل تکراری است"
+      },
+      "data": {}
+    }
+  },
+  {
+    "request": "DELETE http://127.0.0.1:8435/api/v1/potential-level/3",
+    "output_200": {
+      "meta": {
+        "data_type": "integer",
+        "count": 1,
+        "is_success": true,
+        "description": "سطح پتانسیل با موفقیت حذف شد."
+      },
+      "data": {
+        "potentiallevelid": 3
+      }
+    },
+    "output_404": {
+      "meta": {
+        "data_type": "integer",
+        "count": 0,
+        "is_success": false,
+        "description": "سطح پتانسیل مورد نظر یافت نشد!"
+      },
+      "data": {}
+    }
+  }
+]

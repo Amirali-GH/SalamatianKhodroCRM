@@ -1,0 +1,319 @@
+دریافت لیست تمام خودروها
+GET http://127.0.0.1:8435/api/v1/car?page=1
+
+این endpoint لیستی از خودروهای ثبت‌شده را به همراه صفحه‌بندی برمی‌گرداند.
+
+خروجی موفق (کد 200):
+
+
+
+{
+    "meta": {
+        "data_type": "list<model_car_car>",
+        "count": 3,
+        "is_success": true,
+        "description": "لیست تمام خودروهای ثبت شده"
+    },
+    "data": [
+        {
+            "carid": 1,
+            "code": "PRD-111",
+            "mainname": "Pride 111",
+            "secondname": "پراید هاچ‌بک",
+            "companyid": 10,
+            "categoryid": 2,
+            "year": 2018,
+            "fueltype": "Petrol",
+            "transmission": "Manual",
+            "enginecapacity": 1.3,
+            "horsepower": 71,
+            "torque": 108,
+            "seats": 5,
+            "drivetype": "FWD",
+            "bodytype": "Hatchback",
+            "rangekm": null,
+            "safetyrating": "1 Star",
+            "baseprice": 15000.0,
+            "isactive": true,
+            "issystemic": false,
+            "description": "ارزان و پراستهلاک",
+            "createdat": "2025-09-10T14:30:00.000+03:30",
+            "links": [
+                {
+                    "href": "/api/v1/car/1",
+                    "type": "application/",
+                    "rel": "self"
+                }
+            ]
+        },
+        {
+            "carid": 2,
+            "code": "PEU-206",
+            "mainname": "Peugeot 206",
+            "secondname": "پژو ۲۰۶ تیپ ۲",
+            "companyid": 12,
+            "categoryid": 2,
+            "year": 2020,
+            "fueltype": "Petrol",
+            "transmission": "Manual",
+            "enginecapacity": 1.4,
+            "horsepower": 75,
+            "torque": 118,
+            "seats": 5,
+            "drivetype": "FWD",
+            "bodytype": "Hatchback",
+            "rangekm": null,
+            "safetyrating": "3 Stars",
+            "baseprice": 25000.0,
+            "isactive": true,
+            "issystemic": false,
+            "description": "خودروی محبوب جوانان",
+            "createdat": "2025-09-09T11:00:00.000+03:30",
+            "links": [
+                {
+                    "href": "/api/v1/car/2",
+                    "type": "application/",
+                    "rel": "self"
+                }
+            ]
+        }
+    ]
+}
+ایجاد یک خودروی جدید
+POST http://127.0.0.1:8435/api/v1/car
+
+با ارسال اطلاعات در body این درخواست، یک خودروی جدید در سیستم ثبت می‌شود.
+
+اطلاعات ارسالی (Body):
+
+
+
+{
+  "code": "DENA-P",
+  "mainname": "Dena Plus",
+  "secondname": "دنا پلاس توربو",
+  "companyid": 15,
+  "categoryid": 3,
+  "year": 2023,
+  "fueltype": "Petrol",
+  "transmission": "Automatic",
+  "enginecapacity": 1.7,
+  "horsepower": 150,
+  "torque": 215,
+  "seats": 5,
+  "baseprice": 40000.0,
+  "description": "فول آپشن، تولید ملی"
+}
+خروجی موفق (کد 201):
+
+
+
+{
+    "meta": {
+        "data_type": "model_car_car",
+        "count": 1,
+        "is_success": true,
+        "url": "/api/v1/car/3",
+        "description": "خودرو با موفقیت ذخیره شد."
+    },
+    "data": {
+        "carid": 3,
+        "code": "DENA-P",
+        "mainname": "Dena Plus",
+        "secondname": "دنا پلاس توربو",
+        "companyid": 15,
+        "categoryid": 3,
+        "year": 2023,
+        "fueltype": "Petrol",
+        "transmission": "Automatic",
+        "enginecapacity": 1.7,
+        "horsepower": 150,
+        "torque": 215,
+        "seats": 5,
+        "drivetype": null,
+        "bodytype": null,
+        "rangekm": null,
+        "safetyrating": null,
+        "baseprice": 40000.0,
+        "isactive": true,
+        "issystemic": false,
+        "description": "فول آپشن، تولید ملی",
+        "createdat": "2025-09-10T16:50:12.000+03:30"
+    }
+}
+خروجی در صورت تکراری بودن کد (کد 409):
+
+
+
+{
+    "meta": {
+        "data_type": "model_car_car",
+        "count": 0,
+        "is_success": false,
+        "description": "کد خودرو تکراری است"
+    },
+    "data": {}
+}
+دریافت اطلاعات یک خودرو با شناسه
+GET http://127.0.0.1:8435/api/v1/car/1
+
+اطلاعات کامل یک خودروی خاص را بر اساس carid آن برمی‌گرداند.
+
+خروجی موفق (کد 200):
+
+
+
+{
+    "meta": {
+        "data_type": "model_car_car",
+        "count": 1,
+        "is_success": true,
+        "description": "خودرو با کد PRD-111 یافت شد."
+    },
+    "data": {
+        "carid": 1,
+        "code": "PRD-111",
+        "mainname": "Pride 111",
+        "secondname": "پراید هاچ‌بک",
+        "companyid": 10,
+        "categoryid": 2,
+        "year": 2018,
+        "fueltype": "Petrol",
+        "transmission": "Manual",
+        "enginecapacity": 1.3,
+        "horsepower": 71,
+        "torque": 108,
+        "seats": 5,
+        "drivetype": "FWD",
+        "bodytype": "Hatchback",
+        "rangekm": null,
+        "safetyrating": "1 Star",
+        "baseprice": 15000.0,
+        "isactive": true,
+        "issystemic": false,
+        "description": "ارزان و پراستهلاک",
+        "createdat": "2025-09-10T14:30:00.000+03:30"
+    }
+}
+خروجی در صورت یافت نشدن (کد 404):
+
+
+
+{
+    "meta": {
+        "data_type": "model_car_car",
+        "count": 0,
+        "is_success": false,
+        "description": "خودرو یافت نشد"
+    },
+    "data": {}
+}
+به‌روزرسانی اطلاعات یک خودرو
+PUT http://127.0.0.1:8435/api/v1/car/1
+
+اطلاعات یک خودروی موجود را بر اساس carid به‌روزرسانی می‌کند.
+
+اطلاعات ارسالی (Body):
+
+
+
+{
+    "secondname": "پراید هاچ‌بک - مدل جدید",
+    "baseprice": 16000.0,
+    "isactive": false
+}
+خروجی موفق (کد 200):
+
+
+
+{
+    "meta": {
+        "data_type": "model_car_car",
+        "count": 1,
+        "is_success": true,
+        "description": "خودرو با موفقیت بروزرسانی شد."
+    },
+    "data": {
+        "carid": 1,
+        "code": "PRD-111",
+        "mainname": "Pride 111",
+        "secondname": "پراید هاچ‌بک - مدل جدید",
+        "companyid": 10,
+        "categoryid": 2,
+        "year": 2018,
+        "fueltype": "Petrol",
+        "transmission": "Manual",
+        "enginecapacity": 1.3,
+        "horsepower": 71,
+        "torque": 108,
+        "seats": 5,
+        "drivetype": "FWD",
+        "bodytype": "Hatchback",
+        "rangekm": null,
+        "safetyrating": "1 Star",
+        "baseprice": 16000.0,
+        "isactive": false,
+        "issystemic": false,
+        "description": "ارزان و پراستهلاک",
+        "createdat": "2025-09-10T14:30:00.000+03:30"
+    }
+}
+خروجی در صورت یافت نشدن (کد 404):
+
+
+
+{
+    "meta": {
+        "data_type": "model_car_car",
+        "count": 0,
+        "is_success": false,
+        "description": "خودرو یافت نشد"
+    },
+    "data": {}
+}
+خروجی در صورت تکراری شدن کد (کد 409):
+
+
+
+{
+    "meta": {
+        "data_type": "model_car_car",
+        "count": 0,
+        "is_success": false,
+        "description": "کد خودرو تکراری است"
+    },
+    "data": {}
+}
+حذف یک خودرو
+DELETE http://127.0.0.1:8435/api/v1/car/3
+
+یک خودرو را بر اساس carid آن از سیستم حذف می‌کند.
+
+خروجی موفق (کد 200):
+
+
+
+{
+    "meta": {
+        "data_type": "integer",
+        "count": 1,
+        "is_success": true,
+        "description": "خودرو با موفقیت حذف شد."
+    },
+    "data": {
+        "carid": 3
+    }
+}
+خروجی در صورت یافت نشدن (کد 404):
+
+
+
+{
+    "meta": {
+        "data_type": "integer",
+        "count": 0,
+        "is_success": false,
+        "description": "خودرو مورد نظر یافت نشد!"
+    },
+    "data": {}
+}

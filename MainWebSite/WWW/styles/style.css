@@ -1,0 +1,397 @@
+:root {
+    --primary-color: #8e44ad;
+    --primary-light: #9b59b6;
+    --primary-dark: #7d3c98;
+}
+
+* {
+    font-family: Vazir, sans-serif;
+}
+
+html, body {
+    height: 100%;
+    margin: 0;
+}
+
+main, #login-container{
+  flex: 1;
+}
+
+body {
+    background: #f5f7fa;
+    color: #333;
+    display: flex;
+    flex-direction: column;    
+}
+
+#login-container {
+    display: flex;
+    flex-direction: column;
+    height: auto;
+}
+
+#login-container footer {
+    margin-top: auto;
+    margin-bottom: 0;
+}
+
+#app {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+#login-page {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+#login-page main {
+    flex: 1;
+}
+
+#main-app {
+    display: flex;
+    min-height: 100vh;
+}
+
+
+
+
+#main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin-inline-start: 280px; /* در RTL: margin-right برای خالی کردن سمت راست */
+    transition: margin-inline-start 0.3s ease;
+    width: calc(100% - 280px);
+}
+
+#main-content > main {
+    flex: 1;
+}
+
+#sidebar-container {
+    transform: translateX(100%); /* مخفی در سمت راست برای RTL */
+    width: 280px;
+    background-color: #6b21a8;
+    color: white;
+    height: 100vh;
+    position: fixed;
+    top: 0;
+    right: 0; /* سمت راست برای RTL */
+    transition: transform 0.3s ease;
+    z-index: 1000;
+    overflow-y: auto;
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+}
+
+footer {
+    margin-top: auto;
+    margin-bottom: 0;
+}
+
+.sidebar-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    color: #e9d5ff;
+    text-decoration: none;
+}
+
+.sidebar-item:hover {
+    background-color: #7e22ce;
+    color: white;
+}
+
+.sidebar-item.active {
+    background-color: #7e22ce;
+    color: white;
+}
+
+.sidebar-item i {
+    margin-inline-start: 10px; /* logical برای RTL */
+    font-size: 20px;
+}
+
+.mobile-menu-btn {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    background-color: rgb(147 51 234);
+}
+
+
+/* جلوگیری از اسکرول بدن هنگام باز بودن سایدبار */
+body.overflow-hidden {
+    overflow: hidden;
+}
+
+#sidebar-container.active {
+    transform: translateX(0);
+}
+
+#main-content {
+    margin-inline-start: 0; /* حذف margin در موبایل */
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    #sidebar-container {
+        width: 60%;
+    }
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    color: #fff;
+    padding: 0.5rem 1rem;
+    display: inline-block;
+}
+
+.btn-outline {
+    border: 1px solid var(--primary-color);
+    padding: 0.4rem 0.8rem;
+}
+
+.drag-area {
+    border: 2px dashed #ccc;
+    border-radius: 0.5rem;
+}
+
+.drag-area.active {
+    border-color: var(--primary-color);
+    background: rgba(142, 68, 173, 0.03);
+}
+
+.progress-bar {
+    height: 8px;
+    background: #e0e0e0;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--primary-color);
+    width: 0;
+}
+
+.pagination-btn {
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+
+#notification-button{
+    cursor: pointer;
+}
+
+/* اسکرول بار سفارشی فقط برای قسمت منوی سایدبار */
+.flex-1::-webkit-scrollbar {
+  width: 8px; /* ضخامت اسکرول */
+}
+
+.flex-1::-webkit-scrollbar-track {
+  background: #581c87; /* رنگ پس‌زمینه مسیر (بنفش تیره) */
+  border-radius: 8px;
+}
+
+.flex-1::-webkit-scrollbar-thumb {
+  background: #9333ea; /* رنگ خود اسکرول (بنفش روشن) */
+  border-radius: 8px;
+}
+
+.flex-1::-webkit-scrollbar-thumb:hover {
+  background: #a855f7; /* رنگ روشن‌تر وقتی هاور میشه */
+}
+
+
+
+
+
+
+/* کل صفحه */
+body::-webkit-scrollbar {
+  width: 10px; /* ضخامت اسکرول */
+}
+
+body::-webkit-scrollbar-track {
+  background: #581c87; /* بنفش تیره (مسیر) */
+  border-radius: 10px;
+}
+
+body::-webkit-scrollbar-thumb {
+  background: #9333ea; /* بنفش اصلی */
+  border-radius: 10px;
+}
+
+body::-webkit-scrollbar-thumb:hover {
+  background: #a855f7; /* بنفش روشن‌تر موقع hover */
+}
+
+/* [file name]: style.css */
+/* [file content begin] */
+/* ... استایل‌های قبلی ... */
+
+/* استایل‌های جدید برای مدیریت مشتریان */
+.view-customer, .edit-customer, .delete-customer {
+    padding: 0.25rem;
+    border-radius: 0.25rem;
+    transition: all 0.2s ease;
+}
+
+.view-customer:hover, .edit-customer:hover, .delete-customer:hover {
+    background-color: #f3f4f6;
+}
+
+/* استایل برای مودال جزئیات مشتری */
+#customer-detail-info {
+    grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+    #customer-detail-info {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+/* استایل برای تاریخچه تماس‌ها */
+#customer-contact-history .bg-white {
+    border-left: 3px solid #8b5cf6;
+}
+
+/* استایل برای نوع مشتری VIP */
+.bg-yellow-100 {
+    background-color: #fef9c3;
+}
+
+.text-yellow-800 {
+    color: #92400e;
+}
+
+
+.pagination-btn {
+    padding: 0.5rem 0.75rem;
+    margin: 0 0.25rem;
+    border-radius: 0.375rem;
+    border: 1px solid #e5e7eb;
+    background-color: white;
+    color: #374151;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.pagination-btn:hover {
+    background-color: #f3f4f6;
+}
+
+.pagination-btn.active {
+    background-color: #8b5cf6;
+    color: white;
+    border-color: #8b5cf6;
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+/* استایل برای مودال */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background-color: white;
+    padding: 1.5rem;
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+    max-height: 90vh;
+    overflow-y: auto;
+    max-width: 90vw;
+    width: 100%;
+}
+
+@media (min-width: 640px) {
+    .modal-content {
+        width: auto;
+        min-width: 500px;
+        max-width: 600px;
+    }
+}
+
+/* استایل برای دکمه‌های عملیات */
+.edit-campaign, .delete-campaign {
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    transition: all 0.2s ease;
+}
+
+.edit-campaign:hover, .delete-campaign:hover {
+    background-color: #f3f4f6;
+}
+
+
+.opacity-50 {
+    opacity: 0.5;
+}
+
+.cursor-not-allowed {
+    cursor: not-allowed;
+}
+
+/* استایل برای انیمیشن چرخش */
+.animate-spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* استایل برای فاصله بین آیتم‌ها */
+.space-y-3 > * + * {
+    margin-top: 0.75rem;
+}
+
+.mb-3 {
+    margin-bottom: 0.75rem;
+}

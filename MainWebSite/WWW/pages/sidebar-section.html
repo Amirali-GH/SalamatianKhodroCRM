@@ -1,0 +1,73 @@
+<!-- [file name]: sidebar-section.html -->
+<!-- [file content begin] -->
+<div class="flex flex-col h-screen w-75 bg-purple-900 text-white">
+    <!-- Header -->
+    <div class="p-4 border-b border-purple-700"> 
+        <h2 class="text-xl font-bold">سلامتیان خودرو</h2>
+        <p class="text-sm text-purple-200">پنل مدیریت کارشناس فروش</p>
+    </div>
+
+    <!-- Scrollable menu -->
+    <div class="flex-1 overflow-y-auto p-4">
+        <div class="flex items-center mb-6 p-2 bg-purple-700 rounded-lg">
+            <div class="w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center">
+                <span class="text-white font-bold">ک</span>
+            </div>
+            <div class="mr-3">
+                <p class="font-medium" id="user-full-name">کاربر سیستم</p>
+                <p class="text-xs text-purple-200" id="branch-full-name">کارشناس فروش</p>
+            </div>
+        </div>
+
+        <ul class="space-y-2">
+            <li>
+                <a href="#dashboard" class="sidebar-item active" data-page="dashboard">
+                    <i class="material-icons">dashboard</i>
+                    <span>داشبورد</span>
+                </a>
+            </li>
+            <li>
+                <a href="#assigned-numbers" class="sidebar-item" data-page="assigned-numbers">
+                    <i class="material-icons">groups</i>
+                    <span>شماره های تخصیص یافته</span>
+                </a>
+            </li>
+            <li>
+                <a href="#upload" class="sidebar-item" data-page="upload">
+                    <i class="material-icons">cloud_upload</i>
+                    <span>آپلود فایل</span>
+                </a>
+            </li>
+            <li>
+                <a href="#customer-management" class="sidebar-item" data-page="customer-management">
+                    <i class="material-icons">person</i>
+                    <span>مدیریت مشتریان</span>
+                </a>
+            </li>
+            
+            <!-- منوی مدیریت سیستم فقط برای ادمین -->
+            <li id="admin-menu-item" class="hidden">
+                <a href="#system-management" class="sidebar-item" data-page="system-management">
+                    <i class="material-icons">admin_panel_settings</i>
+                    <span>مدیریت سیستم</span>
+                </a>
+            </li>
+            
+            <li>
+                <a href="#settings" class="sidebar-item" data-page="settings">
+                    <i class="material-icons">settings</i>
+                    <span>تنظیمات</span>
+                </a>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Footer -->
+    <div class="p-4 border-t border-purple-700">
+        <button id="logout-btn" class="sidebar-item w-full text-right">
+            <i class="material-icons">logout</i>
+            <span>خروج از سیستم</span>
+        </button>
+    </div>
+</div>
+<!-- [file content end] -->

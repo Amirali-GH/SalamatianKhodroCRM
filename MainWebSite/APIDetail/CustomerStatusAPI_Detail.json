@@ -1,0 +1,221 @@
+GET http://127.0.0.1:8435/api/v1/customer-status?page=1&status=active&context=lead
+
+Output:
+{
+  "meta": {
+    "page": {
+      "page_num": "1",
+      "default_page_size": "20",
+      "page_size": "2"
+    },
+    "data_type": "list<model_lead_customerstatus>",
+    "count": 2,
+    "is_success": true,
+    "description": "لیست تمام وضعیت‌های مشتری ثبت شده"
+  },
+  "data": [
+    {
+      "customerstatusid": 1,
+      "code": "NEW",
+      "name": "New Customer",
+      "isactive": true,
+      "issystemic": false,
+      "description": "مشتری تازه ثبت شده",
+      "createdat": "2025-09-10T10:00:00.000+03:30",
+      "links": [
+        {
+          "href": "/api/v1/customer-status/1",
+          "type": "application/json",
+          "rel": "self"
+        }
+      ]
+    },
+    {
+      "customerstatusid": 2,
+      "code": "INACTIVE",
+      "name": "Inactive",
+      "isactive": false,
+      "issystemic": false,
+      "description": "مشتری غیرفعال",
+      "createdat": "2025-09-10T12:30:00.000+03:30",
+      "links": [
+        {
+          "href": "/api/v1/customer-status/2",
+          "type": "application/json",
+          "rel": "self"
+        }
+      ]
+    }
+  ]
+}
+
+
+-----------------------------------------------------------------
+
+
+
+POST http://127.0.0.1:8435/api/v1/customer-status
+
+Body:
+{
+  "code": "VIP",
+  "name": "VIP Customer",
+  "isactive": true,
+  "description": "مشتری ویژه"
+}
+
+Output Code 201:
+{
+  "meta": {
+    "data_type": "model_lead_customerstatus",
+    "count": 1,
+    "is_success": true,
+    "url": "/api/v1/customer-status/3",
+    "description": "وضعیت مشتری با موفقیت ذخیره شد."
+  },
+  "data": {
+    "customerstatusid": 3,
+    "code": "VIP",
+    "name": "VIP Customer",
+    "isactive": true,
+    "issystemic": false,
+    "description": "مشتری ویژه",
+    "createdat": "2025-09-10T14:00:00.000+03:30"
+  }
+}
+
+Output Code 409:
+{
+  "meta": {
+    "data_type": "model_lead_customerstatus",
+    "count": 0,
+    "is_success": false,
+    "description": "کد وضعیت مشتری تکراری است"
+  },
+  "data": {}
+}
+
+
+
+-----------------------------------------------------------------
+
+
+
+GET http://127.0.0.1:8435/api/v1/customer-status/1
+
+Output Code 200:
+{
+  "meta": {
+    "data_type": "model_lead_customerstatus",
+    "count": 1,
+    "is_success": true,
+    "description": "وضعیت مشتری با کد NEW یافت شد."
+  },
+  "data": {
+    "customerstatusid": 1,
+    "code": "NEW",
+    "name": "New Customer",
+    "isactive": true,
+    "issystemic": false,
+    "description": "مشتری تازه ثبت شده",
+    "createdat": "2025-09-10T10:00:00.000+03:30"
+  }
+}
+
+Output Code 404:
+{
+  "meta": {
+    "data_type": "model_lead_customerstatus",
+    "count": 0,
+    "is_success": false,
+    "description": "وضعیت مشتری یافت نشد"
+  },
+  "data": {}
+}
+
+
+
+
+-----------------------------------------------------------------
+
+PUT http://127.0.0.1:8435/api/v1/customer-status/1
+
+Body:
+{
+  "name": "New Customer Updated",
+  "isactive": false,
+  "description": "ویرایش وضعیت مشتری"
+}
+
+Output Code 200:
+{
+  "meta": {
+    "data_type": "model_lead_customerstatus",
+    "count": 1,
+    "is_success": true,
+    "description": "وضعیت مشتری با موفقیت بروزرسانی شد."
+  },
+  "data": {
+    "customerstatusid": 1,
+    "code": "NEW",
+    "name": "New Customer Updated",
+    "isactive": false,
+    "issystemic": false,
+    "description": "ویرایش وضعیت مشتری",
+    "createdat": "2025-09-10T10:00:00.000+03:30"
+  }
+}
+
+Output Code 404:
+{
+  "meta": {
+    "data_type": "model_lead_customerstatus",
+    "count": 0,
+    "is_success": false,
+    "description": "وضعیت مشتری یافت نشد"
+  },
+  "data": {}
+}
+
+Output Code 409:
+{
+  "meta": {
+    "data_type": "model_lead_customerstatus",
+    "count": 0,
+    "is_success": false,
+    "description": "کد وضعیت مشتری تکراری است"
+  },
+  "data": {}
+}
+
+
+
+
+-----------------------------------------------------------------
+
+
+DELETE http://127.0.0.1:8435/api/v1/customer-status/2
+
+Output Code 200:
+{
+  "meta": {
+    "data_type": "integer",
+    "count": 1,
+    "is_success": true,
+    "description": "وضعیت مشتری با موفقیت حذف شد."
+  },
+  "data": {
+    "customerstatusid": 2
+  }
+}
+
+Output Code 404:
+{
+  "meta": {
+    "data_type": "integer",
+    "count": 0,
+    "is_success": false,
+    "description": "وضعیت مشتری مورد نظر یافت نشد!"
+  },
+  "data": {}
+}

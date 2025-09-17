@@ -1,0 +1,259 @@
+GET http://127.0.0.1:8435/api/v1/campaign?page=1
+
+Output:
+{
+    "meta": {
+        "page": {
+            "page_num": "1",
+            "default_page_size": "20",
+            "page_size": "2"
+        },
+        "data_type": "list<model_sale_campaign>",
+        "count": 2,
+        "is_success": true,
+        "description": "لیست تمام کمپین های ثبت شده"
+    },
+    "data": [
+        {
+            "campaignid": 17,
+            "code": "CAMP2017",
+            "mainname": "Spring Sale",
+            "secondname": "کمپین عالی است",
+            "startdate": "2017-12-01",
+            "enddate": "2018-02-28",
+            "budget": 6500000000.0,
+            "isactive": true,
+            "issystemic": false,
+            "description": "بروزرسانی کردم!",
+            "createdat": "2025-09-04T22:55:17.000+03:30",
+            "links": [
+                {
+                    "href": "/api/v1/campaign/17",
+                    "type": "application/json",
+                    "rel": "self"
+                }
+            ]
+        },
+        {
+            "campaignid": 10,
+            "code": "CAMP2025",
+            "mainname": "Winter Sale",
+            "secondname": null,
+            "startdate": "2025-12-01",
+            "enddate": "2025-12-31",
+            "budget": 15000.5,
+            "isactive": true,
+            "issystemic": false,
+            "description": "A special campaign for winter sales with exclusive discounts.",
+            "createdat": "2025-09-04T22:42:58.000+03:30",
+            "links": [
+                {
+                    "href": "/api/v1/campaign/10",
+                    "type": "application/json",
+                    "rel": "self"
+                }
+            ]
+        },
+        {
+            "campaignid": 22,
+            "code": "CAMP2028",
+            "mainname": "Summer Sale",
+            "secondname": null,
+            "startdate": "2025-12-01",
+            "enddate": "2025-12-31",
+            "budget": 15000.5,
+            "isactive": true,
+            "issystemic": false,
+            "description": "A special campaign for winter sales with exclusive discounts.",
+            "createdat": "2025-09-05T10:12:00.000+03:30",
+            "links": [
+                {
+                    "href": "/api/v1/campaign/22",
+                    "type": "application/json",
+                    "rel": "self"
+                }
+            ]
+        }
+    ]
+}
+
+----------------------------------------------------------------------------------------
+
+Post http://127.0.0.1:8435/api/v1/campaign
+
+Body:
+{
+  "code": "CAMP2027",
+  "mainname": "Summer Sale",
+  "secondname": "End of Year Discount",
+  "startdate": "2025-12-01",
+  "enddate": "2025-12-31",
+  "budget": 15000.50,
+  "description": "A special campaign for winter sales with exclusive discounts."
+}
+
+Output Code 201:
+{
+    "meta": {
+        "data_type": "model_sale_campaign",
+        "count": 1,
+        "is_success": true,
+        "url": "/api/v1/campaign/27",
+        "description": "کمپین با موفقیت ذخیره شد."
+    },
+    "data": {
+        "campaignid": 27,
+        "code": "CAMP2027",
+        "mainname": "Summer Sale",
+        "secondname": null,
+        "startdate": "2025-12-01",
+        "enddate": "2025-12-31",
+        "budget": 15000.5,
+        "isactive": true,
+        "issystemic": false,
+        "description": "A special campaign for winter sales with exclusive discounts.",
+        "createdat": "2025-09-08T23:31:06.000+03:30"
+    }
+}
+
+Output Code 409:
+{
+    "meta": {
+        "data_type": "model_sale_campaign",
+        "count": 0,
+        "is_success": false,
+        "description": "کد کمپین تکراری است"
+    },
+    "data": {}
+}
+
+---------------------------------------------------------------------------
+
+
+Get http://127.0.0.1:8435/api/v1/campaign/17
+
+output Code 200:
+{
+    "meta": {
+        "data_type": "model_sale_campaign",
+        "count": 1,
+        "is_success": true,
+        "description": "کمپین به کد CAMP2017 یافت شد."
+    },
+    "data": {
+        "campaignid": 17,
+        "code": "CAMP2017",
+        "mainname": "Spring Sale",
+        "secondname": "کمپین عالی است",
+        "startdate": "2017-12-01",
+        "enddate": "2018-02-28",
+        "budget": 6500000000.0,
+        "isactive": true,
+        "issystemic": false,
+        "description": "بروزرسانی کردم!",
+        "createdat": "2025-09-04T22:55:17.000+03:30"
+    }
+}
+
+
+output Code 404:
+{
+    "meta": {
+        "data_type": "model_sale_campaign",
+        "count": 0,
+        "is_success": false,
+        "description": "کمپین یافت نشد"
+    },
+    "data": {}
+}
+
+----------------------------------------------------------------------
+
+Put http://127.0.0.1:8435/api/v1/campaign/18
+
+Body:
+{
+    "campaignid": 17,
+    "code": "CAMP2017",
+    "mainname": "Spring Sale",
+    "secondname": "آپدیت جدید",
+    "startdate": "2017-12-01",
+    "enddate": "2018-02-28",
+    "budget": 6500000000,
+    "isactive": true,
+    "description": "بروزرسانی کردم!"
+}
+
+output Code 404:
+{
+    "meta": {
+        "data_type": "model_sale_campaign",
+        "count": 0,
+        "is_success": false,
+        "description": "کمپین یافت نشد"
+    },
+    "data": {}
+}
+
+output Code 409:
+{
+    "meta": {
+        "data_type": "model_sale_campaign",
+        "count": 0,
+        "is_success": false,
+        "description": "کد کمپین تکراری است"
+    },
+    "data": {}
+}
+
+output Code 200:
+{
+    "meta": {
+        "data_type": "model_sale_campaign",
+        "count": 1,
+        "is_success": true,
+        "description": "کمپین با موفقیت بروزرسانی شد."
+    },
+    "data": {
+        "campaignid": 17,
+        "code": "CAMP2017",
+        "mainname": "Spring Sale",
+        "secondname": "آپدیت جدید",
+        "startdate": "2017-12-01",
+        "enddate": "2018-02-28",
+        "budget": 6500000000.0,
+        "isactive": true,
+        "issystemic": false,
+        "description": "بروزرسانی کردم!",
+        "createdat": "2025-09-04T22:55:17.000+03:30"
+    }
+}
+
+-----------------------------------------------------------------------------------------
+
+
+Delete http://127.0.0.1:8435/api/v1/campaign/28
+
+output Code 404:
+{
+    "meta": {
+        "data_type": "integer",
+        "count": 0,
+        "is_success": false,
+        "description": "کمپین مورد نظر یافت نشد!"
+    },
+    "data": {}
+}
+
+output Code 200:
+{
+    "meta": {
+        "data_type": "integer",
+        "count": 1,
+        "is_success": true,
+        "description": "کمپین با موفقیت حذف شد."
+    },
+    "data": {
+        "campaignid": 17
+    }
+}

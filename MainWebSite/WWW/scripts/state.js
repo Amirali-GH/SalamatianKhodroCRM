@@ -1,0 +1,20 @@
+export let currentState = {
+    token: null,
+    user: null,
+    leads: [],
+    currentPage: 1,
+    pageSize: 10,
+    totalLeads: 0,
+    totalPages: 1,
+    searchQuery: '',
+    sortField: 'assignedAt',
+    sortOrder: 'desc',
+    selectedLeads: [],
+    selectedBranch: '',
+    branches: [],
+    currentExcel_JSON: {},
+    currentExcel_File: null,
+    currentExcel_FileSize: null,
+    currentExcel_FileName: null,
+    currentLead: null
+};

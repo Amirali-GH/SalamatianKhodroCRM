@@ -1,0 +1,244 @@
+GET http://127.0.0.1:8435/api/v1/employee/saleagent/?page=1&context=ز&status=both
+
+Output Code 200:
+{
+    "meta": {
+        "page": {
+            "total_size": 2,
+            "page_num": "1",
+            "default_page_size": "20",
+            "page_size": "1"
+        },
+        "data_type": "list<model_organization_employee>",
+        "count": 1,
+        "is_success": true,
+        "description": "لیست تمام کارمندان ثبت‌شده"
+    },
+    "data": [
+        {
+            "employeeid": 1,
+            "employeeroleid": 1,
+            "firstname": null,
+            "lastname": "زمانی",
+            "nationalcode": null,
+            "birthdate": null,
+            "hiredate": null,
+            "phonenumber": null,
+            "email": null,
+            "address": null,
+            "status": "Active",
+            "isactive": true,
+            "issystemic": true,
+            "description": null,
+            "createdat": "2025-09-12T18:34:30.000+03:30",
+            "links": [
+                {
+                    "href": "/api/v1/employee/1",
+                    "type": "application/json",
+                    "rel": "self"
+                }
+            ]
+        }
+    ]
+}
+
+
+---------------------------------------------------------------------------
+
+
+Get http://127.0.0.1:8435/api/v1/employee/1
+
+output Code 200:
+{
+    "meta": {
+        "data_type": "model_organization_employee",
+        "count": 1,
+        "is_success": true,
+        "description": "کارمند با کد ملی  یافت شد."
+    },
+    "data": {
+        "employeeid": 1,
+        "employeeroleid": 1,
+        "firstname": null,
+        "lastname": "زمانی",
+        "nationalcode": null,
+        "birthdate": null,
+        "hiredate": null,
+        "phonenumber": null,
+        "email": null,
+        "address": null,
+        "status": "Active",
+        "isactive": true,
+        "issystemic": true,
+        "description": null,
+        "createdat": "2025-09-12T18:34:30.000+03:30"
+    }
+}
+
+
+output Code 404:
+{
+    "meta": {
+        "data_type": "model_organization_employee",
+        "count": 0,
+        "is_success": false,
+        "description": "کارمند یافت نشد"
+    },
+    "data": {}
+}
+
+----------------------------------------------------------------------------------------
+
+Post http://127.0.0.1:8435/api/v1/employee/saleagent/
+
+Body:
+{
+    "employeeroleid": 1,
+    "firstname": "شهلا",
+    "lastname": "زمانی",
+    "nationalcode": "1275698833",
+    "birthdate": "1401/01/01",
+    "hiredate": null,
+    "phonenumber": null,
+    "email": null,
+    "address": null,
+    "status": "Active",
+    "isactive": true,
+    "description": "کارشناس تستی"
+}
+
+Output Code 201:
+{
+    "meta": {
+        "data_type": "model_organization_employee",
+        "count": 1,
+        "is_success": true,
+        "url": "/api/v1/employee/4",
+        "description": "کارمند با موفقیت ذخیره شد."
+    },
+    "data": {
+        "employeeid": 4,
+        "employeeroleid": 1,
+        "firstname": "شهلا",
+        "lastname": "زمانی",
+        "nationalcode": "1275698833",
+        "birthdate": "1401/01/01",
+        "hiredate": null,
+        "phonenumber": null,
+        "email": null,
+        "address": null,
+        "status": "Active",
+        "isactive": true,
+        "issystemic": false,
+        "description": "کارشناس تستی",
+        "createdat": null
+    }
+}
+
+Output Code 409:
+{
+    "meta": {
+        "data_type": "model_organization_employee",
+        "count": 0,
+        "is_success": false,
+        "description": "کد ملی یا ایمیل کارمند تکراری است"
+    },
+    "data": {}
+}
+
+----------------------------------------------------------------------
+
+Put http://127.0.0.1:8435/api/v1/employee/4
+
+Body:
+{
+    "firstname": "شهلا",
+    "lastname": "زمانی",
+    "nationalcode": "1275698833",
+    "birthdate": "1401/01/01",
+    "hiredate": null,
+    "phonenumber": null,
+    "email": null,
+    "address": null,
+    "status": "Active",
+    "isactive": true,
+    "description": "کارشناس تستی"
+}
+
+output Code 404:
+{
+    "meta": {
+        "data_type": "model_organization_employee",
+        "count": 0,
+        "is_success": false,
+        "description": "کارمند یافت نشد"
+    },
+    "data": {}
+}
+
+output Code 409:
+{
+    "meta": {
+        "data_type": "model_organization_employee",
+        "count": 0,
+        "is_success": false,
+        "description": "کد ملی یا ایمیل کارمند تکراری است"
+    },
+    "data": {}
+}
+
+output Code 200:
+{
+    "meta": {
+        "data_type": "model_organization_employee",
+        "count": 1,
+        "is_success": true,
+        "description": "کارمند با موفقیت به‌روزرسانی شد."
+    },
+    "data": {
+        "employeeid": 4,
+        "employeeroleid": 1,
+        "firstname": "شهلا",
+        "lastname": "زمانی",
+        "nationalcode": "1275698833",
+        "birthdate": "1401/01/01",
+        "hiredate": null,
+        "phonenumber": null,
+        "email": null,
+        "address": null,
+        "status": "Active",
+        "isactive": true,
+        "issystemic": false,
+        "description": "کارشناس تستی",
+        "createdat": null
+    }
+}
+
+-----------------------------------------------------------------------------------------
+
+
+Delete http://127.0.0.1:8435/api/v1/employee/1
+
+output Code 404:
+{
+    "meta": {
+        "data_type": "integer",
+        "count": 0,
+        "is_success": false,
+        "description": "کارمند مورد نظر یافت نشد!"
+    },
+    "data": {}
+}
+
+output Code 200:
+{
+    "meta": {
+        "data_type": "integer",
+        "count": 1,
+        "is_success": true,
+        "description": "کارمند با موفقیت حذف شد."
+    },
+    "data": {
+        "employeeid": 1
+    }
+}

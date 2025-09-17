@@ -1,0 +1,226 @@
+GET http://127.0.0.1:8435/api/v1/branch?page=1&status=active&context=test
+
+Output:
+{
+  "meta": {
+    "page": {
+      "page_num": "1",
+      "default_page_size": "20",
+      "page_size": "2"
+    },
+    "data_type": "list<model_branch>",
+    "count": 2,
+    "is_success": true,
+    "description": "لیست تمام شعب ثبت شده"
+  },
+  "data": [
+    {
+      "branchid": 1,
+      "code": "BR001",
+      "mainname": "شعبه مرکزی",
+      "secondname": "مرکزی تهران",
+      "locationid": 100,
+      "phone": "021-22222222",
+      "isactive": true,
+      "issystemic": false,
+      "description": "شعبه اصلی شرکت",
+      "createdat": "2025-09-10T10:00:00.000+03:30",
+      "links": [
+        {
+          "href": "/api/v1/branch/1",
+          "type": "application/json",
+          "rel": "self"
+        }
+      ]
+    },
+    {
+      "branchid": 2,
+      "code": "BR002",
+      "mainname": "شعبه مشهد",
+      "secondname": null,
+      "locationid": 200,
+      "phone": "051-33333333",
+      "isactive": true,
+      "issystemic": false,
+      "description": "شعبه مشهد",
+      "createdat": "2025-09-10T12:30:00.000+03:30",
+      "links": [
+        {
+          "href": "/api/v1/branch/2",
+          "type": "application/json",
+          "rel": "self"
+        }
+      ]
+    }
+  ]
+}
+
+
+
+POST http://127.0.0.1:8435/api/v1/branch
+
+Body:
+{
+  "code": "BR003",
+  "mainname": "شعبه اصفهان",
+  "secondname": "اصفهان شمال",
+  "locationid": 300,
+  "phone": "031-44444444",
+  "isactive": true,
+  "description": "شعبه جدید در اصفهان"
+}
+
+Output Code 201:
+{
+  "meta": {
+    "data_type": "model_branch",
+    "count": 1,
+    "is_success": true,
+    "url": "/api/v1/branch/3",
+    "description": "شعبه با موفقیت ذخیره شد."
+  },
+  "data": {
+    "branchid": 3,
+    "code": "BR003",
+    "mainname": "شعبه اصفهان",
+    "secondname": "اصفهان شمال",
+    "locationid": 300,
+    "phone": "031-44444444",
+    "isactive": true,
+    "issystemic": false,
+    "description": "شعبه جدید در اصفهان",
+    "createdat": "2025-09-10T14:00:00.000+03:30"
+  }
+}
+
+Output Code 409:
+{
+  "meta": {
+    "data_type": "model_branch",
+    "count": 0,
+    "is_success": false,
+    "description": "کد شعبه تکراری است"
+  },
+  "data": {}
+}
+
+
+
+GET http://127.0.0.1:8435/api/v1/branch/1
+
+Output Code 200:
+{
+  "meta": {
+    "data_type": "model_branch",
+    "count": 1,
+    "is_success": true,
+    "description": "شعبه با کد BR001 یافت شد."
+  },
+  "data": {
+    "branchid": 1,
+    "code": "BR001",
+    "mainname": "شعبه مرکزی",
+    "secondname": "مرکزی تهران",
+    "locationid": 100,
+    "phone": "021-22222222",
+    "isactive": true,
+    "issystemic": false,
+    "description": "شعبه اصلی شرکت",
+    "createdat": "2025-09-10T10:00:00.000+03:30"
+  }
+}
+
+Output Code 404:
+{
+  "meta": {
+    "data_type": "model_branch",
+    "count": 0,
+    "is_success": false,
+    "description": "شعبه یافت نشد"
+  },
+  "data": {}
+}
+
+
+PUT http://127.0.0.1:8435/api/v1/branch/1
+
+Body:
+{
+  "code": "BR001",
+  "mainname": "شعبه مرکزی آپدیت شده",
+  "secondname": "تهران آپدیت",
+  "phone": "021-99999999",
+  "isactive": true,
+  "description": "بروزرسانی اطلاعات شعبه"
+}
+
+Output Code 200:
+{
+  "meta": {
+    "data_type": "model_branch",
+    "count": 1,
+    "is_success": true,
+    "description": "شعبه با موفقیت بروزرسانی شد."
+  },
+  "data": {
+    "branchid": 1,
+    "code": "BR001",
+    "mainname": "شعبه مرکزی آپدیت شده",
+    "secondname": "تهران آپدیت",
+    "locationid": 100,
+    "phone": "021-99999999",
+    "isactive": true,
+    "issystemic": false,
+    "description": "بروزرسانی اطلاعات شعبه",
+    "createdat": "2025-09-10T10:00:00.000+03:30"
+  }
+}
+
+Output Code 404:
+{
+  "meta": {
+    "data_type": "model_branch",
+    "count": 0,
+    "is_success": false,
+    "description": "شعبه یافت نشد"
+  },
+  "data": {}
+}
+
+Output Code 409:
+{
+  "meta": {
+    "data_type": "model_branch",
+    "count": 0,
+    "is_success": false,
+    "description": "کد شعبه تکراری است"
+  },
+  "data": {}
+}
+
+
+DELETE http://127.0.0.1:8435/api/v1/branch/2
+
+Output Code 200:
+{
+  "meta": {
+    "data_type": "integer",
+    "count": 1,
+    "is_success": true,
+    "description": "شعبه با موفقیت حذف شد."
+  },
+  "data": {
+    "branchid": 2
+  }
+}
+
+Output Code 404:
+{
+  "meta": {
+    "data_type": "integer",
+    "count": 0,
+    "is_success": false,
+    "description": "شعبه مورد نظر یافت نشد!"
+  },
+  "data": {}
+}

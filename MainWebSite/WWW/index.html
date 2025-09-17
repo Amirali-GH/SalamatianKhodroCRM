@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پنل شعبه های سلامتیان خودرو</title>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/font-face.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="./styles/style.css" rel="stylesheet">
+    <link rel="icon" type="image/x-icon" href="./assets/favicon.ico">
+</head>
+<body class="bg-gray-50">
+    <div id="login-container">
+    </div>
+        
+    <div id="app" class="flex min-h-screen">
+        <!-- سایدبار با استایل جدید -->
+        <div id="sidebar-container" 
+            class="fixed md:relative z-50 transform -translate-x-full md:translate-x-0 transition-transform duration-300 ease-in-out 
+                    flex flex-col h-screen w-72 bg-purple-900 text-white">
+
+        </div>
+
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden"></div>
+
+        <div id="main-content" class="flex-1 flex flex-col hidden">
+            <header class="bg-white shadow-md py-4 px-6" id="main-app-header">
+                <div class="flex justify-between items-center">
+                    <!-- دکمه همبرگر برای موبایل -->
+                    <button id="mobile-menu-btn" class="mobile-menu-btn mdhover:shadow-lg hover:shadow-purple-400/50 transition cursor-pointer">
+                        <i class="material-icons">menu</i>
+                    </button>
+
+                    <!-- عنوان وسط -->
+                    <h1 class="text-xl font-bold text-gray-800 text-center flex-1" id="page-title">
+                    داشبورد
+                    </h1>
+
+                    <!-- بخش چپ (اعلان‌ها) -->
+                    <div class="flex items-center gap-4">
+                        <div class="relative" id="notification-button">
+                            <div class="w-12 h-12 bg-purple-600 rounded-full flex items-center justify-center hover:shadow-lg hover:shadow-purple-400/50 transition cursor-pointer">
+                            <i class="material-icons text-white text-[26px]">notifications</i>
+                            </div>
+                            <span id="notif-badge" class="hidden absolute top-1 right-1 w-4 h-4 bg-red-600 text-white text-xs flex items-center justify-center rounded-full shadow">
+                            !
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main class="p-6 flex-1">
+                <div id="pages-container">
+                    </div>
+            </main>
+
+            <footer class="bg-white border-t py-6 mt-8">
+                <div class="container mx-auto px-4 text-center text-gray-600">
+                    <p>پنل شعبه های سلامتیان خودرو - تمام حقوق محفوظ است © 1404</p>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <script type="module" src="./scripts/main.js"></script>
+</body>
+</html>

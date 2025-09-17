@@ -1,0 +1,15 @@
+[9976:13176:0915/085857.733:INFO:components\enterprise\browser\controller\chrome_browser_cloud_management_controller.cc:206] No machine level policy manager exists.
+[28060:26908:0915/085857.818:INFO:third_party\webrtc\rtc_base\cpu_info.cc:75] Available number of cores: 16
+[27512:8076:0915/085857.821:INFO:third_party\webrtc\rtc_base\cpu_info.cc:75] Available number of cores: 16
+[27576:27580:0915/085857.824:VERBOSE1:components\viz\service\main\viz_main_impl.cc:86] VizNullHypothesis is disabled (not a warning)
+[26020:14920:0915/085857.957:INFO:third_party\webrtc\rtc_base\cpu_info.cc:75] Available number of cores: 16
+[24656:16440:0915/085858.146:INFO:third_party\webrtc\rtc_base\cpu_info.cc:75] Available number of cores: 16
+[25592:16156:0915/085858.174:ERROR:net\socket\ssl_client_socket_impl.cc:915] handshake failed; returned -1, SSL error code 1, net_error -107
+[25592:16156:0915/085858.177:ERROR:net\socket\ssl_client_socket_impl.cc:915] handshake failed; returned -1, SSL error code 1, net_error -107
+[9976:13176:0915/085859.387:INFO:CONSOLE:0] "Slow network is detected. See https://www.chromestatus.com/feature/5636954674692096 for more details. Fallback font will be used while loading: https://app.novinhub.com/assets/YekanBakhFaNum-Bold-B0339MnD.woff", source: https://app.novinhub.com/dashboard (0)
+[9976:13176:0915/085859.706:INFO:CONSOLE:0] "Slow network is detected. See https://www.chromestatus.com/feature/5636954674692096 for more details. Fallback font will be used while loading: https://app.novinhub.com/assets/YekanBakhFaNum-SemiBold-D6uk59ej.woff", source: https://app.novinhub.com/dashboard (0)
+[9976:13176:0915/085900.069:INFO:CONSOLE:877] "A component is changing from uncontrolled to controlled. This may be caused by the value changing from undefined to a defined value, which should not happen.", source: https://app.novinhub.com/assets/index-C24GxZJd.js (877)
+[9976:13176:0915/085900.082:INFO:CONSOLE:884] "Slow network is detected. See https://www.chromestatus.com/feature/5636954674692096 for more details. Fallback font will be used while loading: https://app.novinhub.com/assets/yekanbakh-regular-CtIiwT9t.woff", source: https://app.novinhub.com/assets/index-C24GxZJd.js (884)
+[9976:21120:0915/085900.372:ERROR:google_apis\gcm\engine\registration_request.cc:291] Registration response error message: DEPRECATED_ENDPOINT
+[25592:31556:0915/085910.086:WARNING:net\extras\sqlite\sqlite_persistent_store_backend_base.cc:176] Failed to post task from FlushAndNotifyInBackground@net\extras\sqlite\sqlite_persistent_store_backend_base.cc:226 to client_task_runner_.
+[25592:31556:0915/085910.086:WARNING:net\extras\sqlite\sqlite_persistent_store_backend_base.cc:176] Failed to post task from FlushAndNotifyInBackground@net\extras\sqlite\sqlite_persistent_store_backend_base.cc:226 to client_task_runner_.

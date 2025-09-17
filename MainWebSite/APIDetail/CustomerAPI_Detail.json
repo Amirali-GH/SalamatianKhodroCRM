@@ -1,0 +1,282 @@
+GET http://127.0.0.1:8435/api/v1/customer?page=1&status=both&context=ح
+
+Output Code 200:
+{
+    "meta": {
+        "page": {
+            "page_num": "1",
+            "default_page_size": "20",
+            "page_size": "3"
+        },
+        "data_type": "list<model_customer_customer>",
+        "count": 3,
+        "is_success": true,
+        "description": "لیست تمام مشتریان ثبت شده"
+    },
+    "data": [
+        {
+            "customerid": 9,
+            "firstname": "امیرعلی کبیر",
+            "lastname": "احمدی",
+            "phone": "9133754366",
+            "nationalid": null,
+            "email": "AmirAli.updated@example.com",
+            "address": null,
+            "budget": null,
+            "campaignid": null,
+            "createdbyuserid": null,
+            "createdat": "2025-09-10T12:34:20.000+03:30",
+            "updatedat": "2025-09-10T12:43:07.000+03:30",
+            "isactive": true,
+            "issystemic": false,
+            "description": null,
+            "links": [
+                {
+                    "href": "/api/v1/customer/9",
+                    "type": "application/json",
+                    "rel": "self"
+                }
+            ]
+        },
+        {
+            "customerid": 12,
+            "firstname": "محمدرضا",
+            "lastname": "حیدری",
+            "phone": "09134567890",
+            "nationalid": null,
+            "email": "mreza.heaidari@example.com",
+            "address": null,
+            "budget": null,
+            "campaignid": null,
+            "createdbyuserid": null,
+            "createdat": "2025-09-10T12:44:20.000+03:30",
+            "updatedat": "2025-09-10T12:44:20.000+03:30",
+            "isactive": true,
+            "issystemic": false,
+            "description": null,
+            "links": [
+                {
+                    "href": "/api/v1/customer/12",
+                    "type": "application/json",
+                    "rel": "self"
+                }
+            ]
+        },
+        {
+            "customerid": 17,
+            "firstname": "علی",
+            "lastname": "محمدی",
+            "phone": "8742165854",
+            "nationalid": "",
+            "email": "",
+            "address": "",
+            "budget": null,
+            "campaignid": null,
+            "createdbyuserid": null,
+            "createdat": "2025-09-10T16:00:42.000+03:30",
+            "updatedat": "2025-09-10T16:00:42.000+03:30",
+            "isactive": true,
+            "issystemic": false,
+            "description": "",
+            "links": [
+                {
+                    "href": "/api/v1/customer/17",
+                    "type": "application/json",
+                    "rel": "self"
+                }
+            ]
+        }
+    ]
+}
+
+----------------------------------------------------------------------------------------
+
+Post http://127.0.0.1:8435/api/v1/customer
+
+Body:
+{
+    "code": "CUST003",
+    "firstname": "امیرعلی",
+    "lastname": "قدیری مقدم",
+    "phone": "09133754366",
+    "email": "amiralighadiri1383@example.com",
+    "isactive": true
+}
+
+Output Code 201:
+{
+    "meta": {
+        "data_type": "model_customer_customer",
+        "count": 1,
+        "is_success": true,
+        "url": "/api/v1/customer/10",
+        "description": "مشتری با موفقیت ذخیره شد."
+    },
+    "data": {
+        "customerid": 10,
+        "firstname": "امیرعلی",
+        "lastname": "قدیری مقدم",
+        "phone": "09133754366",
+        "nationalid": null,
+        "email": "amiralighadiri1383@example.com",
+        "address": null,
+        "budget": null,
+        "campaignid": null,
+        "createdbyuserid": null,
+        "createdat": "2025-09-10T12:38:02.000+03:30",
+        "updatedat": "2025-09-10T12:38:02.000+03:30",
+        "isactive": true,
+        "issystemic": false,
+        "description": null
+    }
+}
+
+Output Code 409:
+{
+    "meta": {
+        "data_type": "model_customer_customer",
+        "count": 0,
+        "is_success": false,
+        "description": "ایمیل یا شماره تلفن یا کدملی مشتری تکراری است"
+    },
+    "data": {}
+}
+
+---------------------------------------------------------------------------
+
+
+Get http://127.0.0.1:8435/api/v1/customer/9
+
+output Code 200:
+{
+    "meta": {
+        "data_type": "model_customer_customer",
+        "count": 1,
+        "is_success": true,
+        "description": "مشتری با ایمیل AmirAli.updated@example.com یافت شد."
+    },
+    "data": {
+        "customerid": 9,
+        "firstname": "امیرعلی کبیر",
+        "lastname": "احمدی",
+        "phone": "9133754366",
+        "nationalid": null,
+        "email": "AmirAli.updated@example.com",
+        "address": null,
+        "budget": null,
+        "campaignid": null,
+        "createdbyuserid": null,
+        "createdat": "2025-09-10T12:34:20.000+03:30",
+        "updatedat": "2025-09-10T12:43:07.000+03:30",
+        "isactive": true,
+        "issystemic": false,
+        "description": null
+    }
+}
+
+
+output Code 404:
+{
+    "meta": {
+        "data_type": "model_customer_customer",
+        "count": 0,
+        "is_success": false,
+        "description": "مشتری یافت نشد"
+    },
+    "data": {}
+}
+
+----------------------------------------------------------------------
+
+Put http://127.0.0.1:8435/api/v1/customer/18
+
+Body:
+{
+    "customerid": 17,
+    "code": "CAMP2017",
+    "mainname": "Spring Sale",
+    "secondname": "آپدیت جدید",
+    "startdate": "2017-12-01",
+    "enddate": "2018-02-28",
+    "budget": 6500000000,
+    "isactive": true,
+    "description": "بروزرسانی کردم!"
+}
+
+output Code 404:
+{
+    "meta": {
+        "data_type": "model_customer_customer",
+        "count": 0,
+        "is_success": false,
+        "description": "مشتری یافت نشد"
+    },
+    "data": {}
+}
+
+output Code 409:
+{
+    "meta": {
+        "data_type": "model_customer_customer",
+        "count": 0,
+        "is_success": false,
+        "description": "شماره تکراری است"
+    },
+    "data": {}
+}
+
+output Code 200:
+{
+    "meta": {
+        "data_type": "model_customer_customer",
+        "count": 1,
+        "is_success": true,
+        "description": "مشتری با موفقیت بروزرسانی شد."
+    },
+    "data": {
+        "customerid": 9,
+        "firstname": "امیرعلی کبیر",
+        "lastname": "احمدی",
+        "phone": "9133754366",
+        "nationalid": null,
+        "email": "AmirAli.updated@example.com",
+        "address": null,
+        "budget": null,
+        "campaignid": null,
+        "createdbyuserid": null,
+        "createdat": "2025-09-10T12:34:20.000+03:30",
+        "updatedat": "2025-09-10T12:34:20.000+03:30",
+        "isactive": true,
+        "issystemic": false,
+        "description": null
+    }
+}
+
+-----------------------------------------------------------------------------------------
+
+
+Delete http://127.0.0.1:8435/api/v1/customer/11
+
+output Code 404:
+{
+    "meta": {
+        "data_type": "integer",
+        "count": 0,
+        "is_success": false,
+        "description": "مشتری مورد نظر یافت نشد!"
+    },
+    "data": {}
+}
+
+output Code 200:
+{
+    "meta": {
+        "data_type": "integer",
+        "count": 1,
+        "is_success": true,
+        "description": "مشتری با موفقیت حذف شد."
+    },
+    "data": {
+        "customerid": 11
+    }
+}

@@ -1,0 +1,276 @@
+GET http://127.0.0.1:8435/api/v1/user?context&page=1&status=both
+
+Output Code 200:
+{
+    "meta": {
+        "page": {
+            "page_num": "1",
+            "default_page_size": "20",
+            "page_size": "3"
+        },
+        "data_type": "list<model_user>",
+        "count": 3,
+        "is_success": true,
+        "description": "لیست تمام کاربران ثبت شده"
+    },
+    "data": [
+        {
+            "userid": 13,
+            "username": "AKorbekandi",
+            "firstname": "",
+            "lastname": "",
+            "email": "Akorbekandi@gmail.com",
+            "phone": "09131234569",
+            "userroleid": 1,
+            "branchid": 1,
+            "isactive": true,
+            "issystemic": false,
+            "description": "کاربر ارشد سیستم میدریت مشتریان سلامتیان",
+            "lastlogin": null,
+            "createdat": "2025-09-10T15:02:20.000+03:30",
+            "updatedat": "2025-09-10T15:02:20.000+03:30",
+            "links": [
+                {
+                    "href": "/api/v1/user/13/info",
+                    "type": "application/json",
+                    "rel": "self"
+                }
+            ]
+        },
+        {
+            "userid": 12,
+            "username": "AmirAli",
+            "firstname": "امیرعلی",
+            "lastname": "قدیری مقدم",
+            "email": "amiralighadiri1383@gmail.com",
+            "phone": "09133754366",
+            "userroleid": 1,
+            "branchid": 1,
+            "isactive": true,
+            "issystemic": false,
+            "description": "من کاربر ارشد هستم",
+            "lastlogin": "2025-09-11T01:35:13.000+03:30",
+            "createdat": "2025-09-04T01:00:59.000+03:30",
+            "updatedat": "2025-09-11T01:35:12.000+03:30",
+            "links": [
+                {
+                    "href": "/api/v1/user/12/info",
+                    "type": "application/json",
+                    "rel": "self"
+                }
+            ]
+        },
+        {
+            "userid": 11,
+            "username": "MR.H1384",
+            "firstname": "محمدرضا",
+            "lastname": "حیدری",
+            "email": "Mr.heidari84@gmail.com",
+            "phone": "09135969086",
+            "userroleid": 1,
+            "branchid": 1,
+            "isactive": true,
+            "issystemic": false,
+            "description": "کاربر هستم!",
+            "lastlogin": null,
+            "createdat": "2025-09-04T01:00:09.000+03:30",
+            "updatedat": "2025-09-10T15:18:16.000+03:30",
+            "links": [
+                {
+                    "href": "/api/v1/user/11/info",
+                    "type": "application/json",
+                    "rel": "self"
+                }
+            ]
+        }
+    ]
+}
+
+
+---------------------------------------------------------------------------
+
+
+Get http://127.0.0.1:8435/api/v1/user/11
+
+output Code 200:
+{
+    "meta": {
+        "data_type": "model_user",
+        "count": 1,
+        "is_success": true,
+        "description": "کاربر یافت شد"
+    },
+    "data": {
+        "userid": 11,
+        "username": "MR.H1384",
+        "firstname": "محمدرضا",
+        "lastname": "حیدری",
+        "email": "Mr.heidari84@gmail.com",
+        "phone": "09135969086",
+        "userroleid": 2,
+        "branchid": 2,
+        "isactive": true,
+        "issystemic": false,
+        "description": "کاربر هستم!",
+        "lastlogin": null,
+        "createdat": "2025-09-04T01:00:09.000+03:30",
+        "updatedat": "2025-09-04T01:00:09.000+03:30"
+    }
+}
+
+
+output Code 404:
+{
+    "meta": {
+        "data_type": "model_user",
+        "count": 0,
+        "is_success": false,
+        "description": "کاربر یافت نشد"
+    },
+    "data": {}
+}
+
+----------------------------------------------------------------------------------------
+
+Post http://127.0.0.1:8435/api/v1/user
+
+Body:
+{
+    "username": "AKorbekandi",
+    "firstname": "",
+    "lastname": "",
+    "email": "Akorbekandi@gmail.com",
+    "phone": "09131234569",
+    "passwordhash": "215",
+    "userroleid": 1,
+    "branchid": 1,
+    "isactive": true,
+    "issystemic": false,
+    "description": "کاربر ارشد سیستم میدریت مشتریان سلامتیان"
+}
+
+Output Code 201:
+{
+    "meta": {
+        "data_type": "model_user",
+        "count": 1,
+        "is_success": true,
+        "description": "کاربر با موفقیت ایجاد شد"
+    },
+    "data": {
+        "userid": 13,
+        "username": "AKorbekandi",
+        "firstname": "",
+        "lastname": "",
+        "email": "Akorbekandi@gmail.com",
+        "phone": "09131234569",
+        "userroleid": 1,
+        "branchid": 1,
+        "isactive": true,
+        "issystemic": false,
+        "description": "کاربر ارشد سیستم میدریت مشتریان سلامتیان",
+        "lastlogin": null,
+        "createdat": null,
+        "updatedat": null
+    }
+}
+
+Output Code 409:
+{
+    "meta": {
+        "data_type": "model_user",
+        "count": 0,
+        "is_success": false,
+        "description": "ایمیل یا شماره تلفن یا نام کاربری کاربر تکراری است"
+    },
+    "data": {}
+}
+
+----------------------------------------------------------------------
+
+Put http://127.0.0.1:8435/api/v1/user/18
+
+Body:
+{ 
+    "userroleid": 1,
+    "branchid": 1,
+    "isactive": true,
+    "issystemic": false
+}
+
+output Code 404:
+{
+    "meta": {
+        "data_type": "model_user",
+        "count": 0,
+        "is_success": false,
+        "description": "شناسه کاربر نامعتبر است!"
+    },
+    "data": {}
+}
+
+output Code 409:
+{
+    "meta": {
+        "data_type": "model_user",
+        "count": 0,
+        "is_success": false,
+        "description": "نام کاربری، ایمیل یا شماره تلفن کاربر تکراری است"
+    },
+    "data": {}
+}
+
+output Code 200:
+{
+    "meta": {
+        "data_type": "model_user",
+        "count": 1,
+        "is_success": true,
+        "description": "کاربر بروزرسانی شد"
+    },
+    "data": {
+        "userid": 11,
+        "username": "MR.H1384",
+        "firstname": "محمدرضا",
+        "lastname": "حیدری",
+        "email": "Mr.heidari84@gmail.com",
+        "phone": "09135969086",
+        "userroleid": 1,
+        "branchid": 1,
+        "isactive": true,
+        "issystemic": false,
+        "description": "کاربر هستم!",
+        "lastlogin": null,
+        "createdat": "2025-09-04T01:00:09.000+03:30",
+        "updatedat": "2025-09-04T01:00:09.000+03:30"
+    }
+}
+
+-----------------------------------------------------------------------------------------
+
+
+Delete http://127.0.0.1:8435/api/v1/user/11
+
+output Code 404:
+{
+    "meta": {
+        "data_type": "integer",
+        "count": 0,
+        "is_success": false,
+        "description": "کاربر یافت نشد"
+    },
+    "data": {}
+}
+
+output Code 200:
+{
+    "meta": {
+        "data_type": "integer",
+        "count": 1,
+        "is_success": true,
+        "description": "کاربر با موفقیت حذف شد"
+    },
+    "data": {
+        "userid": 17
+    }
+}
