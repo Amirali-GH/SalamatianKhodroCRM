@@ -1,0 +1,72 @@
+﻿Unit Controller.Upload;
+
+Interface
+
+Uses
+    System.JSON,
+    MVCFramework,
+    MVCFramework.Commons,
+    MVCFramework.SQLGenerators.MSSQL,
+    MVCFramework.ActiveRecord,
+    MVCFramework.Nullables,
+    FireDAC.Phys.MSSQL,
+    System.Variants,
+    System.Generics.Collections,
+    Model.User,
+    IdHash,
+    Service.Interfaces,
+    WebModule.SalamtCRM;
+
+Type
+    [MVCPath(BASE_API_V1 + '/upload')]
+    TUserController = class(TMVCController)
+    Public
+        [MVCPath('/salesconsultant/sheet')]
+        [MVCHTTPMethods([httpPost])]
+        [MVCConsumes(TMVCMediaType.MULTIPART_FORM_DATA)]
+        Procedure GetSeperateSheet(Const [MVCInject] AUploadFileService: IUploadFileService);
+End;
+
+Implementation
+
+Uses
+    Web.ReqFiles,
+    System.Classes,
+    MVCFramework.Logger;
+
+{ TUserController }
+
+//________________________________________________________________________________________
+Procedure TUserController.GetSeperateSheet(Const AUploadFileService: IUploadFileService);
+Var
+    LStream: TStream;
+Begin
+    If (Context.Request.Files.Count = 0) then
+    Begin
+        raise EMVCException.Create(HTTP_STATUS.NoContent, 'هیچ فایلی آپلود نشده است');
+    End;
+
+    LStream := Context.Request.Files[0].Stream;
+    If not Assigned(LStream) then
+    Begin
+        raise EMVCException.Create(HTTP_STATUS.NoContent, 'استریم فایل خالی است');
+    End;
+
+    Try
+        LStream.Position := 0;
+        If AUploadFileService.GetSalesConsultantSheet(TStream(Context.Request.Files[0])) then
+        Begin
+            Render(HTTP_STATUS.OK, 'فایل با موفقیت ذخیره شد');
+        End
+        Else
+        Begin
+            raise EMVCException.Create(HTTP_STATUS.InternalServerError 'ذخیره‌سازی فایل با مشکل مواجه شد');
+        End;
+    Finally
+
+    End;
+    
+End;
+//________________________________________________________________________________________
+
+End.

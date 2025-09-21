@@ -1,0 +1,512 @@
+﻿Unit Controller.User;
+
+Interface
+
+Uses
+    System.SysUtils,
+    System.Classes,
+    System.Generics.Collections,
+    MVCFramework,
+    MVCFramework.Commons,
+    MVCFramework.ActiveRecord,
+    MVCFramework.Swagger.Commons,
+    MVCFramework.Nullables,
+    Service.Interfaces,
+    Model.User,
+    WebModule.SalamtCRM;
+
+Type
+    [MVCPath(BASE_API_V1 + '/user')]
+    TUserController = Class(TMVCController)
+    Public
+        [MVCPath('')]
+        [MVCHTTPMethods([httpGET])]
+        [MVCProduces(TMVCMediaType.APPLICATION_JSON)]
+        [MVCConsumes(TMVCMediaType.APPLICATION_JSON)]
+        Procedure GetAllUsers(Const [MVCInject] AUserService: IUserService);
+
+        [MVCPath('/($AUserID)')]
+        [MVCHTTPMethods([httpGET])]
+        [MVCProduces(TMVCMediaType.APPLICATION_JSON)]
+        [MVCConsumes(TMVCMediaType.APPLICATION_JSON)]
+        Procedure GetUserByID(Const AUserID: String;
+            Const [MVCInject] AUserService: IUserService);
+
+        [MVCPath('/($AUserID)/info')]
+        [MVCHTTPMethods([httpGET])]
+        [MVCProduces(TMVCMediaType.APPLICATION_JSON)]
+        [MVCConsumes(TMVCMediaType.APPLICATION_JSON)]
+        Procedure GetUserInfo(Const AUserID: String;
+            Const [MVCInject] AUserService: IUserService);
+
+        [MVCPath('')]
+        [MVCHTTPMethods([httpPOST])]
+        [MVCProduces(TMVCMediaType.APPLICATION_JSON)]
+        [MVCConsumes(TMVCMediaType.APPLICATION_JSON)]
+        Procedure CreateUser(Const [MVCInject] AUserService: IUserService);
+
+        [MVCPath('/($AUserID)')]
+        [MVCHTTPMethods([httpPUT])]
+        [MVCProduces(TMVCMediaType.APPLICATION_JSON)]
+        [MVCConsumes(TMVCMediaType.APPLICATION_JSON)]
+        Procedure UpdateUser(Const AUserID: String;
+            Const [MVCInject] AUserService: IUserService);
+
+        [MVCPath('/($AUserID)')]
+        [MVCHTTPMethods([httpDELETE])]
+        [MVCProduces(TMVCMediaType.APPLICATION_JSON)]
+        [MVCConsumes(TMVCMediaType.APPLICATION_JSON)]
+        Procedure DeleteUser(Const AUserID: String;
+            Const [MVCInject] AUserService: IUserService);
+    End;
+
+Implementation
+
+Uses
+    MVCFramework.Serializer.Commons,
+    System.JSON, FireDAC.Stan.Error;
+
+{ TUserController }
+
+//________________________________________________________________________________________
+Procedure TUserController.GetAllUsers(Const AUserService: IUserService);
+Var
+	  LUserList: TObjectList<TUser>;
+    LEqualIndex: Integer;
+    LPageArrayData: TArray<string>;
+    LCurrPage, LPageData, Key, Value, LStatus, LContext: String;
+    LMetaJSON, LPageJSON: TJSONObject;
+    LTotalSize: Integer;
+Begin
+    LMetaJSON := TJSONObject.Create;
+    Try
+        Try
+            LCurrPage := Context.Request.Params['page'];
+            LStatus := Context.Request.Params['status'];
+            LContext := Context.Request.Params['context'];
+            LUserList := AUserService.GetAllUsers(LCurrPage, LStatus, LContext);
+            If Assigned(LUserList) Then
+            Begin
+                LPageJSON := TJSONObject.Create;
+                Try
+                    LPageArrayData := GetPaginationData(lCurrPage.ToInteger,
+                                                        LUserList.Count,
+                                                        PAGE_SIZE,
+                                                        BASE_API_V1 + '/user?page=($page)')
+                                                      .ToString.Split([';']);
+                    For LPageData in LPageArrayData do
+                    Begin
+                        LEqualIndex := LPageData.IndexOf('=');
+                        If (LEqualIndex > 0) then
+                        Begin
+                            Key := LPageData.Substring(0, LEqualIndex).Trim;
+                            Value := LPageData.Substring(LEqualIndex + 1).Trim;
+                            LPageJSON.AddPair(Key, Value);
+                        End;
+                    End;
+
+                    LMetaJSON.AddPair('page', LPageJSON);
+                    LMetaJSON.AddPair('data_type', 'list<model_user>');
+                    LMetaJSON.AddPair('count', LUserList.Count);
+                    LMetaJSON.AddPair('is_success', True);
+                    LMetaJSON.AddPair('description', 'لیست تمام کاربران ثبت شده');
+
+                    Render(HTTP_STATUS.OK,
+                        ObjectDict(False)
+                            .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                            .Add('data', LUserList,
+                                Procedure(Const Obj: TObject; Const Links: IMVCLinks)
+                                Begin
+                                    Links.AddRefLink
+                                        .Add(HATEOAS._TYPE, TMVCMediaType.APPLICATION_JSON)
+                                        .Add(HATEOAS.HREF, Format(BASE_API_V1 + '/user/%d/info',
+                                            [TUser(Obj).UserID]))
+                                        .Add(HATEOAS.REL, 'self');
+                                End)
+                    );
+                Finally
+                    LUserList.Free;
+                End;
+            End
+            Else
+            Begin
+                Raise Exception.Create('هیچ کاربری یافت نشد!');
+            End;
+        Except
+            On E: Exception do
+            Begin
+                LMetaJSON.AddPair('data_type', 'list<model_user>');
+                LMetaJSON.AddPair('count', 0);
+                LMetaJSON.AddPair('is_success', False);
+                LMetaJSON.AddPair('description', E.Message);
+
+                Render(HTTP_STATUS.InternalServerError,
+                    ObjectDict(True)
+                        .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                        .Add('data', TList.Create)
+                );
+            End;
+        End;
+    Finally
+        LMetaJSON.Free;
+    End;
+End;
+//________________________________________________________________________________________
+Procedure TUserController.GetUserByID(Const AUserID: String;
+    Const AUserService: IUserService);
+Var
+    LUserID, LStatusCode: Integer;
+    LUser: TUser;
+    LMetaJSON: TJSONObject;
+Begin
+    LMetaJSON := TJSONObject.Create;
+    Try
+        LStatusCode := HTTP_STATUS.InternalServerError;
+        Try
+            If (AUserID.IsEmpty) OR (Not TryStrToInt(AUserID, LUserID)) Then
+            Begin
+                LStatusCode := HTTP_STATUS.NotFound;
+                Raise EMVCException.Create('شناسه کاربر نامعتبر است!');
+            End;
+
+            LUser := AUserService.GetUserByID(LUserID);
+            If Assigned(LUser) Then
+            Begin
+                Try
+                    LMetaJSON.AddPair('data_type', 'model_user');
+                    LMetaJSON.AddPair('count', 1);
+                    LMetaJSON.AddPair('is_success', True);
+                    LMetaJSON.AddPair('description', 'کاربر یافت شد');
+
+                    Render(HTTP_STATUS.OK,
+                        ObjectDict(False)
+                            .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                            .Add('data', LUser)
+                    );
+                Finally
+                    LUser.Free;
+                End;
+            End
+            Else
+            Begin
+                LStatusCode := HTTP_STATUS.NotFound;
+                Raise EMVCException.Create('کاربر یافت نشد');
+            End;
+        Except
+            On E: Exception do
+            Begin
+                LMetaJSON.AddPair('data_type', 'model_user');
+                LMetaJSON.AddPair('count', 0);
+                LMetaJSON.AddPair('is_success', False);
+                LMetaJSON.AddPair('description', E.Message);
+
+                Render(LStatusCode,
+                    ObjectDict(True)
+                        .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                        .Add('data', TMVCObjectDictionary.Create)
+                );
+            End;
+        End;
+    Finally
+        LMetaJSON.Free;
+    End;
+End;
+//________________________________________________________________________________________
+Procedure TUserController.GetUserInfo(Const AUserID: String;
+    Const AUserService: IUserService);
+Var
+    LUserID, LStatusCode: Integer;
+    LUserInfo: TUserInfo;
+    LMetaJSON: TJSONObject;
+Begin
+    LMetaJSON := TJSONObject.Create;
+    Try
+        LStatusCode := HTTP_STATUS.InternalServerError;
+        Try
+            If (AUserID.IsEmpty) OR (Not TryStrToInt(AUserID, LUserID)) Then
+            Begin
+                LStatusCode := HTTP_STATUS.NotFound;
+                Raise EMVCException.Create('شناسه کاربر نامعتبر است!');
+            End;
+
+            If (AUserID = '0') then
+            Begin
+                LUserID := Context.LoggedUser.CustomData['userid'].ToInteger;
+            End;
+
+            LUserInfo := AUserService.GetUserInfo(LUserID);
+            If Assigned(LUserInfo) Then
+            Begin
+                Try
+                    LMetaJSON.AddPair('data_type', 'model_user_info');
+                    LMetaJSON.AddPair('count', 1);
+                    LMetaJSON.AddPair('is_success', True);
+                    LMetaJSON.AddPair('description', 'اطلاعات کاربر یافت شد');
+
+                    Render(HTTP_STATUS.OK,
+                        ObjectDict(False)
+                            .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                            .Add('data', LUserInfo)
+                    );
+                Finally
+                    LUserInfo.Free;
+                End;
+            End
+            Else
+            Begin
+                LStatusCode := HTTP_STATUS.NotFound;
+                Raise EMVCException.Create('کاربر یافت نشد');
+            End;
+        Except
+            On E: Exception do
+            Begin
+                LMetaJSON.AddPair('data_type', 'model_user_info');
+                LMetaJSON.AddPair('count', 0);
+                LMetaJSON.AddPair('is_success', False);
+                LMetaJSON.AddPair('description', E.Message);
+
+                Render(LStatusCode,
+                    ObjectDict(True)
+                        .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                        .Add('data', TMVCObjectDictionary.Create)
+                );
+            End;
+        End;
+    Finally
+        LMetaJSON.Free;
+    End;
+End;
+//________________________________________________________________________________________
+Procedure TUserController.CreateUser(Const AUserService: IUserService);
+Var
+    LInput: TUser;
+    LCreated: TUser;
+    LMetaJSON: TJSONObject;
+    LStatusCode: Integer;
+Begin
+    LMetaJSON := TJSONObject.Create;
+    Try
+        LStatusCode := HTTP_STATUS.InternalServerError;
+        Try
+            LInput := Context.Request.BodyAs<TUser>;
+            If Not Assigned(LInput) Then
+            Begin
+                LStatusCode := HTTP_STATUS.BadRequest;
+                Raise EMVCException.Create('داده ورودی نامعتبر است');
+            End;
+
+            Try
+                LCreated := Nil;
+                Try
+                    LCreated := AUserService.CreateUser(LInput);
+                Except
+                    On E: EFDException do
+                    Begin
+                        If Assigned(LCreated) then
+                        Begin
+                            LCreated.Free;
+                        End;
+
+                        If Pos('duplicate', E.Message.ToLower) > 0 then
+                        Begin
+                            LStatusCode := HTTP_STATUS.Conflict;
+                            Raise EMVCException.Create('ایمیل یا شماره تلفن یا نام کاربری کاربر تکراری است');
+                        End
+                        Else
+                        Begin
+                            Raise EMVCException.Create('خطای پایگاه داده: ' + E.Message);
+                        End;
+                    End;
+
+                    On E: Exception do
+                    Begin
+                        Raise EMVCException.Create(E.Message);
+                    End;
+                End;
+
+                Try
+                    LStatusCode := HTTP_STATUS.Created;
+                    LMetaJSON.AddPair('data_type', 'model_user');
+                    LMetaJSON.AddPair('count', 1);
+                    LMetaJSON.AddPair('is_success', True);
+                    LMetaJSON.AddPair('description', 'کاربر با موفقیت ایجاد شد');
+
+                    Render(LStatusCode,
+                        ObjectDict(False)
+                            .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                            .Add('data', LCreated)
+                    );
+                Finally
+                    LCreated.Free;
+                End;
+            Finally
+                LInput.Free;
+            End;
+        Except
+            On E: Exception do
+            Begin
+                LMetaJSON.AddPair('data_type', 'model_user');
+                LMetaJSON.AddPair('count', 0);
+                LMetaJSON.AddPair('is_success', False);
+                LMetaJSON.AddPair('description', E.Message);
+
+                Render(LStatusCode,
+                    ObjectDict(True)
+                        .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                        .Add('data', TMVCObjectDictionary.Create)
+                );
+            End;
+        End;
+    Finally
+        LMetaJSON.Free;
+    End;
+End;
+//________________________________________________________________________________________
+Procedure TUserController.UpdateUser(Const AUserID: String;
+    Const AUserService: IUserService);
+Var
+    LUserID, LStatusCode: Integer;
+    LUserInput: TUser;
+    LUpdated: TUser;
+    LMetaJSON: TJSONObject;
+Begin
+    LMetaJSON := TJSONObject.Create;
+    Try
+        LStatusCode := HTTP_STATUS.InternalServerError;
+        Try
+            If (AUserID.IsEmpty) OR (Not TryStrToInt(AUserID, LUserID)) Then
+            Begin
+                LStatusCode := HTTP_STATUS.NotFound;
+                Raise EMVCException.Create('شناسه کاربر نامعتبر است!');
+            End;
+
+            LUserInput := Context.Request.BodyAs<TUser>;
+            If Not Assigned(LUserInput) Then
+            Begin
+                LStatusCode := HTTP_STATUS.BadRequest;
+                Raise EMVCException.Create('داده ورودی نامعتبر است');
+            End;
+
+            Try
+                Try
+                    LUpdated := AUserService.UpdateUserPartial(LUserID, LUserInput);
+                Except
+                    On E: EFDException do
+                    Begin
+                        If Pos('duplicate', E.Message.ToLower) > 0 then
+                        Begin
+                            LStatusCode := HTTP_STATUS.Conflict;
+                            Raise EMVCException.Create('نام کاربری، ایمیل یا شماره تلفن کاربر تکراری است')
+                        End
+                        Else
+                        Begin
+                            Raise EMVCException.Create('خطای پایگاه داده: ' + E.Message);
+                        End;
+                    End;
+
+                    On E: Exception do
+                    Begin
+                        Raise EMVCException.Create(E.Message);
+                    End;
+                End;
+
+                If Not Assigned(LUpdated) Then
+                Begin
+                    LStatusCode := HTTP_STATUS.NotFound;
+                    Raise EMVCException.Create('کاربر یافت نشد');
+                End;
+
+                Try
+                    LMetaJSON.AddPair('data_type', 'model_user');
+                    LMetaJSON.AddPair('count', 1);
+                    LMetaJSON.AddPair('is_success', True);
+                    LMetaJSON.AddPair('description', 'کاربر بروزرسانی شد');
+
+                    Render(HTTP_STATUS.OK,
+                        ObjectDict(False)
+                            .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                            .Add('data', LUpdated)
+                    );
+                Finally
+                    LUpdated.Free;
+                End;
+            Finally
+                LUserInput.Free;
+            End;
+        Except
+            On E: Exception do
+            Begin
+                LMetaJSON.AddPair('data_type', 'model_user');
+                LMetaJSON.AddPair('count', 0);
+                LMetaJSON.AddPair('is_success', False);
+                LMetaJSON.AddPair('description', E.Message);
+
+                Render(LStatusCode,
+                    ObjectDict(True)
+                        .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                        .Add('data', TMVCObjectDictionary.Create)
+                );
+            End;
+        End;
+    Finally
+        LMetaJSON.Free;
+    End;
+End;
+//________________________________________________________________________________________
+Procedure TUserController.DeleteUser(Const AUserID: String;
+    Const AUserService: IUserService);
+Var
+    LUserID, LStatusCode: Integer;
+    LMetaJSON: TJSONObject;
+Begin
+    LMetaJSON := TJSONObject.Create;
+    Try
+        LStatusCode := HTTP_STATUS.InternalServerError;
+        Try
+            If (AUserID.IsEmpty) OR (Not TryStrToInt(AUserID, LUserID)) Then
+            Begin
+                LStatusCode := HTTP_STATUS.NotFound;
+                Raise EMVCException.Create('شناسه کاربر نامعتبر است!');
+            End;
+
+            If AUserService.DeleteUser(LUserID) Then
+            Begin
+                LMetaJSON.AddPair('data_type', 'integer');
+                LMetaJSON.AddPair('count', 1);
+                LMetaJSON.AddPair('is_success', True);
+                LMetaJSON.AddPair('description', 'کاربر با موفقیت حذف شد');
+
+                Render(HTTP_STATUS.OK,
+                    ObjectDict(True)
+                        .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                        .Add('data', StrToJSONObject(TJSONObject.Create(TJSONPair.Create('userid', LUserID)).ToString))
+                );
+            End
+            Else
+            Begin
+                LStatusCode := HTTP_STATUS.NotFound;
+                Raise EMVCException.Create('کاربر یافت نشد');
+            End;
+        Except
+            On E: Exception do
+            Begin
+                LMetaJSON.AddPair('data_type', 'integer');
+                LMetaJSON.AddPair('count', 0);
+                LMetaJSON.AddPair('is_success', False);
+                LMetaJSON.AddPair('description', E.Message);
+
+                Render(LStatusCode,
+                    ObjectDict(True)
+                        .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                        .Add('data', TMVCObjectDictionary.Create)
+                );
+            End;
+        End;
+    Finally
+        LMetaJSON.Free;
+    End;
+End;
+//________________________________________________________________________________________
+
+End.
+

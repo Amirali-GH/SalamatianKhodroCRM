@@ -1,0 +1,138 @@
+Unit Service.Car.Company;
+
+Interface
+
+Uses
+    System.SysUtils,
+    System.Generics.Collections,
+    MVCFramework.ActiveRecord,
+    MVCFramework.Nullables,
+    Model.Car.Company,
+    Service.Interfaces;
+
+Type
+    TCarCompanyService = Class(TInterfacedObject, ICarCompanyService)
+    Public
+        Function GetAllCarCompanies(Var APage: String; Const AOnlyActive: Boolean): TObjectList<TCar_Company>;
+        Function GetCarCompanyByID(Const AID: Integer): TCar_Company;
+        Function CreateCarCompany(Const ACarCompany: TCar_Company): TCar_Company;
+        Function UpdateCarCompanyPartial(Const AID: Integer; Const ACarCompany: TCar_Company): TCar_Company;
+        Function DeleteCarCompany(Const AID: Integer): Boolean;
+    End;
+
+Implementation
+
+Uses Utils;
+
+{ TCarCompanyService }
+
+//________________________________________________________________________________________
+Function TCarCompanyService.GetAllCarCompanies(Var APage: String; Const AOnlyActive: Boolean): TObjectList<TCar_Company>;
+Begin
+    Result := TMVCActiveRecord.All<TCar_Company>;
+End;
+//________________________________________________________________________________________
+Function TCarCompanyService.GetCarCompanyByID(Const AID: Integer): TCar_Company;
+Begin
+    Result := TMVCActiveRecord.GetByPK<TCar_Company>(AID, False);
+End;
+//________________________________________________________________________________________
+Function TCarCompanyService.CreateCarCompany(Const ACarCompany: TCar_Company): TCar_Company;
+Var
+    LCopy: TCar_Company;
+Begin
+    LCopy := TCar_Company.Create;
+    Try
+        LCopy.CompanyID := ACarCompany.CompanyID;
+        LCopy.Code := ACarCompany.Code;
+        LCopy.MainName := ACarCompany.MainName;
+        LCopy.SecondName := ACarCompany.SecondName;
+        LCopy.IsActive := ACarCompany.IsActive;
+        LCopy.Description := ACarCompany.Description;
+
+        If (ACarCompany.IsActive.HasValue) then
+        Begin
+            LCopy.IsActive := ACarCompany.IsActive;
+        End
+        Else
+        Begin
+            LCopy.IsActive := True;
+        End;
+
+        LCopy.Insert;
+        Result := GetCarCompanyByID(LCopy.CompanyID);
+    Except
+        LCopy.Free;
+        Raise;
+    End;
+End;
+//________________________________________________________________________________________
+Function TCarCompanyService.UpdateCarCompanyPartial(Const AID: Integer; Const ACarCompany: TCar_Company): TCar_Company;
+Var
+    LExisting: TCar_Company;
+Begin
+    LExisting := TMVCActiveRecord.GetByPK<TCar_Company>(AID, False);
+    If Not Assigned(LExisting) Then
+    Begin
+        Exit(nil);
+    End;
+
+    Try
+        If (ACarCompany.Code.HasValue) Then
+        Begin
+            LExisting.Code := ACarCompany.Code;
+        End;
+
+        If (ACarCompany.MainName.HasValue) Then
+        Begin
+            LExisting.MainName := ACarCompany.MainName;
+        End;
+
+        If (ACarCompany.SecondName.HasValue) Then
+        Begin
+            LExisting.SecondName := ACarCompany.SecondName;
+        End;
+
+        If (ACarCompany.IsActive.HasValue) Then
+        Begin
+            LExisting.IsActive := ACarCompany.IsActive;
+        End;
+
+        If (ACarCompany.Description.HasValue) Then
+        Begin
+            LExisting.Description := ACarCompany.Description;
+        End;
+
+        LExisting.Update;
+        Result := LExisting;
+    Except
+        LExisting.Free;
+        Raise;
+    End;
+End;
+//________________________________________________________________________________________
+Function TCarCompanyService.DeleteCarCompany(Const AID: Integer): Boolean;
+Var
+    LExisting: TCar_Company;
+Begin
+    LExisting := TMVCActiveRecord.GetByPK<TCar_Company>(AID, False);
+    If Not Assigned(LExisting) Then
+    Begin
+        Exit(False);
+    End;
+
+    Try
+        Try
+            LExisting.Delete;
+            Result := True;
+        Except
+            Result := False;
+            Raise;
+        End;
+    Finally
+        LExisting.Free;
+    End;
+End;
+//________________________________________________________________________________________
+
+End.

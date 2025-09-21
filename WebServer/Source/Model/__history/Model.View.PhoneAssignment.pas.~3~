@@ -1,0 +1,37 @@
+Unit Model.View.PhoneAssignment;
+
+Interface
+
+Uses
+    MVCFramework.ActiveRecord,
+    MVCFramework.Nullables,
+    MVCFramework.Serializer.Commons,
+    System.Generics.Collections;
+
+Type
+    [MVCNameCase(ncLowerCase)]
+    [MVCTable('vw_phone_assignment')]
+    [MVCEntityActions([eaRetrieve])]
+    TVWPhoneAssignment = Class(TMVCActiveRecord)
+    Private
+        FPhone: String;
+        FMainName: String;
+        FSourceName: String;
+        FUserName: String;
+    Public
+        [MVCColumn('Phone')]
+        Property Phone: String Read FPhone Write FPhone;
+
+        [MVCColumn('MainName')]
+        Property MainName: String Read FMainName Write FMainName;
+
+        [MVCColumn('SourceName')]
+        Property SourceName: String Read FSourceName Write FSourceName;
+
+        [MVCColumn('UserName')]
+        Property UserName: String Read FUserName Write FUserName;
+    End;
+
+implementation
+
+end.

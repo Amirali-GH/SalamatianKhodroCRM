@@ -1,0 +1,193 @@
+Unit Service.Branch.Branch;
+
+Interface
+
+Uses
+    System.SysUtils,
+    System.Generics.Collections,
+    MVCFramework.ActiveRecord,
+    MVCFramework.Nullables,
+    Model.Branch.Branch,
+    Service.Interfaces, WebModule.SalamtCRM;
+
+Type
+    TBranchService = Class(TInterfacedObject, IBranchService)
+    Public
+        Function GetAllBranches(Var APage: String; Const AStatus: String; Const AContext: String): TObjectList<TBranch>;
+        Function GetInfo(const AID: Integer): TBranchInfo;
+        Function GetBranchByID(Const AID: Integer): TBranch;
+        Function CreateBranch(Const ABranch: TBranch): TBranch;
+        Function UpdateBranchPartial(Const AID: Integer; Const ABranch: TBranch): TBranch;
+        Function DeleteBranch(Const AID: Integer): Boolean;
+    End;
+
+Implementation
+
+Uses Utils, Math, StrUtils;
+
+{ TBranchService }
+
+//________________________________________________________________________________________
+Function TBranchService.GetAllBranches(Var APage: String; Const AStatus: String; Const AContext: String): TObjectList<TBranch>;
+Var
+    LCurrPage: Integer;
+    LFirstRec: Integer;
+    LActive, LSearchField: String;
+Begin
+    LCurrPage := 0;
+    TryStrToInt(APage, LCurrPage);
+
+    LCurrPage := Max(LCurrPage, 1);
+    LFirstRec := (LCurrPage - 1) * PAGE_SIZE;
+    APage := LCurrPage.ToString;
+
+    If (Not AContext.IsEmpty) then
+    Begin
+        LSearchField := Format(
+            '(Code LIKE %s OR MainName LIKE %s)',
+            [QuotedStr('%' + AContext + '%'), QuotedStr('%' + AContext + '%')]
+        );
+    End
+    Else
+    Begin
+        LSearchField := '';
+    End;
+
+    If (AStatus.IsEmpty) Or (AStatus.ToLower = 'active') then
+    Begin
+        LActive := 'IsActive = 1';
+    End
+    Else If (AStatus.ToLower = 'notactive') then
+    Begin
+        LActive := 'IsActive = 0';
+    End
+    Else
+    Begin
+        LActive := '1=1';
+    End;
+
+    If (Not LSearchField.IsEmpty) AND (Not LActive.IsEmpty) then
+    Begin
+        LActive := ' AND ' + LActive;
+    End;
+
+    Result := TMVCActiveRecord.Where<TBranch>(
+      LSearchField + LActive + ' ORDER BY Code ASC, MainName ASC limit ?,?',
+      [LFirstRec, PAGE_SIZE]);
+End;
+//________________________________________________________________________________________
+Function TBranchService.GetBranchByID(Const AID: Integer): TBranch;
+Begin
+    Result := TMVCActiveRecord.GetByPK<TBranch>(AID, False);
+End;
+//________________________________________________________________________________________
+Function TBranchService.GetInfo(Const AID: Integer): TBranchInfo;
+Begin
+    Result := TBranchInfo(TMVCActiveRecord.GetByPK<TBranch>(AID, True));
+End;
+//________________________________________________________________________________________
+Function TBranchService.CreateBranch(Const ABranch: TBranch): TBranch;
+Var
+    LCopy: TBranch;
+Begin
+    LCopy := TBranch.Create;
+    Try
+        LCopy.Code := ABranch.Code;
+        LCopy.MainName := ABranch.MainName;
+        LCopy.SecondName := ABranch.SecondName;
+        LCopy.LocationID := ABranch.LocationID;
+        LCopy.Phone := ABranch.Phone;
+        LCopy.IsActive := ABranch.IsActive;
+        LCopy.Description := ABranch.Description;
+
+        If (ABranch.IsActive.HasValue) then
+        Begin
+            LCopy.IsActive := ABranch.IsActive;
+        End
+        Else
+        Begin
+            LCopy.IsActive := True;
+        End;
+
+        LCopy.Insert;
+        Result := GetBranchByID(LCopy.BranchID);
+    Except
+        LCopy.Free;
+        Raise;
+    End;
+End;
+//________________________________________________________________________________________
+Function TBranchService.UpdateBranchPartial(Const AID: Integer; Const ABranch: TBranch): TBranch;
+Var
+    LExisting: TBranch;
+Begin
+    LExisting := TMVCActiveRecord.GetByPK<TBranch>(AID, False);
+    If Not Assigned(LExisting) Then
+    Begin
+        Exit(nil);
+    End;
+
+    Try
+        If (Not ABranch.Code.IsEmpty) Then
+        Begin
+            LExisting.Code := ABranch.Code;
+        End;
+
+        If (Not ABranch.MainName.IsEmpty) Then
+        Begin
+            LExisting.MainName := ABranch.MainName;
+        End;
+
+        If (ABranch.SecondName.HasValue) Then
+        Begin
+            LExisting.SecondName := ABranch.SecondName;
+        End;
+
+        If (ABranch.LocationID.HasValue) Then
+        Begin
+            LExisting.LocationID := ABranch.LocationID;
+        End;
+
+        If (ABranch.Phone.HasValue) Then
+        Begin
+            LExisting.Phone := ABranch.Phone;
+        End;
+
+        If (ABranch.IsActive.HasValue) Then
+        Begin
+            LExisting.IsActive := ABranch.IsActive;
+        End;
+
+        If (ABranch.Description.HasValue) Then
+        Begin
+            LExisting.Description := ABranch.Description;
+        End;
+
+        LExisting.Update;
+        Result := LExisting;
+    Except
+        LExisting.Free;
+        Raise;
+    End;
+End;
+//________________________________________________________________________________________
+Function TBranchService.DeleteBranch(Const AID: Integer): Boolean;
+Var
+    LExisting: TBranch;
+Begin
+    LExisting := TMVCActiveRecord.GetByPK<TBranch>(AID, False);
+    If Not Assigned(LExisting) Then
+    Begin
+        Exit(False);
+    End;
+
+    Try
+        LExisting.Delete;
+        Result := True;
+    Finally
+        LExisting.Free;
+    End;
+End;
+//________________________________________________________________________________________
+
+End.

@@ -1,0 +1,199 @@
+Unit Service.Lead.PotentialLevel;
+
+Interface
+
+Uses
+    System.SysUtils,
+    System.Generics.Collections,
+    MVCFramework.ActiveRecord,
+    MVCFramework.Nullables,
+    Model.Lead.PotentialLevel,
+    Service.Interfaces;
+
+Type
+    TPotentialLevelService = Class(TInterfacedObject, IPotentialLevelService)
+    Public
+        Function GetAllPotentialLevels(Var APage: String; Const AStatus: String; Const AContext: String; Var ATotalSize: Integer): TObjectList<TLead_PotentialLevel>;
+        Function GetPotentialLevelByID(Const AID: Integer): TLead_PotentialLevel;
+        Function CreatePotentialLevel(Const APotentialLevel: TLead_PotentialLevel): TLead_PotentialLevel;
+        Function UpdatePotentialLevelPartial(Const AID: Integer; Const APotentialLevel: TLead_PotentialLevel): TLead_PotentialLevel;
+        Function DeletePotentialLevel(Const AID: Integer): Boolean;
+    End;
+
+Implementation
+
+Uses Utils, Math, StrUtils, WebModule.SalamtCRM;
+
+{ TPotentialLevelService }
+
+//________________________________________________________________________________________
+Function TPotentialLevelService.GetAllPotentialLevels(Var APage: String; Const AStatus: String;
+  Const AContext: String; Var ATotalSize: Integer): TObjectList<TLead_PotentialLevel>;
+VAR
+    LCurrPage: Integer;
+    LFirstRec: Integer;
+    LHasActive: Boolean;
+    LSQLBase, LSQL, LFilter, LRQL: String;
+    LParams: TArray<Variant>;
+Begin
+    ATotalSize := 0;
+    LCurrPage := 0;
+    TryStrToInt(APage, LCurrPage);
+
+    LCurrPage := Max(LCurrPage, 1);
+    LFirstRec := (LCurrPage - 1) * PAGE_SIZE;
+    APage := LCurrPage.ToString;
+
+    // BASE QUERY
+    LFilter := '';
+    LSQLBase := 'SELECT * FROM lead_potentiallevel WHERE 1=1';
+    SetLength(LParams, 0);
+
+    // FILTER BY BRANCH ID
+    LHasActive := True;
+    If (AStatus.Contains('inactive')) THEN
+    Begin
+        LRQL := 'eq(IsActive,0)';
+        LFilter := LFilter + ' AND IsActive = ?';
+        LParams := LParams + [0];
+    End
+    Else IF (AStatus.Contains('active')) then
+    Begin
+        LRQL := 'eq(IsActive,1)';
+        LFilter := LFilter + ' AND IsActive = ?';
+        LParams := LParams + [1];
+    END
+    Else
+    Begin
+        LHasActive := False;
+    End;
+
+    // FILTER BY SOURCE ID
+    IF (NOT AContext.IsEmpty) THEN
+    BEGIN
+        If (LHasActive) then
+        Begin
+            LRQL := Format('and(%s, or(like(Code,%s), like(Name, %s)))',
+              [LRQL, QuotedStr(AContext), QuotedStr(AContext)]);
+        End
+        Else
+        Begin
+            LRQL := Format('or(like(Code,%s), like(Name, %s))',
+              [QuotedStr(AContext), QuotedStr(AContext)]);
+        End;
+
+        LFilter := LFilter + ' AND (Code LIEK ? OR Name LIKE ?)';
+        LParams := LParams + [QuotedStr(AContext), QuotedStr(AContext)];
+    END;
+
+    // DATA QUERY
+    LSQL := LSQLBase + LFilter + ' ORDER BY Code ASC LIMIT ?, ?';
+    LParams := LParams + [LFirstRec, PAGE_SIZE];
+
+    ATotalSize := TMVCActiveRecord.Count<TUser>(LRQL);
+    RESULT := TMVCActiveRecord.Select<TUser>(LSQL, LParams);
+END;
+//________________________________________________________________________________________
+Function TPotentialLevelService.GetPotentialLevelByID(Const AID: Integer): TLead_PotentialLevel;
+Begin
+    Result := TMVCActiveRecord.GetByPK<TLead_PotentialLevel>(AID, False);
+End;
+//________________________________________________________________________________________
+Function TPotentialLevelService.CreatePotentialLevel(Const APotentialLevel: TLead_PotentialLevel): TLead_PotentialLevel;
+Var
+    LCopy: TLead_PotentialLevel;
+Begin
+    LCopy := TLead_PotentialLevel.Create;
+    Try
+        LCopy.Code := APotentialLevel.Code;
+        LCopy.Name := APotentialLevel.Name;
+        LCopy.Description := APotentialLevel.Description;
+        LCopy.Color := APotentialLevel.Color;
+        LCopy.Priority := APotentialLevel.Priority;
+
+        If (APotentialLevel.IsActive.HasValue) then
+        Begin
+            LCopy.IsActive := APotentialLevel.IsActive;
+        End
+        Else
+        Begin
+            LCopy.IsActive := True;
+        End;
+
+        LCopy.Insert;
+        Result := GetPotentialLevelByID(LCopy.PotentialLevelID);
+    Except
+        LCopy.Free;
+        Raise;
+    End;
+End;
+//________________________________________________________________________________________
+Function TPotentialLevelService.UpdatePotentialLevelPartial(Const AID: Integer; Const APotentialLevel: TLead_PotentialLevel): TLead_PotentialLevel;
+Var
+    LExisting: TLead_PotentialLevel;
+Begin
+    LExisting := TMVCActiveRecord.GetByPK<TLead_PotentialLevel>(AID, False);
+    If Not Assigned(LExisting) Then
+    Begin
+        Exit(nil);
+    End;
+
+    Try
+        If (Not APotentialLevel.Code.IsEmpty) Then
+        Begin
+            LExisting.Code := APotentialLevel.Code;
+        End;
+
+        If (Not APotentialLevel.Name.IsEmpty) Then
+        Begin
+            LExisting.Name := APotentialLevel.Name;
+        End;
+
+        If (APotentialLevel.Description.HasValue) Then
+        Begin
+            LExisting.Description := APotentialLevel.Description;
+        End;
+
+        If (APotentialLevel.Color.HasValue) Then
+        Begin
+            LExisting.Color := APotentialLevel.Color;
+        End;
+
+        If (APotentialLevel.Priority.HasValue) Then
+        Begin
+            LExisting.Priority := APotentialLevel.Priority;
+        End;
+
+        If (APotentialLevel.IsActive.HasValue) Then
+        Begin
+            LExisting.IsActive := APotentialLevel.IsActive;
+        End;
+
+        LExisting.Update;
+        Result := LExisting;
+    Except
+        LExisting.Free;
+        Raise;
+    End;
+End;
+//________________________________________________________________________________________
+Function TPotentialLevelService.DeletePotentialLevel(Const AID: Integer): Boolean;
+Var
+    LExisting: TLead_PotentialLevel;
+Begin
+    LExisting := TMVCActiveRecord.GetByPK<TLead_PotentialLevel>(AID, False);
+    If Not Assigned(LExisting) Then
+    Begin
+        Exit(False);
+    End;
+
+    Try
+        LExisting.Delete;
+        Result := True;
+    Finally
+        LExisting.Free;
+    End;
+End;
+//________________________________________________________________________________________
+
+End.

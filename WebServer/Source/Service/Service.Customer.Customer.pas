@@ -1,0 +1,210 @@
+﻿Unit Service.Customer.Customer;
+
+Interface
+
+Uses
+    System.SysUtils,
+    System.Generics.Collections,
+    MVCFramework.ActiveRecord,
+    MVCFramework.Nullables,
+    Model.Customer.Customer,
+    Model.View.Leads,
+    Service.Interfaces;
+
+Type
+    TCustomerService = Class(TInterfacedObject, ICustomerService)
+    Public
+        Function GetAllCustomers(Var APage: String; Const AStatus: String;
+          Const AContext: String; Out ATotalSize: Integer): TObjectList<TCustomer_Leads>;
+        Function GetCustomerByID(Const AID: Int64): TCustomer_Customer;
+        Function CreateCustomer(Const ACustomer: TCustomer_Customer): TCustomer_Customer;
+        Function UpdateCustomerPartial(Const AID: Int64; Const ACustomer: TCustomer_Customer): TCustomer_Customer;
+        Function DeleteCustomer(Const AID: Int64): Boolean;
+    End;
+
+Implementation
+
+Uses Utils, Math, StrUtils, WebModule.SalamtCRM;
+
+{ TCustomerService }
+
+//________________________________________________________________________________________
+FUNCTION TCustomerService.GetAllCustomers(
+    VAR APage: String;
+    CONST AStatus: String;
+    CONST AContext: String;
+    OUT ATotalSize: Integer
+): TObjectList<TCustomer_Leads>;
+VAR
+    LCurrPage: Integer;
+    LFirstRec: Integer;
+    LSQLBase, LSQL, LFilter: String;
+    LParams, LParamsCount: TArray<Variant>;
+BEGIN
+    LCurrPage := 0;
+    TryStrToInt(APage, LCurrPage);
+    LCurrPage := Max(LCurrPage, 1);
+    LFirstRec := (LCurrPage - 1) * PAGE_SIZE;
+    APage := LCurrPage.ToString;
+
+    // BASE QUERY
+    LFilter := '';
+    LSQLBase := ' FROM vw_list_of_the_leads WHERE 1=1';
+    SetLength(LParams, 0);
+    SetLength(LParamsCount, 0);
+
+    IF NOT AContext.IsEmpty THEN
+    BEGIN
+        LFilter := LFilter + ' AND (Phone LIKE ? OR FullName LIKE ?)';
+        LParams := LParams + [Format('%%%s%%', [AContext]), Format('%%%s%%', [AContext])];
+        LParamsCount := LParamsCount + [Format('%%%s%%', [AContext]), Format('%%%s%%', [AContext])];
+    END;
+
+//    IF NOT AStatus.IsEmpty THEN
+//    BEGIN
+//        LFilter := LFilter + ' AND CustomerStatus = ?';
+//        LParams := LParams + [AStatus];
+//        LParamsCount := LParamsCount + [AStatus];
+//    END;
+
+    // DATA QUERY
+    LSQL := 'SELECT * ' + LSQLBase + LFilter + ' ORDER BY CustomerID ASC, Phone ASC LIMIT ?, ?';
+    LParams := LParams + [LFirstRec, PAGE_SIZE];
+
+    RESULT := TMVCActiveRecord.Select<TCustomer_Leads>(LSQL, LParams);
+END;
+//________________________________________________________________________________________
+Function TCustomerService.GetCustomerByID(Const AID: Int64): TCustomer_Customer;
+Begin
+    Result := TMVCActiveRecord.GetByPK<TCustomer_Customer>(AID, False);
+End;
+//________________________________________________________________________________________
+Function TCustomerService.CreateCustomer(Const ACustomer: TCustomer_Customer): TCustomer_Customer;
+Var
+    LCopy: TCustomer_Customer;
+Begin
+    LCopy := TCustomer_Customer.Create;
+    Try
+        LCopy.FirstName := ACustomer.FirstName;
+        LCopy.LastName := ACustomer.LastName;
+        LCopy.Phone := ACustomer.Phone;
+        LCopy.NationalID := ACustomer.NationalID;
+        LCopy.Email := ACustomer.Email;
+        LCopy.Address := ACustomer.Address;
+        LCopy.Budget := ACustomer.Budget;
+        LCopy.CampaignID := ACustomer.CampaignID;
+        LCopy.CreatedByUserID := ACustomer.CreatedByUserID;
+        LCopy.IsActive := ACustomer.IsActive;
+        LCopy.Description := ACustomer.Description;
+
+        If (ACustomer.IsActive.HasValue) then
+        Begin
+            LCopy.IsActive := ACustomer.IsActive;
+        End
+        Else
+        Begin
+            LCopy.IsActive := True;
+        End;
+
+        LCopy.Insert;
+        Result := GetCustomerByID(LCopy.CustomerID);
+    Except
+        LCopy.Free;
+        Raise;
+    End;
+End;
+//________________________________________________________________________________________
+Function TCustomerService.UpdateCustomerPartial(Const AID: Int64; Const ACustomer: TCustomer_Customer): TCustomer_Customer;
+Var
+    LExisting: TCustomer_Customer;
+Begin
+    LExisting := TMVCActiveRecord.GetByPK<TCustomer_Customer>(AID, False);
+    If Not Assigned(LExisting) Then
+    Begin
+        Exit(nil);
+    End;
+
+    Try
+        If (ACustomer.FirstName.HasValue) Then
+        Begin
+            LExisting.FirstName := ACustomer.FirstName;
+        End;
+
+        If (ACustomer.LastName.HasValue) Then
+        Begin
+            LExisting.LastName := ACustomer.LastName;
+        End;
+
+        If (ACustomer.Phone.HasValue) Then
+        Begin
+            LExisting.Phone := ACustomer.Phone;
+        End;
+
+        If (ACustomer.NationalID.HasValue) Then
+        Begin
+            LExisting.NationalID := ACustomer.NationalID;
+        End;
+
+        If (ACustomer.Email.HasValue) Then
+        Begin
+            LExisting.Email := ACustomer.Email;
+        End;
+
+        If (ACustomer.Address.HasValue) Then
+        Begin
+            LExisting.Address := ACustomer.Address;
+        End;
+
+        If (ACustomer.Budget.HasValue) Then
+        Begin
+            LExisting.Budget := ACustomer.Budget;
+        End;
+
+        If (ACustomer.CampaignID.HasValue) Then
+        Begin
+            LExisting.CampaignID := ACustomer.CampaignID;
+        End;
+
+        If (ACustomer.CreatedByUserID.HasValue) Then
+        Begin
+            LExisting.CreatedByUserID := ACustomer.CreatedByUserID;
+        End;
+
+        If (ACustomer.IsActive.HasValue) Then
+        Begin
+            LExisting.IsActive := ACustomer.IsActive;
+        End;
+
+        If (ACustomer.Description.HasValue) Then
+        Begin
+            LExisting.Description := ACustomer.Description;
+        End;
+
+        LExisting.Update;
+        Result := LExisting;
+    Except
+        LExisting.Free;
+        Raise;
+    End;
+End;
+//________________________________________________________________________________________
+Function TCustomerService.DeleteCustomer(Const AID: Int64): Boolean;
+Var
+    LExisting: TCustomer_Customer;
+Begin
+    LExisting := TMVCActiveRecord.GetByPK<TCustomer_Customer>(AID, False);
+    If Not Assigned(LExisting) Then
+    Begin
+        Exit(False);
+    End;
+
+    Try
+        LExisting.Delete;
+        Result := True;
+    Finally
+        LExisting.Free;
+    End;
+End;
+//________________________________________________________________________________________
+
+End.

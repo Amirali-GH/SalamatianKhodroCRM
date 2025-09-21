@@ -90,9 +90,9 @@ export function renderCustomerStatusesTable(statuses) {
     statuses.forEach(status => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${status.code}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${status.name}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${status.description || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${status.code}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${status.name}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${status.description || '-'}</td>
             <td class="px-6 py-4 whitespace-nowrap">
                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${status.isactive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
                     ${status.isactive ? 'فعال' : 'غیرفعال'}
@@ -398,10 +398,10 @@ export function renderCustomerPotentialsTable(potentials) {
     potentials.forEach(potential => {
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${potential.code}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${potential.name}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${potential.description || '-'}</td>
-            <td class="px-6 py-4 whitespace-nowrap">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${potential.code}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${potential.name}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${potential.description || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-center">
                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${potential.isactive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
                     ${potential.isactive ? 'فعال' : 'غیرفعال'}
                 </span>

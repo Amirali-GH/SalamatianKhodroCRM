@@ -1,0 +1,326 @@
+{
+  "info": {
+    "name": "SalamtCRM API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Campaign Controller",
+      "item": [
+        {
+          "name": "GET All Campaigns",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/campaign"
+          }
+        },
+        {
+          "name": "GET Campaign by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/campaign/1"
+          }
+        },
+        {
+          "name": "POST Create Campaign",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"CAMP002\",\n  \"name\": \"کمپین پاییز 1404\",\n  \"description\": \"کمپین فروش پاییزی\",\n  \"startdate\": \"2025-09-01T00:00:00\",\n  \"enddate\": \"2025-11-30T23:59:59\",\n  \"isactive\": true\n}"
+            },
+            "url": "{{baseUrl}}/campaign"
+          }
+        },
+        {
+          "name": "PUT Update Campaign",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"کمپین تابستان 1404 - بروزرسانی شده\",\n  \"description\": \"کمپین فروش تابستانی با اطلاعات جدید\"\n}"
+            },
+            "url": "{{baseUrl}}/campaign/1"
+          }
+        },
+        {
+          "name": "DELETE Campaign",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/campaign/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "File Result Contact Customer Controller",
+      "item": [
+        {
+          "name": "GET All File Results",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/file-result-contact-customer"
+          }
+        },
+        {
+          "name": "GET File Result by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/file-result-contact-customer/1"
+          }
+        },
+        {
+          "name": "POST Create File Result",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customerid\": 1002,\n  \"contactdate\": \"2025-09-05T11:00:00\",\n  \"result\": \"ناموفق\",\n  \"description\": \"تماس ناموفق به دلیل عدم پاسخگویی\",\n  \"isactive\": true\n}"
+            },
+            "url": "{{baseUrl}}/file-result-contact-customer"
+          }
+        },
+        {
+          "name": "PUT Update File Result",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"result\": \"موفق - بروزرسانی شده\",\n  \"description\": \"تماس موفق با اطلاعات جدید\"\n}"
+            },
+            "url": "{{baseUrl}}/file-result-contact-customer/1"
+          }
+        },
+        {
+          "name": "DELETE File Result",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/file-result-contact-customer/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Potential Level Controller",
+      "item": [
+        {
+          "name": "GET All Potential Levels",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/potential-level"
+          }
+        },
+        {
+          "name": "GET Potential Level by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/potential-level/1"
+          }
+        },
+        {
+          "name": "POST Create Potential Level",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"PL002\",\n  \"name\": \"متوسط\",\n  \"description\": \"مشتری با پتانسیل متوسط برای خرید\",\n  \"isactive\": true\n}"
+            },
+            "url": "{{baseUrl}}/potential-level"
+          }
+        },
+        {
+          "name": "PUT Update Potential Level",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"بالا - بروزرسانی شده\",\n  \"description\": \"مشتری با پتانسیل بالا با اطلاعات جدید\"\n}"
+            },
+            "url": "{{baseUrl}}/potential-level/1"
+          }
+        },
+        {
+          "name": "DELETE Potential Level",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/potential-level/1"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Customer Controller",
+      "item": [
+        {
+          "name": "GET All Customers",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/customer"
+          }
+        },
+        {
+          "name": "GET Customer by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/customer/1001"
+          }
+        },
+        {
+          "name": "POST Create Customer",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"CUST002\",\n  \"firstname\": \"سارا\",\n  \"lastname\": \"احمدی\",\n  \"phone\": \"09198765432\",\n  \"email\": \"sara.ahmadi@example.com\",\n  \"isactive\": true\n}"
+            },
+            "url": "{{baseUrl}}/customer"
+          }
+        },
+        {
+          "name": "PUT Update Customer",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstname\": \"علی - بروزرسانی شده\",\n  \"email\": \"ali.mohammadi.updated@example.com\"\n}"
+            },
+            "url": "{{baseUrl}}/customer/1001"
+          }
+        },
+        {
+          "name": "DELETE Customer",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/customer/1001"
+          }
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://62.60.214.159:8435/api/v1"
+    }
+  ]
+}

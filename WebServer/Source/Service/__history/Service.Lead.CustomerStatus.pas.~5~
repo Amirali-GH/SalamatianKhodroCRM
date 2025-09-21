@@ -1,0 +1,141 @@
+Unit Service.Lead.CustomerStatus;
+
+Interface
+
+Uses
+    System.SysUtils,
+    System.Generics.Collections,
+    MVCFramework.ActiveRecord,
+    MVCFramework.Nullables,
+    Model.Lead.CustomerStatus,
+    Service.Interfaces;
+
+Type
+    TCustomerStatusService = Class(TInterfacedObject, ICustomerStatusService)
+    Public
+        Function GetAllCustomerStatuses(Var APage: String; Const AOnlyActive: Boolean): TObjectList<TLead_CustomerStatus>;
+        Function GetCustomerStatusByID(Const AID: Integer): TLead_CustomerStatus;
+        Function CreateCustomerStatus(Const ACustomerStatus: TLead_CustomerStatus): TLead_CustomerStatus;
+        Function UpdateCustomerStatusPartial(Const AID: Integer; Const ACustomerStatus: TLead_CustomerStatus): TLead_CustomerStatus;
+        Function DeleteCustomerStatus(Const AID: Integer): Boolean;
+    End;
+
+Implementation
+
+Uses Utils, Math, StrUtils, WebModule.SalamtCRM;
+
+{ TCustomerStatusService }
+
+//________________________________________________________________________________________
+Function TCustomerStatusService.GetAllCustomerStatuses(Var APage: String; Const AOnlyActive: Boolean): TObjectList<TLead_CustomerStatus>;
+Var
+    LCurrPage: Integer;
+    LFirstRec: Integer;
+    LRQL, LIsActive: String;
+Begin
+    LCurrPage := 0;
+    TryStrToInt(APage, LCurrPage);
+
+    LCurrPage := Max(LCurrPage, 1);
+    LFirstRec := (LCurrPage - 1) * PAGE_SIZE;
+    APage := LCurrPage.ToString;
+
+    LIsActive := IfThen(AOnlyActive, '1', '0');
+    Result := TMVCActiveRecord.Where<TLead_CustomerStatus>(
+      'IsActive=? ORDER BY Code ASC, MainName ASC limit ?,?',
+      [LIsActive, LFirstRec, PAGE_SIZE]);
+End;
+//________________________________________________________________________________________
+Function TCustomerStatusService.GetCustomerStatusByID(Const AID: Integer): TLead_CustomerStatus;
+Begin
+    Result := TMVCActiveRecord.GetByPK<TLead_CustomerStatus>(AID, False);
+End;
+//________________________________________________________________________________________
+Function TCustomerStatusService.CreateCustomerStatus(Const ACustomerStatus: TLead_CustomerStatus): TLead_CustomerStatus;
+Var
+    LCopy: TLead_CustomerStatus;
+Begin
+    LCopy := TLead_CustomerStatus.Create;
+    Try
+        LCopy.Code := ACustomerStatus.Code;
+        LCopy.Name := ACustomerStatus.Name;
+        LCopy.IsActive := ACustomerStatus.IsActive;
+        LCopy.Description := ACustomerStatus.Description;
+
+        If (ACustomerStatus.IsActive.HasValue) then
+        Begin
+            LCopy.IsActive := ACustomerStatus.IsActive;
+        End
+        Else
+        Begin
+            LCopy.IsActive := True;
+        End;
+
+        LCopy.Insert;
+        Result := GetCustomerStatusByID(LCopy.CustomerStatusID);
+    Except
+        LCopy.Free;
+        Raise;
+    End;
+End;
+//________________________________________________________________________________________
+Function TCustomerStatusService.UpdateCustomerStatusPartial(Const AID: Integer; Const ACustomerStatus: TLead_CustomerStatus): TLead_CustomerStatus;
+Var
+    LExisting: TLead_CustomerStatus;
+Begin
+    LExisting := TMVCActiveRecord.GetByPK<TLead_CustomerStatus>(AID, False);
+    If Not Assigned(LExisting) Then
+    Begin
+        Exit(nil);
+    End;
+
+    Try
+        If (ACustomerStatus.Code.HasValue) Then
+        Begin
+            LExisting.Code := ACustomerStatus.Code;
+        End;
+
+        If (ACustomerStatus.Name.HasValue) Then
+        Begin
+            LExisting.Name := ACustomerStatus.Name;
+        End;
+
+        If (ACustomerStatus.IsActive.HasValue) Then
+        Begin
+            LExisting.IsActive := ACustomerStatus.IsActive;
+        End;
+
+        If (ACustomerStatus.Description.HasValue) Then
+        Begin
+            LExisting.Description := ACustomerStatus.Description;
+        End;
+
+        LExisting.Update;
+        Result := LExisting;
+    Except
+        LExisting.Free;
+        Raise;
+    End;
+End;
+//________________________________________________________________________________________
+Function TCustomerStatusService.DeleteCustomerStatus(Const AID: Integer): Boolean;
+Var
+    LExisting: TLead_CustomerStatus;
+Begin
+    Result := False;
+    LExisting := TMVCActiveRecord.GetByPK<TLead_CustomerStatus>(AID, False);
+    If Not Assigned(LExisting) Then
+    Begin
+        Exit(False);
+    End;
+
+    Try
+        LExisting.Delete;
+        Result := True;
+    Finally
+        LExisting.Free;
+    End;
+End;
+//________________________________________________________________________________________
+
+End.

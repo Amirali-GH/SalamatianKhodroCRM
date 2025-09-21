@@ -1,0 +1,202 @@
+﻿Unit Controller.Branch;
+
+Interface
+
+Uses
+    System.JSON,
+    MVCFramework,
+    MVCFramework.Commons,
+    MVCFramework.SQLGenerators.MSSQL,
+    MVCFramework.ActiveRecord,
+    MVCFramework.Nullables,
+    MVCFramework.JWT,
+    FireDAC.Phys.MSSQL,
+    System.Variants,
+    System.Generics.Collections,
+    Model.Branch,
+    IdHash,
+    Service.Interfaces,
+    WebModule.SalamtCRM;
+
+Type
+    [MVCPath(BASE_API_V1 + '/branch')]
+    TBranchController = class(TMVCController)
+    Protected
+        Procedure OnBeforeAction(aContext: TWebContext; Const aActionName: string;
+          var AHandled: Boolean); Override;
+        Procedure OnAfterAction(aContext: TWebContext; Const aActionName: string); Override;
+
+    Public
+
+        [MVCPath('/all')]
+        [MVCHTTPMethods([httpGET])]
+        Procedure GetAllBranch([MVCInject] ABranchService: IBranchService);
+
+        [MVCPath('/Info')]
+        [MVCHTTPMethods([httpGET])]
+        Procedure GetBranchInfo([MVCInject] ABranchService: IBranchService);
+
+        [MVCPath('')]
+        [MVCHTTPMethods([httpGET])]
+        Procedure GetBranchByID([MVCInject] ABranchService: IBranchService);
+
+        [MVCPath('')]
+        [MVCHTTPMethods([httpDELETE])]
+        Procedure RemoveBranch([MVCInject] ABranchService: IBranchService);
+
+        [MVCPath('')]
+        [MVCHTTPMethod([httpPOST])]
+        Procedure AddBranch([MVCInject] ABranchService: IBranchService);
+
+        [MVCPath('')]
+        [MVCHTTPMethod([httpPUT])]
+        Procedure UpdateBranch([MVCInject] ABranchService: IBranchService);
+
+        [MVCPath('')]
+        [MVCHTTPMethod([httpDelete])]
+        Procedure DeleteBranch([MVCInject] ABranchService: IBranchService);
+End;
+
+Implementation
+
+Uses
+    System.SysUtils,
+    FireDAC.Comp.Client,
+    FireDAC.Stan.Param,
+    MVCFramework.Logger,
+    MVCFramework.Serializer.Commons,
+    MVCFramework.DataSet.Utils;
+
+//______________________________________________________________________________
+Procedure TBranchController.GetAllBranch(ABranchService: IBranchService);
+Var
+    LBranchList: TObjectList<Model.TBranch>;
+Begin
+    LBranchList := ABranchService.GetAll();
+    If (LBranchList.Count > 0) Then
+    Begin
+        Render(LBranchList);
+    End
+    Else
+    Begin
+        Render(HTTP_STATUS.NoContent, 'List_Is_Empty');
+    End;
+End;
+//______________________________________________________________________________
+Procedure TBranchController.UpdateBranch(ABranchService: IBranchService);
+Var
+    UpdatedBranch: TBranch;
+Begin
+    UpdatedBranch := Context.Request.BodyAs<TBranch>;
+    Try
+        Try
+            UpdatedBranch := Context.Request.BodyAs<TBranch>;
+            ABranchService.UpdateBranch(UpdatedBranch);
+            Render(HTTP_STATUS.Ok, 'Branch_Updated');
+        Except
+            On E: Exception do
+            Begin
+                Render(HTTP_STATUS.BadRequest, E.Message);
+            End;
+        End;
+    Finally
+        UpdatedBranch.Free;
+    End;
+End;
+//______________________________________________________________________________
+Procedure TBranchController.DeleteBranch([MVCInject] ABranchService: IBranchService);
+Var
+    LBranchID: Integer;
+    Branch: TBranch;
+Begin
+    LBranchID := Context.Request.QueryStringParam('branchid').ToInteger;
+    Try
+        Branch := ABranchService.GetByID(LBranchID);
+        If (Not Assigned(Branch)) then
+        Begin
+            Render(HTTP_STATUS.NotFound, 'Branch_Not_Found');
+            Exit;
+        End;
+
+        Branch.isActive := False;
+        Branch.Update();
+        Render(HTTP_STATUS.OK, 'Branch_Deleted');
+    Except
+        Render(HTTP_STATUS.InternalServerError, 'Error_Deleting_Branch');
+    End;
+end;
+//______________________________________________________________________________
+Procedure TBranchController.GetBranchByID(ABranchService: IBranchService);
+Var
+    LBranchID: String;
+Begin
+    LBranchID := Context.LoggedUser.CustomData.Items['branchid'];
+    If (Not LBranchID.IsEmpty) then
+    Begin
+
+        Render(HTTP_STATUS.Ok, ABranchService.GetByID(LBranchID.ToInteger));
+    End
+    Else
+    Begin
+        Raise EMVCException.Create(HTTP_STATUS.BadRequest,'توکن خالی است!');
+    End;
+End;
+//______________________________________________________________________________
+Procedure TBranchController.GetBranchInfo(ABranchService: IBranchService);
+Var
+    LBranchID: String;
+Begin
+    LBranchID := Context.Request.QueryStringParam('branchid');
+    If (Not LBranchID.IsEmpty) then
+    Begin
+        Render(HTTP_STATUS.Ok, ABranchService.GetInfo(LBranchID.ToInteger));
+    End
+    Else
+    Begin
+        Raise EMVCException.Create(HTTP_STATUS.BadRequest,'توکن خالی است!');
+    End;
+End;
+//______________________________________________________________________________
+Procedure TBranchController.OnAfterAction(AContext: TWebContext; const AActionName: string);
+Begin
+    Inherited;
+    If (AContext.Response.StatusCode >= 200) AND (AContext.Response.StatusCode <= 299) then
+    Begin
+        AContext.Response.CustomHeaders.Values['Accept-Charset'] := 'utf-8';
+    End;
+End;
+//______________________________________________________________________________
+Procedure TBranchController.OnBeforeAction(AContext: TWebContext; const AActionName: string;
+  var AHandled: Boolean);
+Begin
+    Inherited;
+    {Do Nothing}
+End;
+//______________________________________________________________________________
+Procedure TBranchController.AddBranch(ABranchService: IBranchService);
+var
+    LNewBranch: TBranch;
+    LNewBranchID: Integer;
+begin
+    LNewBranch := Context.Request.BodyAs<TBranch>;
+    try
+        LNewBranchID := ABranchService.CreateBranch(LNewBranch).BranchID;
+        Render(HTTP_STATUS.OK, TJSONObject.Create(TJSONPair.Create('id', LNewBranchID)));
+    Except
+        On E: Exception do
+        Begin
+            Render(HTTP_STATUS.BadRequest, E.Message);
+        End;
+    End;
+End;
+//______________________________________________________________________________
+Procedure TBranchController.RemoveBranch([MVCInject] ABranchService: IBranchService);
+Var
+    LBranch: TBranch;
+Begin
+    LBranch := Context.Request.BodyAs<TBranch>;
+    LBranch.Delete(True);
+End;
+//______________________________________________________________________________
+
+End.

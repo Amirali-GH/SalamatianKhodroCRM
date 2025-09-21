@@ -1,0 +1,37 @@
+Unit Controller.Novinhub;
+
+Interface
+
+Uses
+    MVCFramework,
+    MVCFramework.Commons,
+    MVCFramework.Serializer.Commons,
+    System.SysUtils,
+    Service.Interfaces;
+
+Type
+    [MVCPath('/novinhub')]
+    TNovinhubController = class(TMVCController)
+    Public
+        [MVCPath('/import')]
+        [MVCHTTPMethod([httpPOST])]
+        procedure ImportFromNovinhub;
+    End;
+
+Implementation
+
+Procedure TNovinhubController.ImportFromNovinhub;
+var
+  LService: TNovinhubService;
+begin
+  LService := TNovinhubService.Create;
+  try
+    LService.ImportAssignmentsFromExcel;
+    Render(TJSONObject.Create(TJSONPair.Create('status', 'success')));
+  finally
+    LService.Free;
+  end;
+end;
+
+end.
+

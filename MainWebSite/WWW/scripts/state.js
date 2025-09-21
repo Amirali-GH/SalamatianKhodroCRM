@@ -1,11 +1,13 @@
 export let currentState = {
     token: null,
     user: null,
+    isLoading: false,
     leads: [],
     currentPage: 1,
     pageSize: 10,
     totalLeads: 0,
-    totalPages: 1,
+    totalRecords: 1,
+    totalPages: 0,
     searchQuery: '',
     sortField: 'assignedAt',
     sortOrder: 'desc',
@@ -18,3 +20,4 @@ export let currentState = {
     currentExcel_FileName: null,
     currentLead: null
 };
+

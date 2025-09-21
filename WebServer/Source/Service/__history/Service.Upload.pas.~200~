@@ -1,0 +1,168 @@
+﻿Unit Service.Upload;
+
+Interface
+
+Uses
+    System.Classes,
+    System.Generics.Collections,
+    MVCFramework.Container,
+    Service.Interfaces,
+    WebModule.SalamtCRM,
+    Model.ResultCustomerContact, Utils, SolarCalendarPackage,
+  Service.Lead.FileResultContactCustomer;
+
+Type
+    TUploadService = class(TInterfacedObject, IUploadFileService)
+    Public
+        Function GetSalesConsultantSheet(
+          Const AFileResultService: IFileResultContactCustomerService;
+          Const ALeadPlatformRaw: TObjectList<TLeadPlatformRaw>;
+          Const AUserID: String;
+          Const AFileName: String;
+          Const AFileSize: String): Boolean;
+    End;
+
+implementation
+
+Uses
+    System.SysUtils,
+    System.JSON,
+    System.StrUtils,
+    MVCFramework.ActiveRecord,
+    MVCFramework.Nullables,
+    MVCFramework.Logger,
+    Model.Customer.Customer,
+    Model.Lead.ResultContactCustomer,
+    Model.Sale.SaleAgent,
+    Model.Sale.Campaign,
+    Model.Lead.CustomerStatus,
+    Model.Lead.FileResultContactCustomer,
+    FireDAC.Comp.Client,
+    FireDac.Stan.Param, Data.DB;
+
+
+{ TUploadService }
+//________________________________________________________________________________________
+Function TUploadService.GetSalesConsultantSheet(
+    Const AFileResultService: IFileResultContactCustomerService;
+    Const ALeadPlatformRaw: TObjectList<TLeadPlatformRaw>;
+    Const AUserID: String;
+    Const AFileName: String;
+    Const AFileSize: String): Boolean;
+Var
+    LFileUploadID: Int64;
+    LFileResultHeader: TLead_FileResultContactCustomer;
+    LLeadPlatformRaw: TLeadPlatformRaw;
+    LRecordsSaved: Integer;
+    LErrorRecords: TObjectList<TLeadPlatformRaw>;
+    LJSONErrors: TJSONObject;
+    LJSONArray: TJSONArray;
+    LHasInsertError, LHasSPError: Boolean;
+    LPhone: String;
+    LFDQuery: TFDQuery;
+Begin
+    LFileResultHeader := TLead_FileResultContactCustomer.Create;
+    LErrorRecords := TObjectList<TLeadPlatformRaw>.Create(False); // مالکیت اشیا را نداریم
+    LJSONErrors := TJSONObject.Create;
+    LHasInsertError := False;
+    LHasSPError := False;
+
+    Try
+        LFileResultHeader.FileName := AFileName;
+        LFileResultHeader.FileSize := StrToInt64Def(AFileSize, 0);
+        LFileResultHeader.UploadedByUserID := StrToIntDef(AUserID, 0);
+        LFileResultHeader := AFileResultService.CreateFileResult(LFileResultHeader);
+
+        // دریافت شناسه فایل آپلود شده
+        LFileUploadID := LFileResultHeader.FileUploadID;
+
+        // ذخیره اطلاعات خام در دیتابیس
+        LRecordsSaved := 0;
+        For LLeadPlatformRaw In ALeadPlatformRaw Do
+        Begin
+            Try
+                If (LLeadPlatformRaw.phn.TryHasValue(LPhone)) then
+                Begin
+                    LPhone := LPhone.Replace('$', '', [rfReplaceAll]);
+                    LLeadPlatformRaw.phn := LPhone;
+
+                    LLeadPlatformRaw.FileUploadID := LFileUploadID;
+                    LLeadPlatformRaw.Insert;
+                    Inc(LRecordsSaved);
+                End
+                Else
+                Begin
+                    Continue;
+                End;
+            Except
+                On E: Exception Do
+                Begin
+                    LHasInsertError := True;
+                    LErrorRecords.Add(LLeadPlatformRaw);
+                End;
+            End;
+        End;
+
+        // ساختن JSON برای خطاهای Insert
+        If (LErrorRecords.Count > 0) Then
+        Begin
+            LJSONErrors.AddPair('TotalErrorRecords', TJSONNumber.Create(LErrorRecords.Count));
+            LJSONArray := TJSONArray.Create;
+
+            For LLeadPlatformRaw In LErrorRecords Do
+            Begin
+                LJSONArray.AddElement(TJSONObject.ParseJSONValue(LLeadPlatformRaw.ToString));
+            End;
+
+            LJSONErrors.AddPair('ErrorRecords', LJSONArray);
+        End;
+
+        LFDQuery := TFDQuery.Create(nil);
+        Try
+            LFDQuery.Connection := TMVCActiveRecord.CurrentConnection;
+            LFDQuery.SQL.Text := 'CALL SP_Lead_StoreRawData(:p_CreatedByUserID, :p_FileUploadID)';
+
+            LFDQuery.ParamByName('p_CreatedByUserID').AsInteger := StrToIntDef(AUserID, 0);
+            LFDQuery.ParamByName('p_FileUploadID').AsLargeInt := LFileUploadID;
+
+            Try
+                LFDQuery.ExecSQL;
+            Except
+                LHasSPError := True;
+            End;
+        Finally
+            LFDQuery.Free;
+        End;
+
+        // بروزرسانی هدر فایل با اطلاعات خطا
+        LFileResultHeader.HasError_InsertRawData := LHasInsertError;
+        LFileResultHeader.HasError_RunSP := LHasSPError;
+
+        If (LJSONErrors.Count > 0) Then
+        Begin
+            LFileResultHeader.ErrorMessage := LJSONErrors.ToString;
+        End;
+
+        AFileResultService.UpdateFileResultPartial(LFileUploadID, LFileResultHeader);
+
+
+        // اگر هیچ رکوردی ذخیره نشد، هدر فایل را حذف کنید
+        If (LRecordsSaved <= 0) Then
+        Begin
+            AFileResultService.DeleteFileResult(LFileResultHeader.FileUploadID);
+            Result := False;
+        End
+        Else
+        Begin
+            Result := True;
+        End;
+    Finally
+        LJSONErrors.Free;
+        LErrorRecords.Free;
+        LFileResultHeader.Free;
+    End;
+End;
+//________________________________________________________________________________________
+
+End.
+

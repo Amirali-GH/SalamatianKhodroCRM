@@ -2,9 +2,15 @@
     <div class="bg-white rounded-xl shadow-md p-6 mt-6">
         <div class="flex items-center justify-between mb-6">
             <h2 class="text-lg font-semibold">مدیریت مشتریان</h2>
-            <button id="add-customer-btn" class="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 flex items-center">
-                <i class="material-icons mr-2">add</i> افزودن مشتری جدید
-            </button>
+            <div class="flex items-center gap-2">
+                <button id="add-customer-btn" class="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 flex items-center">
+                    <i class="material-icons mr-2">add</i> افزودن مشتری جدید
+                </button>
+                <button id="export-customers-btn" class="btn-outline px-4 py-2 rounded-lg flex items-center">
+                    <i class="material-icons mr-1">download</i>
+                    خروجی اکسل
+                </button>
+            </div>
         </div>
         <div class="flex flex-col sm:flex-row gap-4 mb-6">
             <input id="customer-search" type="text" placeholder="شماره تلفن یا نام خانوادگی ..." class="flex-1 border rounded-md px-3 py-2">
@@ -34,7 +40,6 @@
         <div id="customers-pagination" class="flex justify-center mt-4 space-x-2"></div>
     </div>
 
-    <!-- Customer Modal -->
     <div id="customer-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <div class="flex justify-between items-center mb-4">
@@ -95,7 +100,6 @@
         </div>
     </div>
 
-    <!-- Customer Detail Modal -->
     <div id="customer-detail-modal" class="modal-overlay hidden">
         <div class="modal-content">
             <div class="flex justify-between items-center mb-4">

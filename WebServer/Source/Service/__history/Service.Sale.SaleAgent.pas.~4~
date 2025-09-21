@@ -1,0 +1,165 @@
+﻿Unit Service.Sale.SaleAgent;
+
+Interface
+
+Uses
+   System.SysUtils,
+   System.Generics.Collections,
+   MVCFramework.ActiveRecord,
+   MVCFramework.Nullables,
+   Model.Sale.SaleAgent,
+   Service.Interfaces;
+
+Type
+   TSaleAgentService = Class(TInterfacedObject, ISaleAgentService)
+     Public
+       Function GetAllSaleAgents(Var APage: String; Const AStatus: String; Const AContext: String; Const AContext: String): TObjectList<TSale_SaleAgent>;
+       Function GetSaleAgentByID(Const AID: Integer): TSale_SaleAgent;
+       Function CreateSaleAgent(Const ASaleAgent: TSale_SaleAgent): TSale_SaleAgent;
+       Function UpdateSaleAgentPartial(Const AID: Integer; Const ASaleAgent: TSale_SaleAgent): TSale_SaleAgent;
+       Function DeleteSaleAgent(Const AID: Integer): Boolean;
+   End;
+
+Implementation
+
+Uses
+   Utils, Math, StrUtils, WebModule.SalamtCRM;
+
+{ TSaleAgentService }
+
+//________________________________________________________________________________________
+Function TSaleAgentService.GetAllSaleAgents(Var APage: String; Const AStatus: String; Const AContext: String; Const AContext: String): TObjectList<TSale_SaleAgent>;
+Var
+   LCurrPage, LFirstRec: Integer;
+   LActive, LSearchField: String;
+Begin
+   LCurrPage := 0;
+   TryStrToInt(APage, LCurrPage);
+
+   LCurrPage := Max(LCurrPage, 1);
+   LFirstRec := (LCurrPage - 1) * PAGE_SIZE;
+   APage := LCurrPage.ToString;
+
+   // شرط سرچ
+   If (Not AContext.IsEmpty) then
+   Begin
+     LSearchField := Format('(Code LIKE %s OR Region LIKE %s)',
+       [QuotedStr('%' + AContext + '%'), QuotedStr('%' + AContext + '%')]);
+   End
+   Else
+     LSearchField := '';
+
+   // شرط وضعیت فعال/غیرفعال
+   If (AStatus.IsEmpty) Or (AStatus.ToLower = 'active') then
+     LActive := 'IsActive = 1'
+   Else If (AStatus.ToLower = 'notactive') then
+     LActive := 'IsActive = 0'
+   Else
+     LActive := '1=1';
+
+   If (Not LSearchField.IsEmpty) AND (Not LActive.IsEmpty) then
+     LActive := ' AND ' + LActive;
+
+   Result := TMVCActiveRecord.Where<TSale_SaleAgent>(
+     LSearchField + LActive + ' ORDER BY Code ASC limit ?,?',
+     [LFirstRec, PAGE_SIZE]);
+End;
+//________________________________________________________________________________________
+Function TSaleAgentService.GetSaleAgentByID(Const AID: Integer): TSale_SaleAgent;
+Begin
+   Result := TMVCActiveRecord.GetByPK<TSale_SaleAgent>(AID, False);
+End;
+//________________________________________________________________________________________
+Function TSaleAgentService.CreateSaleAgent(Const ASaleAgent: TSale_SaleAgent): TSale_SaleAgent;
+Var
+   LCopy: TSale_SaleAgent;
+Begin
+   LCopy := TSale_SaleAgent.Create;
+   Try
+     LCopy.EmployeeID     := ASaleAgent.EmployeeID;
+     LCopy.Code           := ASaleAgent.Code;
+     LCopy.TargetAmount   := ASaleAgent.TargetAmount;
+     LCopy.Region         := ASaleAgent.Region;
+     LCopy.CommissionRate := ASaleAgent.CommissionRate;
+     LCopy.Description    := ASaleAgent.Description;
+
+     If (ASaleAgent.IsActive.HasValue) then
+       LCopy.IsActive := ASaleAgent.IsActive
+     Else
+       LCopy.IsActive := True;
+
+     If (ASaleAgent.IsSystemic.HasValue) then
+       LCopy.IsSystemic := ASaleAgent.IsSystemic
+     Else
+       LCopy.IsSystemic := False;
+
+     LCopy.CreatedAt := Now;
+
+     LCopy.Insert;
+     Result := GetSaleAgentByID(LCopy.SaleAgentID);
+   Except
+     LCopy.Free;
+     Raise;
+   End;
+End;
+//________________________________________________________________________________________
+Function TSaleAgentService.UpdateSaleAgentPartial(Const AID: Integer; Const ASaleAgent: TSale_SaleAgent): TSale_SaleAgent;
+Var
+   LExisting: TSale_SaleAgent;
+Begin
+   LExisting := TMVCActiveRecord.GetByPK<TSale_SaleAgent>(AID, False);
+   If Not Assigned(LExisting) Then
+     Exit(nil);
+
+   Try
+     If (ASaleAgent.EmployeeID <> 0) Then
+       LExisting.EmployeeID := ASaleAgent.EmployeeID;
+
+     If (Not ASaleAgent.Code.IsEmpty) Then
+       LExisting.Code := ASaleAgent.Code;
+
+     If (ASaleAgent.TargetAmount.HasValue) Then
+       LExisting.TargetAmount := ASaleAgent.TargetAmount;
+
+     If (ASaleAgent.Region.HasValue) Then
+       LExisting.Region := ASaleAgent.Region;
+
+     If (ASaleAgent.CommissionRate.HasValue) Then
+       LExisting.CommissionRate := ASaleAgent.CommissionRate;
+
+     If (ASaleAgent.IsActive.HasValue) Then
+       LExisting.IsActive := ASaleAgent.IsActive;
+
+     If (ASaleAgent.IsSystemic.HasValue) Then
+       LExisting.IsSystemic := ASaleAgent.IsSystemic;
+
+     If (ASaleAgent.Description.HasValue) Then
+       LExisting.Description := ASaleAgent.Description;
+
+     LExisting.Update;
+     Result := LExisting;
+   Except
+     LExisting.Free;
+     Raise;
+   End;
+End;
+//________________________________________________________________________________________
+Function TSaleAgentService.DeleteSaleAgent(Const AID: Integer): Boolean;
+Var
+   LExisting: TSale_SaleAgent;
+Begin
+   LExisting := TMVCActiveRecord.GetByPK<TSale_SaleAgent>(AID, False);
+   If Not Assigned(LExisting) Then
+     Exit(False);
+
+   Try
+     LExisting.Delete;
+     Result := True;
+   Finally
+     LExisting.Free;
+   End;
+End;
+//________________________________________________________________________________________
+
+End.
+

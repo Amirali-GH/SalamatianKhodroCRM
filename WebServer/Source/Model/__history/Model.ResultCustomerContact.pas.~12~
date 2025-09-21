@@ -1,0 +1,62 @@
+Unit Model.ResultCustomerContact;
+
+Interface
+
+Uses
+    MVCFramework.ActiveRecord,
+    MVCFramework.Nullables,
+    MVCFramework.Serializer.Commons,
+    System.Generics.Collections;
+
+Type
+    [MVCNameCase(ncLowerCase)]
+    TResultCustomerContact = Class
+    Private
+        FPhone: String;
+        FFirstName: NullableString;
+        FLastName: NullableString;
+        FNationalCode: NullableString;
+        FRequestedVehicleCode: NullableString;
+        FRequestedVehicleName: NullableString;
+        FEmail: NullableString;
+        FBudget: NullableDouble;
+        FAddress: NullableString;
+        FSaleAgentCode: String;
+        FSaleAgentName: NullableString;
+        FContactDate: String;
+        FCustomerStatusCode: String;
+        FNotes1: NullableString;
+        FNotes2: NullableString;
+        FNotes3: NullableString;
+        FPotential: NullableString;
+        FCampainCode: String;
+        FCampainName: NullableString;
+
+    Public
+        Property Phone: String Read FPhone Write FPhone;
+        Property Sale_Agent_Code: String Read FSaleAgentCode Write FSaleAgentCode;
+        Property Customer_Status_Code: String Read FCustomerStatusCode Write FCustomerStatusCode;
+        Property Contact_Date: String Read FContactDate Write FContactDate;
+        Property CampainCode: String Read FCampainCode Write FCampainCode;
+
+        Property First_Name: NullableString Read FFirstName Write FFirstName;
+        Property Last_Name: NullableString Read FLastName Write FLastName;
+        Property National_Code: NullableString Read FNationalCode Write FNationalCode;
+        Property Email: NullableString Read FEmail Write FEmail;
+        Property Budget: NullableDouble Read FBudget Write FBudget;
+        Property Address: NullableString Read FAddress Write FAddress;
+
+        Property Sale_Agent_Name: NullableString Read FSaleAgentName Write FSaleAgentName;
+        Property Requested_Vehicle_Code: NullableString Read FRequestedVehicleCode Write FRequestedVehicleCode;
+        Property Requested_Vehicle_Name: NullableString Read FRequestedVehicleName Write FRequestedVehicleName;
+        Property Potential: NullableString Read FPotential Write FPotential;
+        Property Note1: NullableString Read FNotes1 Write FNotes1;
+        Property Note2: NullableString Read FNotes2 Write FNotes2;
+        Property Note3: NullableString Read FNotes3 Write FNotes3;
+        Property CampainName: NullableString Read FCampainName Write FCampainName;
+    End;
+
+Implementation
+
+End.
+

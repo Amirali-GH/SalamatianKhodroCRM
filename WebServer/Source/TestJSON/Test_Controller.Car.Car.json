@@ -1,0 +1,22 @@
+﻿{
+    "carid": 1,
+    "code": "CAR001",
+    "mainname": "تویوتا کمری",
+    "secondname": "هیبرید",
+    "companyid": 101,
+    "categoryid": 201,
+    "year": 2025,
+    "fueltype": "هیبرید",
+    "transmission": "اتوماتیک",
+    "enginecapacity": 2.5,
+    "horsepower": 218,
+    "torque": 221,
+    "seats": 5,
+    "drivetype": "دیفرانسیل جلو",
+    "bodytype": "سدان",
+    "rangekm": 900,
+    "safetyrating": "5 ستاره",
+    "baseprice": 35000.00,
+    "isactive": true,
+    "description": "خودروی سدان هیبریدی با مصرف سوخت پایین"
+}

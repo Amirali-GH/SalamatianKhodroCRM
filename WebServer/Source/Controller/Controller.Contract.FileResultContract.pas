@@ -1,0 +1,423 @@
+﻿Unit Controller.Contract.FileResultContract;
+
+Interface
+
+Uses
+    System.SysUtils,
+    System.Classes,
+    System.Generics.Collections,
+    MVCFramework,
+    MVCFramework.Commons,
+    MVCFramework.ActiveRecord,
+    MVCFramework.Nullables,
+    Service.Interfaces,
+    Model.Contract.FileResultContract,
+    WebModule.SalamtCRM;
+
+Type
+    [MVCPath(BASE_API_V1 + '/contract-file-result')]
+    TFileResultContractController = Class(TMVCController)
+    Public
+        [MVCPath('')]
+        [MVCHTTPMethods([httpGET])]
+        [MVCProduces(TMVCMediaType.APPLICATION_JSON)]
+        [MVCConsumes(TMVCMediaType.APPLICATION_JSON)]
+        Procedure GetAllFileResults(Const [MVCInject] AFileResultService: IFileResultContractService);
+
+        [MVCPath('/($AContractFileID)')]
+        [MVCHTTPMethods([httpGET])]
+        [MVCProduces(TMVCMediaType.APPLICATION_JSON)]
+        [MVCConsumes(TMVCMediaType.APPLICATION_JSON)]
+        Procedure GetFileResultByID(Const AContractFileID: String;
+          Const [MVCInject] AFileResultService: IFileResultContractService);
+
+        [MVCPath('')]
+        [MVCHTTPMethods([httpPOST])]
+        [MVCProduces(TMVCMediaType.APPLICATION_JSON)]
+        [MVCConsumes(TMVCMediaType.APPLICATION_JSON)]
+        Procedure CreateFileResult(Const [MVCInject] AFileResultService: IFileResultContractService);
+
+        [MVCPath('/($AContractFileID)')]
+        [MVCHTTPMethods([httpPUT])]
+        [MVCProduces(TMVCMediaType.APPLICATION_JSON)]
+        [MVCConsumes(TMVCMediaType.APPLICATION_JSON)]
+        Procedure UpdateFileResult(Const AContractFileID: String;
+          Const [MVCInject] AFileResultService: IFileResultContractService);
+
+        [MVCPath('/($AContractFileID)')]
+        [MVCHTTPMethods([httpDELETE])]
+        [MVCProduces(TMVCMediaType.APPLICATION_JSON)]
+        [MVCConsumes(TMVCMediaType.APPLICATION_JSON)]
+        Procedure DeleteFileResult(Const AContractFileID: String;
+          Const [MVCInject] AFileResultService: IFileResultContractService);
+    End;
+
+Implementation
+
+Uses
+    MVCFramework.Serializer.Commons,
+    System.JSON, FireDAC.Stan.Error;
+
+{ TFileResultContractController }
+
+//________________________________________________________________________________________
+Procedure TFileResultContractController.GetAllFileResults(Const AFileResultService: IFileResultContractService);
+Var
+    LFileResultList: TObjectList<TContract_FileResult>;
+    LEqualIndex: Integer;
+    LPageArrayData: TArray<string>;
+    LCurrPage, LPageData, Key, Value, LContext: String;
+    LMetaJSON, LPageJSON: TJSONObject;
+Begin
+    LMetaJSON := TJSONObject.Create;
+    Try
+        Try
+            LCurrPage := Context.Request.Params['page'];
+            LContext := Context.Request.Params['context'];
+            LFileResultList := AFileResultService.GetAllFileResults(LCurrPage, LContext);
+            If Assigned(LFileResultList) then
+            Begin
+                LPageJSON := TJSONObject.Create;
+                Try
+                    LPageArrayData := GetPaginationData(LCurrPage.ToInteger,
+                                                        LFileResultList.Count,
+                                                        PAGE_SIZE,
+                                                        BASE_API_V1 + '/contract-file-result?page=($page)')
+                                                      .ToString.Split([';']);
+                    For LPageData in LPageArrayData do
+                    Begin
+                        LEqualIndex := LPageData.IndexOf('=');
+                        If (LEqualIndex > 0) then
+                        Begin
+                            Key := LPageData.Substring(0, LEqualIndex).Trim;
+                            Value := LPageData.Substring(LEqualIndex + 1).Trim;
+                            LPageJSON.AddPair(Key, Value);
+                        End;
+                    End;
+
+                    LMetaJSON.AddPair('page', LPageJSON);
+                    LMetaJSON.AddPair('data_type', 'list<model_contract_file_result>');
+                    LMetaJSON.AddPair('count', LFileResultList.Count);
+                    LMetaJSON.AddPair('is_success', True);
+                    LMetaJSON.AddPair('description', 'لیست تمام فایل‌های آپلود شده قراردادها');
+
+                    Render(HTTP_STATUS.OK,
+                        ObjectDict(False)
+                          .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                          .Add('data', LFileResultList,
+                              Procedure(Const Obj: TObject; Const Links: IMVCLinks)
+                              Begin
+                                  Links.AddRefLink
+                                        .Add(HATEOAS._TYPE, TMVCMediaType.APPLICATION_JSON)
+                                        .Add(HATEOAS.HREF, Format(BASE_API_V1 + '/contract-file-result/%d', [TContract_FileResult(Obj).ContractFileID]))
+                                        .Add(HATEOAS.REL, 'self');
+                              End)
+                    );
+                Finally
+                    LFileResultList.Free;
+                End;
+            End
+            Else
+            Begin
+                Raise Exception.Create('هنگام خواندن فایل‌های آپلود شده قراردادها خطایی رخ داده است!');
+            End;
+        Except
+            On E: Exception do
+            Begin
+                LMetaJSON.AddPair('data_type', 'list<model_contract_file_result>');
+                LMetaJSON.AddPair('count', 0);
+                LMetaJSON.AddPair('is_success', False);
+                LMetaJSON.AddPair('description', E.Message);
+
+                Render(HTTP_STATUS.InternalServerError,
+                    ObjectDict(True)
+                      .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                      .Add('data', TList.Create)
+                );
+            End;
+        End;
+    Finally
+        LMetaJSON.Free;
+    End;
+End;
+//________________________________________________________________________________________
+Procedure TFileResultContractController.GetFileResultByID(Const AContractFileID: String;
+  Const AFileResultService: IFileResultContractService);
+Var
+    LStatusCode: Integer;
+    LContractFileID: Int64;
+    LFileResult: TContract_FileResult;
+    LMetaJSON: TJSONObject;
+Begin
+    LMetaJSON := TJSONObject.Create;
+    Try
+        LStatusCode := HTTP_STATUS.InternalServerError;
+        Try
+            If (AContractFileID.IsEmpty) OR (Not TryStrToInt64(AContractFileID, LContractFileID)) Then
+            Begin
+                LStatusCode := HTTP_STATUS.NotFound;
+                Raise EMVCException.Create('شناسه فایل آپلود قرارداد نامعتبر است!');
+            End;
+
+            LFileResult := AFileResultService.GetFileResultByID(LContractFileID);
+            If Assigned(LFileResult) Then
+            Begin
+                Try
+                    LStatusCode := HTTP_STATUS.OK;
+
+                    LMetaJSON.AddPair('data_type', 'model_contract_file_result');
+                    LMetaJSON.AddPair('count', 1);
+                    LMetaJSON.AddPair('is_success', True);
+                    LMetaJSON.AddPair('description', Format('فایل آپلود قرارداد با نام %s یافت شد.', [LFileResult.FileName]));
+
+                    Render(LStatusCode,
+                        ObjectDict(False)
+                          .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                          .Add('data', LFileResult)
+                    );
+                Finally
+                    LFileResult.Free;
+                End;
+            End
+            Else
+            Begin
+                LStatusCode := HTTP_STATUS.NotFound;
+                Raise EMVCException.Create('فایل آپلود قرارداد یافت نشد');
+            End;
+        Except
+            On E: Exception do
+            Begin
+                LMetaJSON.AddPair('data_type', 'model_contract_file_result');
+                LMetaJSON.AddPair('count', 0);
+                LMetaJSON.AddPair('is_success', False);
+                LMetaJSON.AddPair('description', E.Message);
+
+                Render(LStatusCode,
+                    ObjectDict(True)
+                      .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                      .Add('data', TMVCObjectDictionary.Create())
+                );
+            End;
+        End;
+    Finally
+        LMetaJSON.Free;
+    End;
+End;
+//________________________________________________________________________________________
+Procedure TFileResultContractController.CreateFileResult(Const AFileResultService: IFileResultContractService);
+Var
+    LFileResultInput: TContract_FileResult;
+    LCreated: TContract_FileResult;
+    LMetaJSON: TJSONObject;
+    LStatusCode: Integer;
+Begin
+    LMetaJSON := TJSONObject.Create;
+    Try
+        LStatusCode := HTTP_STATUS.InternalServerError;
+        Try
+            LFileResultInput := Context.Request.BodyAs<TContract_FileResult>;
+            If Not Assigned(LFileResultInput) Then
+            Begin
+                LStatusCode := HTTP_STATUS.BadRequest;
+                Raise EMVCException.Create('داده ورودی نامعتبر است');
+            End;
+
+            Try
+                LCreated := Nil;
+                Try
+                    LCreated := AFileResultService.CreateFileResult(LFileResultInput);
+                Except
+                    On E: EFDException do
+                    Begin
+                        If Assigned(LCreated) then
+                        Begin
+                            LCreated.Free;
+                        End;
+
+                        If Pos('duplicate', E.Message.ToLower) > 0 then
+                        Begin
+                            LStatusCode := HTTP_STATUS.Conflict;
+                            Raise EMVCException.Create('نام فایل قرارداد تکراری است');
+                        End
+                        Else
+                        Begin
+                            Raise EMVCException.Create('خطای پایگاه داده: ' + E.Message);
+                        End;
+                    End;
+
+                    On E: Exception do
+                    Begin
+                        Raise EMVCException.Create(E.Message);
+                    End;
+                End;
+                Try
+                    LStatusCode := HTTP_STATUS.Created;
+
+                    LMetaJSON.AddPair('data_type', 'model_contract_file_result');
+                    LMetaJSON.AddPair('count', 1);
+                    LMetaJSON.AddPair('is_success', True);
+                    LMetaJSON.AddPair('url', BASE_API_V1 + '/contract-file-result/' + LCreated.ContractFileID.ToString);
+                    LMetaJSON.AddPair('description', 'فایل قرارداد با موفقیت ذخیره شد.');
+
+                    Render(LStatusCode,
+                        ObjectDict(False)
+                          .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                          .Add('data', LCreated)
+                    );
+                Finally
+                    LCreated.Free;
+                End;
+            Finally
+                LFileResultInput.Free;
+            End;
+        Except
+            On E: Exception do
+            Begin
+                LMetaJSON.AddPair('data_type', 'model_contract_file_result');
+                LMetaJSON.AddPair('count', 0);
+                LMetaJSON.AddPair('is_success', False);
+                LMetaJSON.AddPair('description', E.Message);
+
+                Render(LStatusCode,
+                    ObjectDict(True)
+                      .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                      .Add('data', TMVCObjectDictionary.Create())
+                );
+            End;
+        End;
+    Finally
+        LMetaJSON.Free;
+    End;
+End;
+//________________________________________________________________________________________
+Procedure TFileResultContractController.UpdateFileResult(Const AContractFileID: String;
+  Const AFileResultService: IFileResultContractService);
+Var
+    LContractFileID: Int64;
+    LFileResultInput: TContract_FileResult;
+    LUpdated: TContract_FileResult;
+    LMetaJSON: TJSONObject;
+    LStatusCode: Integer;
+Begin
+    LMetaJSON := TJSONObject.Create;
+    Try
+        LStatusCode := HTTP_STATUS.InternalServerError;
+        Try
+            If (AContractFileID.IsEmpty) OR (Not TryStrToInt64(AContractFileID, LContractFileID)) Then
+            Begin
+                LStatusCode := HTTP_STATUS.NotFound;
+                Raise EMVCException.Create('شناسه فایل آپلود قرارداد نامعتبر است!');
+            End;
+
+            LFileResultInput := Context.Request.BodyAs<TContract_FileResult>;
+            If Not Assigned(LFileResultInput) Then
+            Begin
+                LStatusCode := HTTP_STATUS.BadRequest;
+                Raise EMVCException.Create('داده ورودی نامعتبر است');
+            End;
+
+            Try
+                LUpdated := AFileResultService.UpdateFileResultPartial(LContractFileID, LFileResultInput);
+                If Not Assigned(LUpdated) Then
+                Begin
+                    LStatusCode := HTTP_STATUS.NotFound;
+                    Raise EMVCException.Create('فایل آپلود قرارداد یافت نشد');
+                End;
+
+                Try
+                    LStatusCode := HTTP_STATUS.OK;
+
+                    LMetaJSON.AddPair('data_type', 'model_contract_file_result');
+                    LMetaJSON.AddPair('count', 1);
+                    LMetaJSON.AddPair('is_success', True);
+                    LMetaJSON.AddPair('description', 'فایل قرارداد با موفقیت بروزرسانی شد.');
+
+                    Render(LStatusCode,
+                        ObjectDict(False)
+                          .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                          .Add('data', LUpdated)
+                    );
+                Finally
+                    LUpdated.Free;
+                End;
+            Finally
+                LFileResultInput.Free;
+            End;
+        Except
+            On E: Exception do
+            Begin
+                LMetaJSON.AddPair('data_type', 'model_contract_file_result');
+                LMetaJSON.AddPair('count', 0);
+                LMetaJSON.AddPair('is_success', False);
+                LMetaJSON.AddPair('description', E.Message);
+
+                Render(LStatusCode,
+                    ObjectDict(True)
+                      .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                      .Add('data', TMVCObjectDictionary.Create())
+                );
+            End;
+        End;
+    Finally
+        LMetaJSON.Free;
+    End;
+End;
+//________________________________________________________________________________________
+Procedure TFileResultContractController.DeleteFileResult(Const AContractFileID: String;
+  Const AFileResultService: IFileResultContractService);
+Var
+    LStatusCode: Integer;
+    LContractFileID: Int64;
+    LMetaJSON: TJSONObject;
+Begin
+    LMetaJSON := TJSONObject.Create;
+    Try
+        LStatusCode := HTTP_STATUS.InternalServerError;
+        Try
+            If (AContractFileID.IsEmpty) OR (Not TryStrToInt64(AContractFileID, LContractFileID)) Then
+            Begin
+                LStatusCode := HTTP_STATUS.NotFound;
+                Raise EMVCException.Create('شناسه فایل آپلود قرارداد نامعتبر است!');
+            End;
+
+            If AFileResultService.DeleteFileResult(LContractFileID) Then
+            Begin
+                LStatusCode := HTTP_STATUS.OK;
+
+                LMetaJSON.AddPair('data_type', 'integer');
+                LMetaJSON.AddPair('count', 1);
+                LMetaJSON.AddPair('is_success', True);
+                LMetaJSON.AddPair('description', 'فایل قرارداد با موفقیت حذف شد.');
+
+                Render(LStatusCode,
+                    ObjectDict(True)
+                      .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                      .Add('data', StrToJSONObject(TJSONObject.Create(TJSONPair.Create('contractfileid', LContractFileID)).ToString))
+                );
+            End
+            Else
+            Begin
+                Raise EMVCException.Create('فایل قرارداد مورد نظر یافت نشد!');
+            End;
+        Except
+            On E: Exception do
+            Begin
+                LMetaJSON.AddPair('data_type', 'integer');
+                LMetaJSON.AddPair('count', 0);
+                LMetaJSON.AddPair('is_success', False);
+                LMetaJSON.AddPair('description', E.Message);
+
+                Render(LStatusCode,
+                    ObjectDict(True)
+                      .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                      .Add('data', TMVCObjectDictionary.Create())
+                );
+            End;
+        End;
+    Finally
+        LMetaJSON.Free;
+    End;
+End;
+//________________________________________________________________________________________
+
+End.

@@ -1,0 +1,157 @@
+﻿Unit Service.ContractUpload;
+
+Interface
+
+Uses
+    System.Classes,
+    System.Generics.Collections,
+    MVCFramework.Container,
+    Service.Interfaces,
+    WebModule.SalamtCRM,
+    Model.ContractRaw, Utils, SolarCalendarPackage,
+    Service.Contract.FileResultContract;  // Assuming a similar service interface for contract file results
+
+Type
+    TContractUploadService = class(TInterfacedObject, IContractUploadService)  // New interface for contracts
+    Public
+        Function GetContractSheet(
+          Const AFileResultService: IFileResultContractService;  // Assuming a similar interface for contracts
+          Const AContractRaw: TObjectList<TContractRaw>;
+          Const AUserID: String;
+          Const AFileName: String;
+          Const AFileSize: String): Boolean;
+    End;
+
+implementation
+
+Uses
+    System.SysUtils,
+    System.JSON,
+    System.StrUtils,
+    MVCFramework.ActiveRecord,
+    MVCFramework.Nullables,
+    MVCFramework.Logger,
+    Model.Customer.Customer,  // Reusing if applicable, or adjust as needed
+    Model.Contract.FileResultContract,  // Assuming a model for contract file result header
+    FireDAC.Comp.Client,
+    FireDac.Stan.Param, Data.DB;
+
+{ TContractUploadService }
+//________________________________________________________________________________________
+Function TContractUploadService.GetContractSheet(
+    Const AFileResultService: IFileResultContractService;
+    Const AContractRaw: TObjectList<TContractRaw>;
+    Const AUserID: String;
+    Const AFileName: String;
+    Const AFileSize: String): Boolean;
+Var
+    LFileUploadID: Int64;
+    LFileResultHeader: TContract_FileResult;  // Assuming a similar header model for contracts
+    LContractRaw: TContractRaw;
+    LRecordsSaved: Integer;
+    LErrorRecords: TObjectList<TContractRaw>;
+    LJSONErrors: TJSONObject;
+    LJSONArray: TJSONArray;
+    LHasInsertError, LHasSPError: Boolean;
+    LContractNumber: String;
+    LFDQuery: TFDQuery;
+Begin
+    LFileResultHeader := TContract_FileResult.Create;
+    LErrorRecords := TObjectList<TContractRaw>.Create(False); // مالکیت اشیا را نداریم
+    LJSONErrors := TJSONObject.Create;
+    LHasInsertError := False;
+    LHasSPError := False;
+
+    Try
+        LFileResultHeader.FileName := AFileName;
+        LFileResultHeader.FileSize := StrToInt64Def(AFileSize, 0);
+        LFileResultHeader.UploadedByUserID := StrToIntDef(AUserID, 0);
+        LFileResultHeader := AFileResultService.CreateFileResult(LFileResultHeader);
+
+        // دریافت شناسه فایل آپلود شده
+        LFileUploadID := LFileResultHeader.ContractFileID;
+
+        // ذخیره اطلاعات خام در دیتابیس
+        LRecordsSaved := 0;
+        For LContractRaw In AContractRaw Do
+        Begin
+            Try
+                If (LContractRaw.con.TryHasValue(LContractNumber)) then
+                Begin
+                    LContractNumber := LContractNumber.Replace('$', '', [rfReplaceAll]);  // Assuming similar cleaning if needed
+                    LContractRaw.con := LContractNumber;
+
+                    LContractRaw.FileUploadID := LFileUploadID;
+                    LContractRaw.Insert;
+                    Inc(LRecordsSaved);
+                End
+                Else
+                Begin
+                    Continue;
+                End;
+            Except
+                On E: Exception Do
+                Begin
+                    LHasInsertError := True;
+                    LErrorRecords.Add(LContractRaw);
+                End;
+            End;
+        End;
+
+        // ساختن JSON برای خطاهای Insert
+        If (LErrorRecords.Count > 0) Then
+        Begin
+            LJSONErrors.AddPair('TotalErrorRecords', TJSONNumber.Create(LErrorRecords.Count));
+            LJSONArray := TJSONArray.Create;
+
+            For LContractRaw In LErrorRecords Do
+            Begin
+                LJSONArray.AddElement(TJSONObject.ParseJSONValue(LContractRaw.ToString));
+            End;
+
+            LJSONErrors.AddPair('ErrorRecords', LJSONArray);
+        End;
+
+        LFDQuery := TFDQuery.Create(nil);
+        Try
+            LFDQuery.Connection := TMVCActiveRecord.CurrentConnection;
+            LFDQuery.SQL.Text := 'CALL SP_Contract_StoreRawData(:p_CreatedByUserID, :p_FileUploadID)';  // Assuming a similar SP for contracts
+
+            LFDQuery.ParamByName('p_CreatedByUserID').AsInteger := StrToIntDef(AUserID, 0);
+            LFDQuery.ParamByName('p_FileUploadID').AsLargeInt := LFileUploadID;
+
+            LFDQuery.ExecSQL;
+        Finally
+            LFDQuery.Free;
+        End;
+
+        // بروزرسانی هدر فایل با اطلاعات خطا
+        LFileResultHeader.HasError_InsertRawData := LHasInsertError;
+        LFileResultHeader.HasError_RunSP := LHasSPError;
+
+        If (LJSONErrors.Count > 0) Then
+        Begin
+            LFileResultHeader.ErrorMessage := LJSONErrors.ToString;
+        End;
+
+        AFileResultService.UpdateFileResultPartial(LFileUploadID, LFileResultHeader);
+
+        // اگر هیچ رکوردی ذخیره نشد، هدر فایل را حذف کنید
+        If (LRecordsSaved <= 0) Then
+        Begin
+            AFileResultService.DeleteFileResult(LFileResultHeader.ContractFileID);
+            Result := False;
+        End
+        Else
+        Begin
+            Result := True;
+        End;
+    Finally
+        LJSONErrors.Free;
+        LErrorRecords.Free;
+        LFileResultHeader.Free;
+    End;
+End;
+//________________________________________________________________________________________
+
+End.

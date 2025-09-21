@@ -1,0 +1,146 @@
+Unit Service.Car.Category;
+
+Interface
+
+Uses
+    System.SysUtils,
+    System.Generics.Collections,
+    MVCFramework.ActiveRecord,
+    MVCFramework.Nullables,
+    Model.Car.Category,
+    Service.Interfaces;
+
+Type
+    TCarCategoryService = Class(TInterfacedObject, ICarCategoryService)
+    Public
+        Function GetAllCarCategories(Var APage: String; Const AOnlyActive: Boolean): TObjectList<TCar_Category>;
+        Function GetCarCategoryByID(Const AID: Integer): TCar_Category;
+        Function CreateCarCategory(Const ACarCategory: TCar_Category): TCar_Category;
+        Function UpdateCarCategoryPartial(Const AID: Integer; Const ACarCategory: TCar_Category): TCar_Category;
+        Function DeleteCarCategory(Const AID: Integer): Boolean;
+    End;
+
+Implementation
+
+Uses Utils, Math, StrUtils, WebModule.SalamtCRM;
+
+{ TCarCategoryService }
+
+//________________________________________________________________________________________
+Function TCarCategoryService.GetAllCarCategories(Var APage: String; Const AOnlyActive: Boolean): TObjectList<TCar_Category>;
+Var
+    LCurrPage: Integer;
+    LFirstRec: Integer;
+    LIsActive: String;
+Begin
+    LCurrPage := 0;
+    TryStrToInt(APage, LCurrPage);
+
+    LCurrPage := Max(LCurrPage, 1);
+    LFirstRec := (LCurrPage - 1) * PAGE_SIZE;
+    APage := LCurrPage.ToString;
+
+    LIsActive := IfThen(AOnlyActive, '1', '0');
+    Result := TMVCActiveRecord.Where<TCar_Category>(
+      'IsActive=? ORDER BY Code ASC, MainName ASC limit ?,?',
+      [LIsActive, LFirstRec, PAGE_SIZE]);
+End;
+//________________________________________________________________________________________
+Function TCarCategoryService.GetCarCategoryByID(Const AID: Integer): TCar_Category;
+Begin
+    Result := TMVCActiveRecord.GetByPK<TCar_Category>(AID, False);
+End;
+//________________________________________________________________________________________
+Function TCarCategoryService.CreateCarCategory(Const ACarCategory: TCar_Category): TCar_Category;
+Var
+    LCopy: TCar_Category;
+Begin
+    LCopy := TCar_Category.Create;
+    Try
+        LCopy.Code := ACarCategory.Code;
+        LCopy.MainName := ACarCategory.MainName;
+        LCopy.SecondName := ACarCategory.SecondName;
+        LCopy.Description := ACarCategory.Description;
+        LCopy.IsActive := ACarCategory.IsActive;
+
+        If (ACarCategory.IsActive.HasValue) then
+        Begin
+            LCopy.IsActive := ACarCategory.IsActive;
+        End
+        Else
+        Begin
+            LCopy.IsActive := True;
+        End;
+
+        LCopy.Insert;
+        Result := GetCarCategoryByID(LCopy.CategoryID);
+    Except
+        LCopy.Free;
+        Raise;
+    End;
+End;
+//________________________________________________________________________________________
+Function TCarCategoryService.UpdateCarCategoryPartial(Const AID: Integer; Const ACarCategory: TCar_Category): TCar_Category;
+Var
+    LExisting: TCar_Category;
+Begin
+    LExisting := TMVCActiveRecord.GetByPK<TCar_Category>(AID, False);
+    If Not Assigned(LExisting) Then
+    Begin
+        Exit(nil);
+    End;
+
+    Try
+        If (ACarCategory.Code.HasValue) Then
+        Begin
+            LExisting.Code := ACarCategory.Code;
+        End;
+
+        If (Not ACarCategory.MainName.IsEmpty) Then
+        Begin
+            LExisting.MainName := ACarCategory.MainName;
+        End;
+
+        If (ACarCategory.SecondName.HasValue) Then
+        Begin
+            LExisting.SecondName := ACarCategory.SecondName;
+        End;
+
+        If (ACarCategory.Description.HasValue) Then
+        Begin
+            LExisting.Description := ACarCategory.Description;
+        End;
+
+        If (ACarCategory.IsActive.HasValue) Then
+        Begin
+            LExisting.IsActive := ACarCategory.IsActive;
+        End;
+
+        LExisting.Update;
+        Result := LExisting;
+    Except
+        LExisting.Free;
+        Raise;
+    End;
+End;
+//________________________________________________________________________________________
+Function TCarCategoryService.DeleteCarCategory(Const AID: Integer): Boolean;
+Var
+    LExisting: TCar_Category;
+Begin
+    LExisting := TMVCActiveRecord.GetByPK<TCar_Category>(AID, False);
+    If Not Assigned(LExisting) Then
+    Begin
+        Exit(False);
+    End;
+
+    Try
+        LExisting.Delete;
+        Result := True;
+    Finally
+        LExisting.Free;
+    End;
+End;
+//________________________________________________________________________________________
+
+End.

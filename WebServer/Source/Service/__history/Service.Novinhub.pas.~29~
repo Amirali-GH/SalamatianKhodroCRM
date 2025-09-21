@@ -1,0 +1,160 @@
+﻿Unit Service.Novinhub;
+
+Interface
+
+Uses
+    System.SysUtils,
+    System.Classes,
+    System.Generics.Collections,
+    MVCFramework.ActiveRecord,
+    Model.Customer.Assignment,
+    Model.Branch.Branch,
+    Service.Interfaces;
+
+Type
+    TNovinhubService = Class(TInterfacedObject, INovinhubService)
+    private
+      function DownloadFile: string;
+    Public
+        procedure ImportAssignmentsFromExcel;
+    End;
+
+Implementation
+
+Uses
+    System.IOUtils,
+    System.Net.HttpClient, // Using the standard client
+    Math,
+
+    // FireDAC Units
+    FireDAC.Stan.Intf,
+    FireDAC.Stan.Option,
+    FireDAC.Stan.Param,
+    FireDAC.Stan.Error,
+    FireDAC.DatS,
+    FireDAC.Phys.Intf,
+    FireDAC.DApt.Intf,
+    FireDAC.Stan.Async,
+    FireDAC.DApt,
+    FireDAC.Comp.Client,
+    FireDAC.Comp.DataSet,
+    System.Net.HttpClientComponent;
+
+{ TNovinhubService }
+
+function TNovinhubService.DownloadFile: string;
+var
+  LHttpClient: TNetHTTPClient;
+  LSavePath: string;
+  LUrl: string;
+begin
+  // TODO: آدرس API واقعی خود را در اینجا قرار دهید
+  LUrl := 'https://api.your-novinhub.com/export/excel';
+  LSavePath := TPath.Combine(TPath.GetTempPath, 'novinhub_data_' + GUIDToString(TGUID.NewGuid) + '.csv');
+
+  LHttpClient := TNetHTTPClient.Create(nil);
+  try
+    // برای سادگی، فرض می‌کنیم فایل با موفقیت دانلود می‌شود
+    // در یک پروژه واقعی، باید کد مدیریت خطا (try..except) برای دانلود قرار دهید
+    //LHttpClient.Get(LUrl, LSavePath);
+    Result := LSavePath;
+  finally
+    LHttpClient.Free;
+  end;
+end;
+
+procedure TNovinhubService.ImportAssignmentsFromExcel;
+var
+    LBranches: TObjectList<TBranch>;
+    LBranchIndex, i, LBatchSize, LRowCount: Integer;
+    LCsvFile: TStringList;
+    LRowData: TArray<string>;
+    LPhone, LUserName: string;
+    LFDConnection: TFDConnection;
+    LFDQuery: TFDQuery;
+begin
+    // Step 1: Get the list of active branches using ActiveRecord
+    LBranches := TMVCActiveRecord.where<TBranch>('IsActive = ?', [True]);
+    try
+        if LBranches.Count = 0 then
+            raise Exception.Create('هیچ شعبه فعالی برای تخصیص یافت نشد.');
+
+        // Step 2: Download the CSV file
+        LCsvFile := TStringList.Create;
+        try
+            LCsvFile.LoadFromFile(DownloadFile);
+            LRowCount := LCsvFile.Count - 1; // Exclude header row
+
+            if LRowCount <= 0 then
+              Exit; // No data to import
+
+            // Step 3: Get the underlying FireDAC connection from MVCFramework
+            LFDConnection := TFDConnection(TMVCActiveRecord.CurrentConnection.CloneConnection);
+            LFDQuery := TFDQuery.Create(nil);
+            try
+                LFDQuery.Connection := LFDConnection;
+
+                // Step 4: Start transaction using FireDAC
+                LFDConnection.StartTransaction;
+                try
+                    // Step 5: Prepare the query for batch insertion (Array DML)
+                    LFDQuery.SQL.Text :=
+                      'INSERT INTO customer_assignment (Phone, BranchID, SourceCollectingDataID, UserName) ' +
+                      'VALUES (:Phone, :BranchID, :SourceCollectingDataID, :UserName)';
+
+                    // Set parameter types and array size
+                    LBatchSize := LRowCount;
+                    LFDQuery.Params.ArraySize := LBatchSize;
+
+                    // Step 6: Populate the parameter arrays
+                    LBranchIndex := 0;
+                    for i := 0 to LBatchSize - 1 do
+                    begin
+                        LRowData := LCsvFile[i + 1].Split([',']); // i+1 to skip header
+
+                        if (Length(LRowData) < 2) or (Trim(LRowData[0]).IsEmpty) then
+                        begin
+                           // Set a marker for this row to be skipped, e.g., by setting a key param to null
+                           LFDQuery.ParamByName('Phone').AsStrings[i] := ''; // Will skip this row
+                           Continue;
+                        end;
+
+                        LPhone    := Trim(LRowData[0]);
+                        LUserName := Trim(LRowData[1]);
+
+                        LFDQuery.ParamByName('Phone').AsStrings[i] := LPhone;
+                        LFDQuery.ParamByName('BranchID').AsIntegers[i] := LBranches[LBranchIndex].BranchID;
+                        LFDQuery.ParamByName('SourceCollectingDataID').AsIntegers[i] := 1; // Novinhub
+                        LFDQuery.ParamByName('UserName').AsStrings[i] := LUserName;
+
+                        // Rotate through branches
+                        Inc(LBranchIndex);
+                        if LBranchIndex >= LBranches.Count then
+                            LBranchIndex := 0;
+                    end;
+
+                    // Step 7: Execute the batch insert
+                    LFDQuery.Execute(LBatchSize, 0);
+
+                    // Step 8: Commit the transaction
+                    LFDConnection.Commit;
+                except
+                    on E: Exception do
+                    begin
+                        // On error, roll back all changes
+                        LFDConnection.Rollback;
+                        raise; // Re-raise the exception
+                    end;
+                end;
+            finally
+                LFDQuery.Free;
+            end;
+        finally
+            LCsvFile.Free;
+        end;
+    finally
+        LBranches.Free;
+    end;
+end;
+
+end.

@@ -1,0 +1,44 @@
+Unit Controller.Novinhub;
+
+Interface
+
+Uses
+    MVCFramework,
+    MVCFramework.Commons,
+    MVCFramework.Serializer.Commons,
+    System.SysUtils,
+    Service.Interfaces,
+    WebModule.SalamtCRM;
+
+Type
+    [MVCPath(BASE_API_V1 + '/novinhub')]
+    TNovinhubController = class(TMVCController)
+    Public
+        [MVCPath('/import')]
+        [MVCHTTPMethod([httpPOST])]
+        procedure ImportFromNovinhub(Const [MVCInject] ANovinhubService: INovinhubService);
+    End;
+
+Implementation
+
+Uses System.JSON;
+
+//________________________________________________________________________________________
+Procedure TNovinhubController.ImportFromNovinhub(Const ANovinhubService: INovinhubService);
+Begin
+    Try
+        ANovinhubService.ImportAssignmentsFromExcel;
+        Render(TJSONObject.Create(TJSONPair.Create('status', 'success')));
+    Except
+        On E: Exception do
+        Begin
+            // Returning a proper error message on failure
+            Context.Response.StatusCode := 500;
+            Render(TJSONObject.Create(TJSONPair.Create('error', E.Message)));
+        End;
+    End;
+End;
+//________________________________________________________________________________________
+
+End.
+

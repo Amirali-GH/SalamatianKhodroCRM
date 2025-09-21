@@ -1,0 +1,167 @@
+Unit Service.Lead.PotentialLevel;
+
+Interface
+
+Uses
+    System.SysUtils,
+    System.Generics.Collections,
+    MVCFramework.ActiveRecord,
+    MVCFramework.Nullables,
+    Model.Lead.PotentialLevel,
+    Service.Interfaces;
+
+Type
+    TPotentialLevelService = Class(TInterfacedObject, IPotentialLevelService)
+    Public
+        Function GetAllPotentialLevels(Var APage: String; Const AStatus: String; Const AContext: String): TObjectList<TLead_PotentialLevel>;
+        Function GetPotentialLevelByID(Const AID: Integer): TLead_PotentialLevel;
+        Function CreatePotentialLevel(Const APotentialLevel: TLead_PotentialLevel): TLead_PotentialLevel;
+        Function UpdatePotentialLevelPartial(Const AID: Integer; Const APotentialLevel: TLead_PotentialLevel): TLead_PotentialLevel;
+        Function DeletePotentialLevel(Const AID: Integer): Boolean;
+    End;
+
+Implementation
+
+Uses Utils, Math, StrUtils, WebModule.SalamtCRM;
+
+{ TPotentialLevelService }
+
+//________________________________________________________________________________________
+Function TPotentialLevelService.GetAllPotentialLevels(Var APage: String; Const AStatus: String; Const AContext: String): TObjectList<TLead_PotentialLevel>;
+Var
+    LCurrPage: Integer;
+    LFirstRec: Integer;
+    LActive, LSearchField: String;
+Begin
+    LCurrPage := 0;
+    TryStrToInt(APage, LCurrPage);
+
+    LCurrPage := Max(LCurrPage, 1);
+    LFirstRec := (LCurrPage - 1) * PAGE_SIZE;
+    APage := LCurrPage.ToString;
+
+    If (Not AContext.IsEmpty) then
+    Begin
+        LSearchField := Format(
+            '(Code LIKE %s OR MainName LIKE %s)',
+            [QuotedStr('%' + AContext + '%'), QuotedStr('%' + AContext + '%')]
+        );
+    End
+    Else
+    Begin
+        LSearchField := '';
+    End;
+
+    If (AStatus.IsEmpty) Or (AStatus.ToLower = 'active') then
+    Begin
+        LActive := 'IsActive = 1';
+    End
+    Else If (AStatus.ToLower = 'notactive') then
+    Begin
+        LActive := 'IsActive = 0';
+    End
+    Else
+    Begin
+        LActive := '1=1';
+    End;
+
+    If (Not LSearchField.IsEmpty) AND (Not LActive.IsEmpty) then
+    Begin
+        LActive := ' AND ' + LActive;
+    End;
+
+    Result := TMVCActiveRecord.Where<TSale_Campaign>(
+    Result := TMVCActiveRecord.Where<TLead_PotentialLevel>(
+      LSearchField + LActive + ' ORDER BY Code ASC, Name ASC limit ?,?',
+      [LFirstRec, PAGE_SIZE]);
+End;
+//________________________________________________________________________________________
+Function TPotentialLevelService.GetPotentialLevelByID(Const AID: Integer): TLead_PotentialLevel;
+Begin
+    Result := TMVCActiveRecord.GetByPK<TLead_PotentialLevel>(AID, False);
+End;
+//________________________________________________________________________________________
+Function TPotentialLevelService.CreatePotentialLevel(Const APotentialLevel: TLead_PotentialLevel): TLead_PotentialLevel;
+Var
+    LCopy: TLead_PotentialLevel;
+Begin
+    LCopy := TLead_PotentialLevel.Create;
+    Try
+        LCopy.Code := APotentialLevel.Code;
+        LCopy.Name := APotentialLevel.Name;
+        LCopy.Description := APotentialLevel.Description;
+        LCopy.Color := APotentialLevel.Color;
+        LCopy.Priority := APotentialLevel.Priority;
+
+        LCopy.Insert;
+        Result := GetPotentialLevelByID(LCopy.PotentialLevelID);
+    Except
+        LCopy.Free;
+        Raise;
+    End;
+End;
+//________________________________________________________________________________________
+Function TPotentialLevelService.UpdatePotentialLevelPartial(Const AID: Integer; Const APotentialLevel: TLead_PotentialLevel): TLead_PotentialLevel;
+Var
+    LExisting: TLead_PotentialLevel;
+Begin
+    LExisting := TMVCActiveRecord.GetByPK<TLead_PotentialLevel>(AID, False);
+    If Not Assigned(LExisting) Then
+    Begin
+        Exit(nil);
+    End;
+
+    Try
+        If (Not APotentialLevel.Code.IsEmpty) Then
+        Begin
+            LExisting.Code := APotentialLevel.Code;
+        End;
+
+        If (Not APotentialLevel.Name.IsEmpty) Then
+        Begin
+            LExisting.Name := APotentialLevel.Name;
+        End;
+
+        If (APotentialLevel.Description.HasValue) Then
+        Begin
+            LExisting.Description := APotentialLevel.Description;
+        End;
+
+        If (APotentialLevel.Color.HasValue) Then
+        Begin
+            LExisting.Color := APotentialLevel.Color;
+        End;
+
+        If (APotentialLevel.Priority.HasValue) Then
+        Begin
+            LExisting.Priority := APotentialLevel.Priority;
+        End;
+
+        LExisting.Update;
+        Result := LExisting;
+    Except
+        LExisting.Free;
+        Raise;
+    End;
+End;
+//________________________________________________________________________________________
+Function TPotentialLevelService.DeletePotentialLevel(Const AID: Integer): Boolean;
+Var
+    LExisting: TLead_PotentialLevel;
+Begin
+    LExisting := TMVCActiveRecord.GetByPK<TLead_PotentialLevel>(AID, False);
+    If Not Assigned(LExisting) Then
+    Begin
+        Exit(False);
+    End;
+
+    Try
+        LExisting.Delete;
+        Result := True;
+    Finally
+        LExisting.Free;
+    End;
+End;
+//________________________________________________________________________________________
+
+End.

@@ -94,6 +94,8 @@ export async function loadUsers(page = 1, search = '', status = 'both', role = '
         if (status !== 'both') url += `&status=${status}`;
         if (role !== 'all') url += `&userroleid=${role}`;
         
+        console.log(url);
+
         const response = await fetch(url, {
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -134,19 +136,19 @@ export function renderUsersTable(users) {
         const branchName = branch.name || user.branchid || '-';
         const row = document.createElement('tr');
         row.innerHTML = `
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">${user.userid}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.username}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.firstname} ${user.lastname}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.email || '-'}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${user.phone || '-'}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${getRoleLabel(user.userroleid)}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${branchName}</td>
-            <td class="px-6 py-4 whitespace-nowrap">
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${user.userid}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${user.username}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${user.firstname} ${user.lastname}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${user.email || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${user.phone || '-'}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${getRoleLabel(user.userroleid)}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${branchName}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-center">
                 <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.isactive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
                     ${user.isactive ? 'فعال' : 'غیرفعال'}
                 </span>
             </td>
-            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-center">
                 <button class="text-blue-600 hover:text-blue-900 view-user mr-3" data-id="${user.userid}">
                     <i class="material-icons text-base">visibility</i>
                 </button>

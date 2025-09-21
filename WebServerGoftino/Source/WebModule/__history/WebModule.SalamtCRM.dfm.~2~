@@ -1,0 +1,8 @@
+object WMSalamtCustomer: TWMSalamtCustomer
+  OnCreate = WebModuleCreate
+  OnDestroy = WebModuleDestroy
+  Actions = <>
+  Height = 571
+  Width = 931
+  PixelsPerInch = 144
+end

@@ -1,0 +1,145 @@
+Unit Service.Lead.FileResultContactCustomer;
+
+Interface
+
+Uses
+    System.SysUtils,
+    System.Generics.Collections,
+    MVCFramework.ActiveRecord,
+    MVCFramework.Nullables,
+    Model.Lead.FileResultContactCustomer,
+    Service.Interfaces;
+
+Type
+    TFileResultContactCustomerService = Class(TInterfacedObject, IFileResultContactCustomerService)
+    Public
+        Function GetAllFileResults(Var APage: String; Const AContext: String): TObjectList<TLead_FileResultContactCustomer>;
+        Function GetFileResultByID(Const AID: Int64): TLead_FileResultContactCustomer;
+        Function CreateFileResult(Const AFileResult: TLead_FileResultContactCustomer): TLead_FileResultContactCustomer;
+        Function UpdateFileResultPartial(Const AID: Int64; Const AFileResult: TLead_FileResultContactCustomer): TLead_FileResultContactCustomer;
+        Function DeleteFileResult(Const AID: Int64): Boolean;
+    End;
+
+Implementation
+
+Uses Utils, Math, StrUtils, WebModule.SalamtCRM;
+
+{ TFileResultContactCustomerService }
+
+//________________________________________________________________________________________
+Function TFileResultContactCustomerService.GetAllFileResults(Var APage: String;
+  Const AContext: String): TObjectList<TLead_FileResultContactCustomer>;
+Var
+    LCurrPage: Integer;
+    LFirstRec: Integer;
+    LSearchField: String;
+Begin
+    LCurrPage := 0;
+    TryStrToInt(APage, LCurrPage);
+
+    LCurrPage := Max(LCurrPage, 1);
+    LFirstRec := (LCurrPage - 1) * PAGE_SIZE;
+    APage := LCurrPage.ToString;
+
+    If (Not AContext.IsEmpty) then
+    Begin
+        LSearchField := Format(
+            '(FileName LIKE %s)',[QuotedStr('%' + AContext + '%')]
+        );
+
+        Result := TMVCActiveRecord.Where<TLead_FileResultContactCustomer>(
+          LSearchField + ' ORDER BY FileName ASC limit ?,?',
+          [LFirstRec, PAGE_SIZE]);
+    End
+    Else
+    Begin
+        Result := TMVCActiveRecord.SelectRQL<TLead_FileResultContactCustomer>(
+          Format(' ORDER BY FileName ASC limit %s,%s', [LFirstRec, PAGE_SIZE],  PAGE_SIZE));
+    End;
+
+
+End;
+//________________________________________________________________________________________
+Function TFileResultContactCustomerService.GetFileResultByID(Const AID: Int64): TLead_FileResultContactCustomer;
+Begin
+    Result := TMVCActiveRecord.GetByPK<TLead_FileResultContactCustomer>(AID, False);
+End;
+//________________________________________________________________________________________
+Function TFileResultContactCustomerService.CreateFileResult(Const AFileResult: TLead_FileResultContactCustomer): TLead_FileResultContactCustomer;
+Var
+    LCopy: TLead_FileResultContactCustomer;
+Begin
+    LCopy := TLead_FileResultContactCustomer.Create;
+    Try
+        LCopy.FileName := AFileResult.FileName;
+        LCopy.UploadedByUserID := AFileResult.UploadedByUserID;
+        LCopy.FileSize := AFileResult.FileSize;
+        LCopy.ErrorMessage := AFileResult.ErrorMessage;
+
+        LCopy.Insert;
+        Result := GetFileResultByID(LCopy.FileUploadID);
+    Except
+        LCopy.Free;
+        Raise;
+    End;
+End;
+//________________________________________________________________________________________
+Function TFileResultContactCustomerService.UpdateFileResultPartial(Const AID: Int64; Const AFileResult: TLead_FileResultContactCustomer): TLead_FileResultContactCustomer;
+Var
+    LExisting: TLead_FileResultContactCustomer;
+Begin
+    LExisting := TMVCActiveRecord.GetByPK<TLead_FileResultContactCustomer>(AID, False);
+    If Not Assigned(LExisting) Then
+    Begin
+        Exit(nil);
+    End;
+
+    Try
+        If (Not AFileResult.FileName.IsEmpty) Then
+        Begin
+            LExisting.FileName := AFileResult.FileName;
+        End;
+
+        If (AFileResult.UploadedByUserID.HasValue) Then
+        Begin
+            LExisting.UploadedByUserID := AFileResult.UploadedByUserID;
+        End;
+
+        If (AFileResult.FileSize.HasValue) Then
+        Begin
+            LExisting.FileSize := AFileResult.FileSize;
+        End;
+
+        If (AFileResult.ErrorMessage.HasValue) Then
+        Begin
+            LExisting.ErrorMessage := AFileResult.ErrorMessage;
+        End;
+
+        LExisting.Update;
+        Result := LExisting;
+    Except
+        LExisting.Free;
+        Raise;
+    End;
+End;
+//________________________________________________________________________________________
+Function TFileResultContactCustomerService.DeleteFileResult(Const AID: Int64): Boolean;
+Var
+    LExisting: TLead_FileResultContactCustomer;
+Begin
+    LExisting := TMVCActiveRecord.GetByPK<TLead_FileResultContactCustomer>(AID, False);
+    If Not Assigned(LExisting) Then
+    Begin
+        Exit(False);
+    End;
+
+    Try
+        LExisting.Delete;
+        Result := True;
+    Finally
+        LExisting.Free;
+    End;
+End;
+//________________________________________________________________________________________
+
+End.

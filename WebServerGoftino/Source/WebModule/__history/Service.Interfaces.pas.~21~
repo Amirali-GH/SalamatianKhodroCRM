@@ -1,0 +1,42 @@
+Unit Service.Interfaces;
+
+Interface
+
+Uses
+    System.Classes,
+    System.Generics.Collections,
+    MVCFramework.Container,
+    Model.User;
+
+Type
+    {User}
+    IUserService = Interface ['{C64D77F7-4F1D-4E22-99EC-76B9385F5E32}']
+        Function GetAll: TObjectList<TUser>;
+        Function GetByID(const AID: Integer): TUser;
+        Function CreateUser(AUser: TUser): TUser;
+        Function UpdateUser(AUser: TUser): TUser;
+        Procedure DeleteUser(const AID: Integer);
+    End;
+
+    {Upload file}
+    IUploadFileService = Interface ['{10B65297-91AB-4CC9-8192-B732484E7318}']
+        Function GetSalesConsultantSheet(Const ASheet: TStream): Boolean;
+    End;
+
+    Procedure RegisterServices(Container: IMVCServiceContainer);
+
+Implementation
+
+Uses
+    Service.User,
+    Service.Upload;
+
+//________________________________________________________________________________________
+Procedure RegisterServices(Container: IMVCServiceContainer);
+Begin
+    Container.RegisterType(TUserService, IUserService, TRegistrationType.SingletonPerRequest);
+    Container.RegisterType(TUploadService, IUploadService, TRegistrationType.SingletonPerRequest);
+End;
+//________________________________________________________________________________________
+
+End.

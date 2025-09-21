@@ -1,0 +1,80 @@
+Unit Model.Organization.Employee;
+
+Interface
+
+Uses
+    MVCFramework.ActiveRecord,
+    MVCFramework.Nullables,
+    MVCFramework.Serializer.Commons,
+    System.Generics.Collections;
+
+Type
+    TEmployeeStatus = (esActive, esInactive, esSuspended, esTerminated);
+
+    [MVCNameCase(ncLowerCase)]
+    [MVCTable('Organization_Employee')]
+    [MVCEntityActions([eaRetrieve, eaCreate, eaUpdate, eaDelete])]
+    TOrganization_Employee = Class(TMVCActiveRecord)
+    Private
+        [MVCTableField('EmployeeID', [foPrimaryKey])]
+        FEmployeeID: Int32;
+
+        [MVCTableField('FirstName')]
+        FFirstName: String;
+
+        [MVCTableField('LastName')]
+        FLastName: String;
+
+        [MVCTableField('NationalCode')]
+        FNationalCode: String;
+
+        [MVCTableField('BirthDate')]
+        FBirthDate: NullableTDate;
+
+        [MVCTableField('HireDate')]
+        FHireDate: TDate;
+
+        [MVCTableField('PhoneNumber')]
+        FPhoneNumber: NullableString;
+
+        [MVCTableField('Email')]
+        FEmail: NullableString;
+
+        [MVCTableField('Address')]
+        FAddress: NullableString;
+
+        [MVCTableField('Status')]
+        FStatus: TEmployeeStatus;
+
+        [MVCTableField('IsActive')]
+        FIsActive: NullableBoolean;
+
+        [MVCTableField('IsSystemic')]
+        FIsSystemic: NullableBoolean;
+
+        [MVCTableField('Description')]
+        FDescription: NullableString;
+
+        [MVCTableField('CreatedAt')]
+        FCreatedAt: NullableTDateTime;
+
+    Public
+        Property EmployeeID: Int32 Read FEmployeeID Write FEmployeeID;
+        Property FirstName: String Read FFirstName Write FFirstName;
+        Property LastName: String Read FLastName Write FLastName;
+        Property NationalCode: String Read FNationalCode Write FNationalCode;
+        Property BirthDate: NullableTDate Read FBirthDate Write FBirthDate;
+        Property HireDate: TDate Read FHireDate Write FHireDate;
+        Property PhoneNumber: NullableString Read FPhoneNumber Write FPhoneNumber;
+        Property Email: NullableString Read FEmail Write FEmail;
+        Property Address: NullableString Read FAddress Write FAddress;
+        Property Status: TEmployeeStatus Read FStatus Write FStatus;
+        Property IsActive: NullableBoolean Read FIsActive Write FIsActive;
+        Property IsSystemic: NullableBoolean Read FIsSystemic Write FIsSystemic;
+        Property Description: NullableString Read FDescription Write FDescription;
+        Property CreatedAt: NullableTDateTime Read FCreatedAt Write FCreatedAt;
+    End;
+
+Implementation
+
+End.

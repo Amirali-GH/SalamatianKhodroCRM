@@ -1,0 +1,423 @@
+﻿Unit Controller.Sale.Campaign;
+
+Interface
+
+Uses
+    System.SysUtils,
+    System.Classes,
+    System.Generics.Collections,
+    MVCFramework,
+    MVCFramework.Commons,
+    MVCFramework.ActiveRecord,
+    MVCFramework.Swagger.Commons,
+    MVCFramework.Nullables,
+    Service.Interfaces,
+    Model.Sale.Campaign,
+    WebModule.SalamtCRM;
+
+Type
+    [MVCPath(BASE_API_V1 + '/campaign')]
+    TSaleCampaignController = Class(TMVCController)
+    Public
+
+        [MVCPath('')]
+        [MVCHTTPMethods([httpGET])]
+        [MVCProduces(TMVCMediaType.APPLICATION_JSON)]
+        [MVCConsumes(TMVCMediaType.APPLICATION_JSON)]
+        Procedure GetAllCampaigns(Const [MVCInject] ASaleCampaignService: ICampaignService);
+
+        [MVCPath('/($ACampaignID)')]
+        [MVCHTTPMethods([httpGET])]
+        [MVCProduces(TMVCMediaType.APPLICATION_JSON)]
+        [MVCConsumes(TMVCMediaType.APPLICATION_JSON)]
+        Procedure GetCampaignByID(Const ACampaignID: String;
+          Const [MVCInject] ASaleCampaignService: ICampaignService);
+
+        [MVCPath('')]
+        [MVCHTTPMethods([httpPOST])]
+        [MVCProduces(TMVCMediaType.APPLICATION_JSON)]
+        [MVCConsumes(TMVCMediaType.APPLICATION_JSON)]
+        Procedure CreateCampaign(Const [MVCInject] ASaleCampaignService: ICampaignService);
+
+        [MVCPath('/($ACampaignID)')]
+        [MVCHTTPMethods([httpPUT])]
+        [MVCProduces(TMVCMediaType.APPLICATION_JSON)]
+        [MVCConsumes(TMVCMediaType.APPLICATION_JSON)]
+        Procedure UpdateCampaign(Const ACampaignID: String;
+          Const [MVCInject] ASaleCampaignService: ICampaignService);
+
+        [MVCPath('/($ACampaignID)')]
+        [MVCHTTPMethods([httpDELETE])]
+        [MVCProduces(TMVCMediaType.APPLICATION_JSON)]
+        [MVCConsumes(TMVCMediaType.APPLICATION_JSON)]
+        Procedure DeleteCampaign(Const ACampaignID: String;
+          Const [MVCInject] ASaleCampaignService: ICampaignService);
+    End;
+
+Implementation
+
+Uses
+    MVCFramework.Serializer.Commons,
+    System.JSON, FireDAC.Stan.Error;
+
+{ TSaleCampaignController }
+
+//________________________________________________________________________________________
+Procedure TSaleCampaignController.GetAllCampaigns(Const ASaleCampaignService: ICampaignService);
+Var
+	  LCampaignList: TObjectList<TSale_Campaign>;
+    LEqualIndex: Integer;
+    LPageArrayData: TArray<string>;
+    LCurrPage, LPageData, Key, Value: String;
+    LMetaJSON, LPageJSON: TJSONObject;
+Begin
+    LMetaJSON := TJSONObject.Create;
+    Try
+        Try
+            LCurrPage := Context.Request.Params['page'];
+            LCampaignList := ASaleCampaignService.GetAllCampaigns(LCurrPage, True);
+            If Assigned(LCampaignList) then
+            Begin
+                LPageJSON := TJSONObject.Create;
+                Try
+                    LPageArrayData := GetPaginationData(lCurrPage.ToInteger,
+                                                        LCampaignList.Count,
+                                                        PAGE_SIZE,
+                                                        BASE_API_V1 + '/campaign?page=($page)')
+                                                      .ToString.Split([';']);
+                    For LPageData in LPageArrayData do
+                    Begin
+                        LEqualIndex := LPageData.IndexOf('=');
+                        If (LEqualIndex > 0) then
+                        Begin
+                            Key := LPageData.Substring(0, LEqualIndex).Trim;
+                            Value := LPageData.Substring(LEqualIndex + 1).Trim;
+                            LPageJSON.AddPair(Key, Value);
+                        End;
+                    End;
+
+                    LMetaJSON.AddPair('data_type', 'list<model_sale_campaign>');
+                    LMetaJSON.AddPair('count', LCampaignList.Count);
+                    LMetaJSON.AddPair('is_success', True);
+                    LMetaJSON.AddPair('description', 'لیست تمام کمپین های ثبت شده');
+
+                    Render(HTTP_STATUS.OK,
+                        ObjectDict(False)
+                          .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                          .Add('data', LCampaignList,
+                              Procedure(Const Obj: TObject; Const Links: IMVCLinks)
+                              Begin
+                                  Links.AddRefLink
+                                        .Add(HATEOAS._TYPE, TMVCMediaType.APPLICATION_JSON)
+                                        .Add(HATEOAS.HREF, Format(BASE_API_V1 + '/campaign/%d', [TSale_Campaign(Obj).CampaignID]))
+                                        .Add(HATEOAS.REL, 'self');
+                              End)
+                    );
+                Finally
+                    LCampaignList.Free;
+                End;
+            End
+            Else
+            Begin
+                Raise Exception.Create('هنگام خواندن کمپین های ثبت شده خطایی رخ داده است!');
+            End;
+        Except
+            On E: Exception do
+            Begin
+                LMetaJSON.AddPair('data_type', 'list<model_sale_campaign>');
+                LMetaJSON.AddPair('count', 0);
+                LMetaJSON.AddPair('is_success', False);
+                LMetaJSON.AddPair('description', E.Message);
+
+                Render(HTTP_STATUS.InternalServerError,
+                    ObjectDict(True)
+                      .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                      .Add('data', TList.Create)
+                );
+            End;
+        End;
+    Finally
+        LMetaJSON.Free;
+    End;
+End;
+//________________________________________________________________________________________
+Procedure TSaleCampaignController.GetCampaignByID(Const ACampaignID: String;
+  Const ASaleCampaignService: ICampaignService);
+Var
+    LStatusCode, LCampaignID: Integer;
+    LCampaign: TSale_Campaign;
+    LMetaJSON: TJSONObject;
+Begin
+    LMetaJSON := TJSONObject.Create;
+    Try
+        LStatusCode := HTTP_STATUS.InternalServerError;
+        Try
+            If (ACampaignID.IsEmpty) OR (Not TryStrToInt(ACampaignID, LCampaignID)) Then
+            Begin
+                LStatusCode := HTTP_STATUS.NotFound;
+                Raise EMVCException.Create('شناسه کمپین نامعتبر است!');
+            End;
+
+            LCampaign := ASaleCampaignService.GetCampaignByID(LCampaignID);
+            If Assigned(LCampaign) Then
+            Begin
+                Try
+                    LStatusCode := HTTP_STATUS.OK;
+
+                    LMetaJSON.AddPair('data_type', 'model_sale_campaign');
+                    LMetaJSON.AddPair('count', 1);
+                    LMetaJSON.AddPair('is_success', True);
+                    LMetaJSON.AddPair('description', Format('کمپین به کد %s یافت شد.', [LCampaign.Code]));
+
+                    Render(LStatusCode,
+                        ObjectDict(False)
+                          .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                          .Add('data', LCampaign)
+                    );
+                Finally
+                    LCampaign.Free;
+                End;
+            End
+            Else
+            Begin
+                LStatusCode := HTTP_STATUS.NotFound;
+                Raise EMVCException.Create('کمپین یافت نشد');
+            End;
+        Except
+            On E: Exception do
+            Begin
+                LMetaJSON.AddPair('data_type', 'model_sale_campaign');
+                LMetaJSON.AddPair('count', 0);
+                LMetaJSON.AddPair('is_success', False);
+                LMetaJSON.AddPair('description', E.Message);
+
+                Render(LStatusCode,
+                    ObjectDict(True)
+                      .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                      .Add('data', TMVCObjectDictionary.Create())
+                );
+            End;
+        End;
+    Finally
+        LMetaJSON.Free;
+    End;
+End;
+//________________________________________________________________________________________
+Procedure TSaleCampaignController.CreateCampaign(Const ASaleCampaignService: ICampaignService);
+Var
+    LCampaignInput: TSale_Campaign;
+    LCreated: TSale_Campaign;
+    LMetaJSON: TJSONObject;
+    LStatusCode: Integer;
+Begin
+    LMetaJSON := TJSONObject.Create;
+    Try
+        LStatusCode := HTTP_STATUS.InternalServerError;
+        Try
+            LCampaignInput := Context.Request.BodyAs<TSale_Campaign>;
+            If Not Assigned(LCampaignInput) Then
+            Begin
+                LStatusCode := HTTP_STATUS.BadRequest;
+                Raise EMVCException.Create('داده ورودی نامعتبر است');
+            End;
+
+            Try
+                LCreated := Nil;
+                Try
+                    LCreated := ASaleCampaignService.CreateCampaign(LCampaignInput);
+                Except
+                    On E: EFDException do
+                    Begin
+                        If Assigned(LCreated) then
+                        Begin
+                            LCreated.Free;
+                        End;
+
+                        If Pos('duplicate', E.Message.ToLower) > 0 then
+                        Begin
+                            LStatusCode := HTTP_STATUS.NotAcceptable;
+                            Raise EMVCException.Create('کد کمپین تکراری است')
+                        End
+                        Else
+                        Begin
+                            Raise EMVCException.Create('خطای پایگاه داده: ' + E.Message);
+                        End;
+                    End;
+
+                    On E: Exception do
+                    Begin
+                        Raise EMVCException.Create(E.Message);
+                    End;
+                End;
+                Try
+                    LStatusCode := HTTP_STATUS.Created;
+
+                    LMetaJSON.AddPair('data_type', 'model_sale_campaign');
+                    LMetaJSON.AddPair('count', 1);
+                    LMetaJSON.AddPair('is_success', True);
+                    LMetaJSON.AddPair('url', BASE_API_V1 + '/campaign/' + LCreated.CampaignID.ToString);
+                    LMetaJSON.AddPair('description', 'کمپین با موفقیت ذخیره شد.');
+
+                    Render(LStatusCode,
+                        ObjectDict(False)
+                          .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                          .Add('data', LCreated)
+                    );
+                Finally
+                    LCreated.Free;
+                End;
+            Finally
+                LCampaignInput.Free;
+            End;
+        Except
+            On E: Exception do
+            Begin
+                LMetaJSON.AddPair('data_type', 'model_sale_campaign');
+                LMetaJSON.AddPair('count', 0);
+                LMetaJSON.AddPair('is_success', False);
+                LMetaJSON.AddPair('description', E.Message);
+
+                Render(LStatusCode,
+                    ObjectDict(True)
+                      .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                      .Add('data', TMVCObjectDictionary.Create())
+                );
+            End;
+        End;
+    Finally
+        LMetaJSON.Free;
+    End;
+End;
+//________________________________________________________________________________________
+Procedure TSaleCampaignController.UpdateCampaign(Const ACampaignID: String;
+  Const ASaleCampaignService: ICampaignService);
+Var
+    LCampaignID: Integer;
+    LCampaignInput: TSale_Campaign;
+    LUpdated: TSale_Campaign;
+    LMetaJSON: TJSONObject;
+    LStatusCode: Integer;
+Begin
+    LMetaJSON := TJSONObject.Create;
+    Try
+        LStatusCode := HTTP_STATUS.InternalServerError;
+        Try
+            If (ACampaignID.IsEmpty) OR (Not TryStrToInt(ACampaignID, LCampaignID)) Then
+            Begin
+                LStatusCode := HTTP_STATUS.NotFound;
+                Raise EMVCException.Create('شناسه کمپین نامعتبر است!');
+            End;
+
+            LCampaignInput := Context.Request.BodyAs<TSale_Campaign>;
+            If Not Assigned(LCampaignInput) Then
+            Begin
+                LStatusCode := HTTP_STATUS.BadRequest;
+                Raise EMVCException.Create('داده ورودی نامعتبر است');
+            End;
+
+            Try
+                LUpdated := ASaleCampaignService.UpdateCampaignPartial(LCampaignID, LCampaignInput);
+                If Not Assigned(LUpdated) Then
+                Begin
+                    LStatusCode := HTTP_STATUS.NotFound;
+                    Raise EMVCException.Create('کمپین یافت نشد');
+                End;
+
+                Try
+                    LStatusCode := HTTP_STATUS.OK;
+
+                    LMetaJSON.AddPair('data_type', 'model_sale_campaign');
+                    LMetaJSON.AddPair('count', 1);
+                    LMetaJSON.AddPair('is_success', True);
+                    LMetaJSON.AddPair('description', 'کمپین با موفقیت بروزرسانی شد.');
+
+                    Render(LStatusCode,
+                        ObjectDict(False)
+                          .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                          .Add('data', LUpdated)
+                    );
+                Finally
+                    LUpdated.Free;
+                End;
+            Finally
+                LCampaignInput.Free;
+            End;
+        Except
+            On E: Exception do
+            Begin
+                LMetaJSON.AddPair('data_type', 'model_sale_campaign');
+                LMetaJSON.AddPair('count', 0);
+                LMetaJSON.AddPair('is_success', False);
+                LMetaJSON.AddPair('description', E.Message);
+
+                Render(LStatusCode,
+                    ObjectDict(True)
+                      .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                      .Add('data', TMVCObjectDictionary.Create())
+                );
+            End;
+        End;
+    Finally
+        LMetaJSON.Free;
+    End;
+End;
+//________________________________________________________________________________________
+Procedure TSaleCampaignController.DeleteCampaign(Const ACampaignID: String;
+  Const ASaleCampaignService: ICampaignService);
+Var
+    LStatusCode, LCampaignID: Integer;
+    LMetaJSON: TJSONObject;
+Begin
+    LMetaJSON := TJSONObject.Create;
+    Try
+        LStatusCode := HTTP_STATUS.InternalServerError;
+        Try
+            If (ACampaignID.IsEmpty) OR (Not TryStrToInt(ACampaignID, LCampaignID)) Then
+            Begin
+                LStatusCode := HTTP_STATUS.NotFound;
+                Raise EMVCException.Create('شناسه کمپین نامعتبر است!');
+            End;
+
+            If ASaleCampaignService.DeleteCampaign(LCampaignID) Then
+            Begin
+                LStatusCode := HTTP_STATUS.OK;
+
+                LMetaJSON.AddPair('data_type', 'integer');
+                LMetaJSON.AddPair('count', 1);
+                LMetaJSON.AddPair('is_success', True);
+                LMetaJSON.AddPair('description', 'کمپین با موفقیت حذف شد.');
+
+                Render(LStatusCode,
+                    ObjectDict(True)
+                      .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                      .Add('data', StrToJSONObject(TJSONObject.Create(TJSONPair.Create('campaignid', LCampaignID)).ToString))
+                );
+            End
+            Else
+            Begin
+                LStatusCode := HTTP_STATUS.NotFound;
+                Raise EMVCException.Create('کمپین مورد نظر یافت نشد!');
+            End;
+        Except
+            On E: Exception do
+            Begin
+                LMetaJSON.AddPair('data_type', 'integer');
+                LMetaJSON.AddPair('count', 0);
+                LMetaJSON.AddPair('is_success', False);
+                LMetaJSON.AddPair('description', E.Message);
+
+                Render(LStatusCode,
+                    ObjectDict(True)
+                      .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                      .Add('data', TMVCObjectDictionary.Create())
+                );
+            End;
+        End;
+    Finally
+        LMetaJSON.Free;
+    End;
+End;
+//________________________________________________________________________________________
+
+End.
+

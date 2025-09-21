@@ -1,0 +1,182 @@
+program Project.SalamatianCutomer;
+
+{$APPTYPE CONSOLE}
+
+uses
+  System.SysUtils,
+  Web.ReqMulti,
+  Web.WebReq,
+  Web.WebBroker,
+  IdContext,
+  IdHTTPWebBrokerBridge,
+  MVCFramework,
+  MVCFramework.Logger,
+  MVCFramework.DotEnv,
+  MVCFramework.Commons,
+  MVCFramework.Serializer.Commons,
+  MVCFramework.Container,
+  MVCFramework.Signal,
+  IdGlobal,
+  IdSocketHandle,
+  Model.Goftino in 'Source\Model\Model.Goftino.pas',
+  Controller.Goftino in 'Source\Controller\Controller.Goftino.pas',
+  Service.Goftino in 'Source\Service\Service.Goftino.pas',
+  WebModule.SalamtCRM in 'Source\WebModule\WebModule.SalamtCRM.pas' {WMSalamtCustomer: TWebModule},
+  UAuthCriteria in 'Source\WebModule\UAuthCriteria.pas',
+  Model.Branch.Branch in 'Source\Model\Model.Branch.Branch.pas',
+  Model.Sale.Campaign in 'Source\Model\Model.Sale.Campaign.pas',
+  Model.CarModel in 'Source\Model\Model.CarModel.pas',
+  Model.Contract in 'Source\Model\Model.Contract.pas',
+  Model.Lead.CustomerStatus in 'Source\Model\Model.Lead.CustomerStatus.pas',
+  Model.Document in 'Source\Model\Model.Document.pas',
+  Model.InteractionType in 'Source\Model\Model.InteractionType.pas',
+  Model.Lead.PotentialLevel in 'Source\Model\Model.Lead.PotentialLevel.pas',
+  Model.UserRole in 'Source\Model\Model.UserRole.pas',
+  Model.User in 'Source\Model\Model.User.pas',
+  Service.User in 'Source\Service\Service.User.pas',
+  Service.Interfaces in 'Source\WebModule\Service.Interfaces.pas',
+  Controller.User in 'Source\Controller\Controller.User.pas',
+  Controller.Upload in 'Source\Controller\Controller.Upload.pas',
+  Service.Upload in 'Source\Service\Service.Upload.pas',
+  Cashe.UserRole in 'Source\Cashe\Cashe.UserRole.pas',
+  Webhook.Goftino in '..\WebServerGoftino\Source\WebHook\Webhook.Goftino.pas',
+  Model.ResultCustomerContact in 'Source\Model\Model.ResultCustomerContact.pas',
+  Controller.Branch.Branch in 'Source\Controller\Controller.Branch.Branch.pas',
+  Service.Branch.Branch in 'Source\Service\Service.Branch.Branch.pas',
+  Model.Lead.ResultContactCustomer in 'Source\Model\Model.Lead.ResultContactCustomer.pas',
+  Model.Customer.Customer in 'Source\Model\Model.Customer.Customer.pas',
+  Model.Lead.FileResultContactCustomer in 'Source\Model\Model.Lead.FileResultContactCustomer.pas',
+  Model.Organization.Employee in 'Source\Model\Model.Organization.Employee.pas',
+  Model.Sale.SaleAgent in 'Source\Model\Model.Sale.SaleAgent.pas',
+  Utils in 'Source\Utils\Utils.pas',
+  SolarCalendarPackage in 'Source\Utils\SolarCalendarPackage.pas',
+  Controller.Sale.Campaign in 'Source\Controller\Controller.Sale.Campaign.pas',
+  Service.Sale.Campaign in 'Source\Service\Service.Sale.Campaign.pas',
+  Service.Lead.FileResultContactCustomer in 'Source\Service\Service.Lead.FileResultContactCustomer.pas',
+  Controller.Lead.FileResultContactCustomer in 'Source\Controller\Controller.Lead.FileResultContactCustomer.pas',
+  Service.Lead.PotentialLevel in 'Source\Service\Service.Lead.PotentialLevel.pas',
+  Controller.Lead.PotentialLevel in 'Source\Controller\Controller.Lead.PotentialLevel.pas',
+  Service.Customer.Customer in 'Source\Service\Service.Customer.Customer.pas',
+  Controller.Customer.Customer in 'Source\Controller\Controller.Customer.Customer.pas',
+  Model.Car.Category in 'Source\Model\Model.Car.Category.pas',
+  Model.Car.Company in 'Source\Model\Model.Car.Company.pas',
+  Model.Car.Car in 'Source\Model\Model.Car.Car.pas',
+  Service.Lead.CustomerStatus in 'Source\Service\Service.Lead.CustomerStatus.pas',
+  Controller.Lead.CustomerStatus in 'Source\Controller\Controller.Lead.CustomerStatus.pas',
+  Service.Car.Car in 'Source\Service\Service.Car.Car.pas',
+  Controller.Car.Car in 'Source\Controller\Controller.Car.Car.pas',
+  Service.Car.Category in 'Source\Service\Service.Car.Category.pas',
+  Controller.Car.Category in 'Source\Controller\Controller.Car.Category.pas',
+  Service.Car.Company in 'Source\Service\Service.Car.Company.pas',
+  Controller.Car.Company in 'Source\Controller\Controller.Car.Company.pas',
+  Model.Organization.SaleAgentContract in 'Source\Model\Model.Organization.SaleAgentContract.pas',
+  Service.Organization.SaleAgentContract in 'Source\Service\Service.Organization.SaleAgentContract.pas',
+  Controller.Organization.SaleAgentContract in 'Source\Controller\Controller.Organization.SaleAgentContract.pas',
+  Service.Organization.Employee in 'Source\Service\Service.Organization.Employee.pas',
+  Controller.Organization.Employee in 'Source\Controller\Controller.Organization.Employee.pas',
+  Model.View.Leads in 'Source\Model\Model.View.Leads.pas',
+  Model.Lead.PhoneAssignment in 'Source\Model\Model.Lead.PhoneAssignment.pas',
+  Service.Lead.PhoneAssignment in 'Source\Service\Service.Lead.PhoneAssignment.pas',
+  Controller.Lead.PhoneAssignment in 'Source\Controller\Controller.Lead.PhoneAssignment.pas',
+  Model.Customer.Assignment in 'Source\Model\Model.Customer.Assignment.pas',
+  Service.Customer.Assignment in 'Source\Service\Service.Customer.Assignment.pas',
+  Controller.Novinhub in 'Source\Controller\Controller.Novinhub.pas',
+  Service.Novinhub in 'Source\Service\Service.Novinhub.pas';
+
+{$R *.res}
+
+procedure RunServer(APort: Integer);
+var
+  LServer: TIdHTTPWebBrokerBridge;
+  LBinding: TIdSocketHandle;
+begin
+  LServer := TIdHTTPWebBrokerBridge.Create(nil);
+  try
+    LServer.OnParseAuthentication := TMVCParseAuthentication.OnParseAuthentication;
+    LServer.KeepAlive := dotEnv.Env('dmvc.indy.keep_alive', True);
+    LServer.MaxConnections := dotEnv.Env('dmvc.webbroker.max_connections', 0);
+    LServer.ListenQueue := dotEnv.Env('dmvc.indy.listen_queue', 500);
+
+    LServer.Bindings.Clear;
+    LBinding := LServer.Bindings.Add;
+    LBinding.IP := '0.0.0.0';
+    LBinding.Port := APort;
+    LBinding.IPVersion := Id_IPv4;
+
+    LServer.Active := True;
+    LogI(Format('Listening on http://%s:%s', [LBinding.IP, APort.ToString]));
+    LogI('Application started. Press Ctrl+C to shut down.');
+    WaitForTerminationSignal;
+    EnterInShutdownState;
+    LServer.Active := False;
+  finally
+    LServer.Free;
+  end;
+end;
+
+begin
+  { Enable ReportMemoryLeaksOnShutdown during debug }
+  // ReportMemoryLeaksOnShutdown := True;
+  IsMultiThread := True;
+
+  // DMVCFramework Specific Configurations
+  //   When MVCSerializeNulls = True empty nullables and nil are serialized as json null.
+  //   When MVCSerializeNulls = False empty nullables and nil are not serialized at all.
+  MVCSerializeNulls := True;
+
+  // MVCNameCaseDefault defines the name case of property names generated by the serializers.
+  //   Possibile values are: ncAsIs, ncUpperCase, ncLowerCase (default), ncCamelCase, ncPascalCase, ncSnakeCase
+  MVCNameCaseDefault := TMVCNameCase.ncLowerCase;
+
+  // UseConsoleLogger defines if logs must be emitted to also the console (if available).
+  UseConsoleLogger := True;
+
+  // UseLoggerVerbosityLevel defines the lowest level of logs that will be produced.
+  UseLoggerVerbosityLevel := TLogLevel.levNormal;
+
+
+  LogI('** DMVCFramework Server ** build ' + DMVCFRAMEWORK_VERSION);
+
+    dotEnvConfigure(
+      function: IMVCDotEnv
+      begin
+        Result := NewDotEnv
+                 .UseStrategy(TMVCDotEnvPriority.FileThenEnv)
+                                       //if available, by default, loads default environment (.env)
+                 .UseProfile('test') //if available loads the test environment (.env.test)
+                 .UseProfile('prod') //if available loads the prod environment (.env.prod)
+                 .UseLogger(procedure(LogItem: String)
+                            begin
+                              LogD('dotEnv: ' + LogItem);
+                            end)
+                 .Build();             //uses the executable folder to look for .env* files
+      end);
+
+
+  TMVCSqids.SQIDS_ALPHABET := dotEnv.Env('dmvc.sqids.alphabet', 'ybrWwJlD8i3s9NYFuOkedqPvUc5aLS1R4mEHKn2ApC0IBTM7QjzohgtxZXVf6G');
+  TMVCSqids.SQIDS_MIN_LENGTH := dotEnv.Env('dmvc.sqids.min_length', 6);
+
+  try
+    if WebRequestHandler <> nil then
+      WebRequestHandler.WebModuleClass := WebModuleClass;
+
+    WebRequestHandlerProc.MaxConnections := dotEnv.Env('dmvc.handler.max_connections', 1024);
+
+{$IF CompilerVersion >= 34} //SYDNEY+
+    if dotEnv.Env('dmvc.profiler.enabled', true) then
+    begin
+      Profiler.ProfileLogger := Log;
+      Profiler.WarningThreshold := dotEnv.Env('dmvc.profiler.warning_threshold', 1000);
+      Profiler.LogsOnlyIfOverThreshold := dotEnv.Env('dmvc.profiler.logs_only_over_threshold', True);
+    end;
+{$ENDIF}
+
+    RegisterServices(DefaultMVCServiceContainer);
+    DefaultMVCServiceContainer.Build;
+
+    RunServer(dotEnv.Env('dmvc.server.port', 10001));
+  except
+    on E: Exception do
+      LogF(E.ClassName + ': ' + E.Message);
+  end;
+end.

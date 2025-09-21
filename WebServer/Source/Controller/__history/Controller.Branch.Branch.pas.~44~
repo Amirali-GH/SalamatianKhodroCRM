@@ -1,0 +1,437 @@
+﻿Unit Controller.Branch.Branch;
+
+Interface
+
+Uses
+    System.SysUtils,
+    System.Classes,
+    System.Generics.Collections,
+    MVCFramework,
+    MVCFramework.Commons,
+    MVCFramework.ActiveRecord,
+    MVCFramework.Nullables,
+    Service.Interfaces,
+    Model.Branch.Branch,
+    WebModule.SalamtCRM;
+
+Type
+    [MVCPath(BASE_API_V1 + '/branch')]
+    TBranchController = Class(TMVCController)
+    Public
+        [MVCPath('')]
+        [MVCHTTPMethods([httpGET])]
+        [MVCProduces(TMVCMediaType.APPLICATION_JSON)]
+        [MVCConsumes(TMVCMediaType.APPLICATION_JSON)]
+        Procedure GetAllBranches(Const [MVCInject] ABranchService: IBranchService);
+
+        [MVCPath('/($ABranchID)')]
+        [MVCHTTPMethods([httpGET])]
+        [MVCProduces(TMVCMediaType.APPLICATION_JSON)]
+        [MVCConsumes(TMVCMediaType.APPLICATION_JSON)]
+        Procedure GetBranchByID(Const ABranchID: String;
+          Const [MVCInject] ABranchService: IBranchService);
+
+        [MVCPath('/($ABranchID)/info')]
+        [MVCHTTPMethods([httpGET])]
+        [MVCProduces(TMVCMediaType.APPLICATION_JSON)]
+        [MVCConsumes(TMVCMediaType.APPLICATION_JSON)]
+        Procedure GetBranchInfo(Const ABranchID: String;
+          Const [MVCInject] ABranchService: IBranchService);
+
+        [MVCPath('')]
+        [MVCHTTPMethods([httpPOST])]
+        [MVCProduces(TMVCMediaType.APPLICATION_JSON)]
+        [MVCConsumes(TMVCMediaType.APPLICATION_JSON)]
+        Procedure CreateBranch(Const [MVCInject] ABranchService: IBranchService);
+
+        [MVCPath('/($ABranchID)')]
+        [MVCHTTPMethods([httpPUT])]
+        [MVCProduces(TMVCMediaType.APPLICATION_JSON)]
+        [MVCConsumes(TMVCMediaType.APPLICATION_JSON)]
+        Procedure UpdateBranch(Const ABranchID: String;
+          Const [MVCInject] ABranchService: IBranchService);
+
+        [MVCPath('/($ABranchID)')]
+        [MVCHTTPMethods([httpDELETE])]
+        [MVCProduces(TMVCMediaType.APPLICATION_JSON)]
+        [MVCConsumes(TMVCMediaType.APPLICATION_JSON)]
+        Procedure DeleteBranch(Const ABranchID: String;
+          Const [MVCInject] ABranchService: IBranchService);
+    End;
+
+Implementation
+
+Uses
+    MVCFramework.Serializer.Commons,
+    System.JSON, FireDAC.Stan.Error;
+
+{ TBranchController }
+
+//________________________________________________________________________________________
+Procedure TBranchController.GetAllBranches(Const ABranchService: IBranchService);
+Var
+    LEqualIndex: Integer;
+    LPageArrayData: TArray<string>;
+    LCurrPage, LPageData: String;
+    LBranchList: TObjectList<TBranch>;
+    LMetaJSON, LPageJSON: TJSONObject;
+  Key: string;
+  Value: string;
+Begin
+    LMetaJSON := TJSONObject.Create;
+    Try
+        Try
+            LCurrPage := Context.Request.Params['page'];
+            LBranchList := ABranchService.GetAllBranches(LCurrPage, True);
+            If Assigned(LBranchList) then
+            Begin
+                LPageJSON := TJSONObject.Create;
+                Try
+                    LPageArrayData := GetPaginationData(lCurrPage.ToInteger,
+                                                        LBranchList.Count,
+                                                        PAGE_SIZE,
+                                                        BASE_API_V1 + '/branch?page=($page)')
+                                                      .ToString.Split([';']);
+                    For LPageData in LPageArrayData do
+                    Begin
+                        LEqualIndex := LPageData.IndexOf('=');
+                        If (LEqualIndex > 0) then
+                        Begin
+                            Key := LPageData.Substring(0, LEqualIndex).Trim;
+                            Value := LPageData.Substring(LEqualIndex + 1).Trim;
+                            LPageJSON.AddPair(Key, Value);
+                        End;
+                    End;
+
+                    LMetaJSON.AddPair('page', LPageJSON);
+                    LMetaJSON.AddPair('data_type', 'list<model_branch>');
+                    LMetaJSON.AddPair('count', LBranchList.Count);
+                    LMetaJSON.AddPair('is_success', True);
+                    LMetaJSON.AddPair('description', 'لیست تمام شعب ثبت شده');
+
+                    Render(HTTP_STATUS.OK,
+                        ObjectDict(False)
+                          .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                          .Add('data', LBranchList,
+                              Procedure(Const Obj: TObject; Const Links: IMVCLinks)
+                              Begin
+                                  Links.AddRefLink
+                                        .Add(HATEOAS._TYPE, TMVCMediaType.APPLICATION_JSON)
+                                        .Add(HATEOAS.HREF, Format(BASE_API_V1 + '/branch/%d', [TBranch(Obj).BranchID]))
+                                        .Add(HATEOAS.REL, 'self');
+                              End)
+                    );
+                Finally
+                    LBranchList.Free;
+                End;
+            End
+            Else
+            Begin
+                Raise Exception.Create('هنگام خواندن شعب ثبت شده خطایی رخ داده است!');
+            End;
+        Except
+            On E: Exception do
+            Begin
+                LMetaJSON.AddPair('data_type', 'list<model_branch>');
+                LMetaJSON.AddPair('count', 0);
+                LMetaJSON.AddPair('is_success', False);
+                LMetaJSON.AddPair('description', E.Message);
+
+                Render(HTTP_STATUS.InternalServerError,
+                    ObjectDict(True)
+                      .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                      .Add('data', TList.Create)
+                );
+            End;
+        End;
+    Finally
+        LMetaJSON.Free;
+    End;
+End;
+//______________________________________________________________________________
+Procedure TBranchController.GetBranchInfo(Const ABranchID: String;
+  Const [MVCInject] ABranchService: IBranchService);
+Begin
+    If (Not ABranchID.IsEmpty) then
+    Begin
+        Render(HTTP_STATUS.Ok, ABranchService.GetInfo(ABranchID.ToInteger));
+    End
+    Else
+    Begin
+        Raise EMVCException.Create(HTTP_STATUS.BadRequest,'توکن خالی است!');
+    End;
+End;
+//________________________________________________________________________________________
+Procedure TBranchController.GetBranchByID(Const ABranchID: String;
+  Const ABranchService: IBranchService);
+Var
+    LStatusCode, LBranchID: Integer;
+    LBranch: TBranch;
+    LMetaJSON: TJSONObject;
+Begin
+    LMetaJSON := TJSONObject.Create;
+    Try
+        LStatusCode := HTTP_STATUS.InternalServerError;
+        Try
+            If (ABranchID.IsEmpty) OR (Not TryStrToInt(ABranchID, LBranchID)) Then
+            Begin
+                LStatusCode := HTTP_STATUS.NotFound;
+                Raise EMVCException.Create('شناسه شعبه نامعتبر است!');
+            End;
+
+            LBranch := ABranchService.GetBranchByID(LBranchID);
+            If Assigned(LBranch) Then
+            Begin
+                Try
+                    LStatusCode := HTTP_STATUS.OK;
+
+                    LMetaJSON.AddPair('data_type', 'model_branch');
+                    LMetaJSON.AddPair('count', 1);
+                    LMetaJSON.AddPair('is_success', True);
+                    LMetaJSON.AddPair('description', Format('شعبه با کد %s یافت شد.', [LBranch.Code]));
+
+                    Render(LStatusCode,
+                        ObjectDict(False)
+                          .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                          .Add('data', LBranch)
+                    );
+                Finally
+                    LBranch.Free;
+                End;
+            End
+            Else
+            Begin
+                LStatusCode := HTTP_STATUS.Forbidden;
+                Raise EMVCException.Create('شعبه یافت نشد');
+            End;
+        Except
+            On E: Exception do
+            Begin
+                LMetaJSON.AddPair('data_type', 'model_branch');
+                LMetaJSON.AddPair('count', 0);
+                LMetaJSON.AddPair('is_success', False);
+                LMetaJSON.AddPair('description', E.Message);
+
+                Render(LStatusCode,
+                    ObjectDict(True)
+                      .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                      .Add('data', TMVCObjectDictionary.Create())
+                );
+            End;
+        End;
+    Finally
+        LMetaJSON.Free;
+    End;
+End;
+//________________________________________________________________________________________
+Procedure TBranchController.CreateBranch(Const ABranchService: IBranchService);
+Var
+    LBranchInput: TBranch;
+    LCreated: TBranch;
+    LMetaJSON: TJSONObject;
+    LStatusCode: Integer;
+Begin
+    LMetaJSON := TJSONObject.Create;
+    Try
+        LStatusCode := HTTP_STATUS.InternalServerError;
+        Try
+            LBranchInput := Context.Request.BodyAs<TBranch>;
+            If Not Assigned(LBranchInput) Then
+            Begin
+                LStatusCode := HTTP_STATUS.BadRequest;
+                Raise EMVCException.Create('داده ورودی نامعتبر است');
+            End;
+
+            Try
+                LCreated := Nil;
+                Try
+                    LCreated := ABranchService.CreateBranch(LBranchInput);
+                Except
+                    On E: EFDException do
+                    Begin
+                        LCreated.Free;
+                        If Pos('duplicate', E.Message.ToLower) > 0 then
+                        Begin
+                            Raise EMVCException.Create('کد شعبه تکراری است');
+                        End
+                        Else
+                        Begin
+                            Raise EMVCException.Create('خطای پایگاه داده: ' + E.Message);
+                        End;
+                    End;
+
+                    On E: Exception do
+                    Begin
+                        Raise EMVCException.Create(E.Message);
+                    End;
+                End;
+                Try
+                    LStatusCode := HTTP_STATUS.Created;
+
+                    LMetaJSON.AddPair('data_type', 'model_branch');
+                    LMetaJSON.AddPair('count', 1);
+                    LMetaJSON.AddPair('is_success', True);
+                    LMetaJSON.AddPair('url', BASE_API_V1 + '/branch/' + LCreated.BranchID.ToString);
+                    LMetaJSON.AddPair('description', 'شعبه با موفقیت ذخیره شد.');
+
+                    Render(LStatusCode,
+                        ObjectDict(False)
+                          .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                          .Add('data', LCreated)
+                    );
+                Finally
+                    LCreated.Free;
+                End;
+            Finally
+                LBranchInput.Free;
+            End;
+        Except
+            On E: Exception do
+            Begin
+                LMetaJSON.AddPair('data_type', 'model_branch');
+                LMetaJSON.AddPair('count', 0);
+                LMetaJSON.AddPair('is_success', False);
+                LMetaJSON.AddPair('description', E.Message);
+
+                Render(LStatusCode,
+                    ObjectDict(True)
+                      .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                      .Add('data', TMVCObjectDictionary.Create())
+                );
+            End;
+        End;
+    Finally
+        LMetaJSON.Free;
+    End;
+End;
+//________________________________________________________________________________________
+Procedure TBranchController.UpdateBranch(Const ABranchID: String;
+  Const ABranchService: IBranchService);
+Var
+    LBranchID: Integer;
+    LBranchInput: TBranch;
+    LUpdated: TBranch;
+    LMetaJSON: TJSONObject;
+    LStatusCode: Integer;
+Begin
+    LMetaJSON := TJSONObject.Create;
+    Try
+        LStatusCode := HTTP_STATUS.InternalServerError;
+        Try
+            If (ABranchID.IsEmpty) OR (Not TryStrToInt(ABranchID, LBranchID)) Then
+            Begin
+                LStatusCode := HTTP_STATUS.NotFound;
+                Raise EMVCException.Create('شناسه شعبه نامعتبر است!');
+            End;
+
+            LBranchInput := Context.Request.BodyAs<TBranch>;
+            If Not Assigned(LBranchInput) Then
+            Begin
+                LStatusCode := HTTP_STATUS.BadRequest;
+                Raise EMVCException.Create('داده ورودی نامعتبر است');
+            End;
+
+            Try
+                LUpdated := ABranchService.UpdateBranchPartial(LBranchID, LBranchInput);
+                If Not Assigned(LUpdated) Then
+                Begin
+                    LStatusCode := HTTP_STATUS.NotFound;
+                    Raise EMVCException.Create('شعبه یافت نشد');
+                End;
+
+                Try
+                    LStatusCode := HTTP_STATUS.OK;
+
+                    LMetaJSON.AddPair('data_type', 'model_branch');
+                    LMetaJSON.AddPair('count', 1);
+                    LMetaJSON.AddPair('is_success', True);
+                    LMetaJSON.AddPair('description', 'شعبه با موفقیت بروزرسانی شد.');
+
+                    Render(LStatusCode,
+                        ObjectDict(False)
+                          .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                          .Add('data', LUpdated)
+                    );
+                Finally
+                    LUpdated.Free;
+                End;
+            Finally
+                LBranchInput.Free;
+            End;
+        Except
+            On E: Exception do
+            Begin
+                LMetaJSON.AddPair('data_type', 'model_branch');
+                LMetaJSON.AddPair('count', 0);
+                LMetaJSON.AddPair('is_success', False);
+                LMetaJSON.AddPair('description', E.Message);
+
+                Render(LStatusCode,
+                    ObjectDict(True)
+                      .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                      .Add('data', TMVCObjectDictionary.Create())
+                );
+            End;
+        End;
+    Finally
+        LMetaJSON.Free;
+    End;
+End;
+//________________________________________________________________________________________
+Procedure TBranchController.DeleteBranch(Const ABranchID: String;
+  Const ABranchService: IBranchService);
+Var
+    LStatusCode, LBranchID: Integer;
+    LMetaJSON: TJSONObject;
+Begin
+    LMetaJSON := TJSONObject.Create;
+    Try
+        LStatusCode := HTTP_STATUS.InternalServerError;
+        Try
+            If (ABranchID.IsEmpty) OR (Not TryStrToInt(ABranchID, LBranchID)) Then
+            Begin
+                LStatusCode := HTTP_STATUS.NotFound;
+                Raise EMVCException.Create('شناسه شعبه نامعتبر است!');
+            End;
+
+            If ABranchService.DeleteBranch(LBranchID) Then
+            Begin
+                LStatusCode := HTTP_STATUS.OK;
+
+                LMetaJSON.AddPair('data_type', 'integer');
+                LMetaJSON.AddPair('count', 1);
+                LMetaJSON.AddPair('is_success', True);
+                LMetaJSON.AddPair('description', 'شعبه با موفقیت حذف شد.');
+
+                Render(LStatusCode,
+                    ObjectDict(True)
+                      .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                      .Add('data', StrToJSONObject(TJSONObject.Create(TJSONPair.Create('branchid', LBranchID)).ToString))
+                );
+            End
+            Else
+            Begin
+                Raise EMVCException.Create('شعبه مورد نظر یافت نشد!');
+            End;
+        Except
+            On E: Exception do
+            Begin
+                LMetaJSON.AddPair('data_type', 'integer');
+                LMetaJSON.AddPair('count', 0);
+                LMetaJSON.AddPair('is_success', False);
+                LMetaJSON.AddPair('description', E.Message);
+
+                Render(LStatusCode,
+                    ObjectDict(True)
+                      .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                      .Add('data', TMVCObjectDictionary.Create())
+                );
+            End;
+        End;
+    Finally
+        LMetaJSON.Free;
+    End;
+End;
+//________________________________________________________________________________________
+
+End.

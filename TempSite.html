@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ثبت نام خودروی Chery | طراحی مدرن</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #193c96;
+            --primary-dark: #152b74;
+            --secondary: #ff6b00;
+            --light: #f5f7fa;
+            --dark: #1a1a2e;
+            --success: #4CAF50;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Vazirmatn', sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+            color: var(--light);
+        }
+        
+        /* Preloader */
+        .preloader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--primary-dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            transition: opacity 0.5s, visibility 0.5s;
+        }
+        
+        .preloader.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .loader {
+            width: 80px;
+            height: 80px;
+            border: 5px solid rgba(255, 255, 255, 0.1);
+            border-top: 5px solid var(--secondary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        /* Main Container */
+        .container {
+            display: flex;
+            max-width: 1200px;
+            width: 100%;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.5);
+            border-radius: 25px;
+            overflow: hidden;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 1s ease forwards 0.5s;
+        }
+        
+        /* Hero Section */
+        .hero-section {
+            flex: 1;
+            background: linear-gradient(rgba(25, 60, 150, 0.85), rgba(25, 60, 150, 0.95)), url('https://images.unsplash.com/photo-1555215695-3004980ad54e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1170&q=80') center/cover;
+            color: white;
+            padding: 50px 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
+        
+        .hero-section h1 {
+            font-size: 2.8rem;
+            margin-bottom: 20px;
+            font-weight: 800;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 1s ease forwards 1s;
+            opacity: 0;
+        }
+        
+        .hero-section p {
+            font-size: 1.1rem;
+            line-height: 1.8;
+            margin-bottom: 30px;
+            max-width: 500px;
+            text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+            animation: fadeIn 1s ease forwards 1.2s;
+            opacity: 0;
+        }
+        
+        .features {
+            list-style: none;
+            margin-top: 30px;
+        }
+        
+        .features li {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+            opacity: 0;
+        }
+        
+        .features li:nth-child(1) { animation: fadeIn 0.6s ease forwards 1.4s; }
+        .features li:nth-child(2) { animation: fadeIn 0.6s ease forwards 1.5s; }
+        .features li:nth-child(3) { animation: fadeIn 0.6s ease forwards 1.6s; }
+        .features li:nth-child(4) { animation: fadeIn 0.6s ease forwards 1.7s; }
+        
+        .features li i {
+            margin-left: 10px;
+            color: var(--secondary);
+            font-size: 1.3rem;
+            text-shadow: 0 0 10px rgba(255, 107, 0, 0.5);
+        }
+        
+        .car-animation {
+            position: absolute;
+            bottom: -30px;
+            right: -150px;
+            width: 500px;
+            height: 250px;
+            z-index: 1;
+            opacity: 0.3;
+            animation: driveIn 20s linear infinite;
+        }
+        
+        /* Form Section */
+        .form-section {
+            flex: 1;
+            padding: 50px 40px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            margin-bottom: 30px;
+            opacity: 0;
+            animation: fadeIn 0.7s ease forwards 1s;
+        }
+        
+        .logo img {
+            height: 50px;
+            margin-left: 15px;
+            filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.5));
+        }
+        
+        .logo h2 {
+            color: white;
+            font-size: 1.8rem;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+        }
+        
+        .form-title {
+            color: white;
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+            opacity: 0;
+            animation: fadeIn 0.7s ease forwards 1.1s;
+        }
+        
+        .form-subtitle {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+            opacity: 0;
+            animation: fadeIn 0.7s ease forwards 1.2s;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+            opacity: 0;
+            animation: fadeIn 0.6s ease forwards;
+        }
+        
+        .form-group:nth-child(1) { animation-delay: 1.3s; }
+        .form-group:nth-child(2) { animation-delay: 1.4s; }
+        .form-group:nth-child(3) { animation-delay: 1.5s; }
+        .form-group:nth-child(4) { animation-delay: 1.6s; }
+        .form-group:nth-child(5) { animation-delay: 1.7s; }
+        .form-group:nth-child(6) { animation-delay: 1.8s; }
+        .form-group:nth-child(7) { animation-delay: 1.9s; }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: white;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s;
+            background: rgba(255, 255, 255, 0.08);
+            color: white;
+        }
+        
+        input::placeholder, select option:first-child {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--secondary);
+            box-shadow: 0 0 0 3px rgba(255, 107, 0, 0.3);
+            background: rgba(255, 255, 255, 0.12);
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .form-row .form-group {
+            flex: 1;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.4s;
+            margin-top: 10px;
+            position: relative;
+            overflow: hidden;
+            opacity: 0;
+            animation: fadeIn 0.6s ease forwards 2s;
+        }
+        
+        .btn:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: 0.5s;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(25, 60, 150, 0.5);
+        }
+        
+        .btn:hover:before {
+            left: 100%;
+        }
+        
+        .form-footer {
+            text-align: center;
+            margin-top: 25px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.95rem;
+            opacity: 0;
+            animation: fadeIn 0.6s ease forwards 2.1s;
+        }
+        
+        .form-footer a {
+            color: var(--secondary);
+            text-decoration: none;
+            font-weight: 600;
+            position: relative;
+        }
+        
+        .form-footer a:after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--secondary);
+            transition: width 0.3s ease;
+        }
+        
+        .form-footer a:hover:after {
+            width: 100%;
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @keyframes driveIn {
+            0% { transform: translateX(100%) rotateY(0deg); }
+            50% { transform: translateX(-20%) rotateY(0deg); }
+            51% { transform: translateX(-20%) rotateY(180deg); }
+            100% { transform: translateX(100%) rotateY(180deg); }
+        }
+        
+        /* Responsive */
+        @media (max-width: 900px) {
+            .container {
+                flex-direction: column;
+            }
+            
+            .hero-section {
+                padding: 40px 30px;
+            }
+            
+            .form-row {
+                flex-direction: column;
+                gap: 0;
+            }
+            
+            .car-animation {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Preloader -->
+    <div class="preloader" id="preloader">
+        <div class="loader"></div>
+    </div>
+    
+    <div class="container">
+        <div class="hero-section">
+            <div class="hero-content">
+                <h1>ثبت نام خودروی Chery</h1>
+                <p>با ثبت اطلاعات خودروی جدید خود، از خدمات اختصاصی و گارانتی معتبر شرکت چری بهره‌مند شوید.</p>
+                
+                <ul class="features">
+                    <li><i class="fas fa-check-circle"></i> گارانتی 5 ساله یا 150,000 کیلومتر</li>
+                    <li><i class="fas fa-check-circle"></i> خدمات پس از فروش در سراسر کشور</li>
+                    <li><i class="fas fa-check-circle"></i> دسترسی به مراکز معتبر خدمات فنی</li>
+                    <li><i class="fas fa-check-circle"></i> به‌روزرسانی نرم‌افزار رایگان</li>
+                </ul>
+            </div>
+            
+            <div class="car-animation">
+                <i class="fas fa-car" style="font-size: 200px; color: rgba(255,255,255,0.2);"></i>
+            </div>
+        </div>
+        
+        <div class="form-section">
+            <div class="logo">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Chery_Logo.svg/800px-Chery_Logo.svg.png" alt="Chery Logo">
+                <h2>Chery Iran</h2>
+            </div>
+            
+            <h2 class="form-title">فرم ثبت نام خودرو</h2>
+            <p class="form-subtitle">لطفاً اطلاعات خودرو و مالک را با دقت وارد نمایید</p>
+            
+            <form id="carForm">
+                <div class="form-group">
+                    <label for="carModel">مدل خودرو</label>
+                    <select id="carModel" required>
+                        <option value="" disabled selected>مدل خودرو را انتخاب کنید</option>
+                        <option value="tiggo8">Chery Tiggo 8 Pro</option>
+                        <option value="arrizo6">Chery Arrizo 6</option>
+                        <option value="tiggo7">Chery Tiggo 7 Pro</option>
+                        <option value="tiggo5x">Chery Tiggo 5x</option>
+                        <option value="tiggo4">Chery Tiggo 4 Pro</option>
+                        <option value="omoda5">Omoda 5</option>
+                    </select>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="year">سال ساخت</label>
+                        <select id="year" required>
+                            <option value="" disabled selected>انتخاب سال</option>
+                            <option value="2023">2023</option>
+                            <option value="2022">2022</option>
+                            <option value="2021">2021</option>
+                            <option value="2020">2020</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="color">رنگ خودرو</label>
+                        <select id="color" required>
+                            <option value="" disabled selected>انتخاب رنگ</option>
+                            <option value="white">سفید</option>
+                            <option value="black">مشکی</option>
+                            <option value="silver">نقره‌ای</option>
+                            <option value="gray">خاکستری</option>
+                            <option value="blue">آبی</option>
+                            <option value="red">قرمز</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="chassis">شماره شاسی</label>
+                        <input type="text" id="chassis" placeholder="شماره 17 رقمی شاسی" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="plate">شماره پلاک</label>
+                        <input type="text" id="plate" placeholder="شماره پلاک خودرو" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="date">تاریخ ثبت نام</label>
+                    <input type="date" id="date" required>
+                </div>
+                
+                <h3 style="margin: 25px 0 15px; color: var(--secondary); border-bottom: 2px solid rgba(255,255,255,0.1); padding-bottom: 10px;">اطلاعات مالک</h3>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="fullname">نام و نام خانوادگی</label>
+                        <input type="text" id="fullname" placeholder="نام کامل مالک خودرو" required>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nationalCode">کد ملی</label>
+                        <input type="text" id="nationalCode" placeholder="کد ملی 10 رقمی" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="phone">شماره تلفن</label>
+                        <input type="tel" id="phone" placeholder="شماره تماس" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="address">آدرس</label>
+                    <input type="text" id="address" placeholder="آدرس کامل" required>
+                </div>
+                
+                <button type="submit" class="btn">
+                    <i class="fas fa-car"></i> ثبت اطلاعات خودرو
+                </button>
+                
+                <div class="form-footer">
+                    با ثبت این فرم، <a href="#">شرایط و ضوابط</a> شرکت را پذیرفته‌اید.
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Set today as default date
+        document.getElementById('date').valueAsDate = new Date();
+        
+        // Preloader functionality
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                document.getElementById('preloader').classList.add('hidden');
+            }, 1000);
+        });
+        
+        // Form validation
+        document.getElementById('carForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const chassis = document.getElementById('chassis').value;
+            const nationalCode = document.getElementById('nationalCode').value;
+            
+            // Simple validation
+            if (chassis.length !== 17) {
+                showError('شماره شاسی باید 17 رقمی باشد');
+                return;
+            }
+            
+            if (nationalCode.length !== 10) {
+                showError('کد ملی باید 10 رقمی باشد');
+                return;
+            }
+            
+            // Show success animation
+            const btn = this.querySelector('button');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-check"></i> ثبت موفق!';
+            btn.style.background = 'linear-gradient(135deg, #4CAF50 0%, #2E7D32 100%)';
+            
+            // Reset button after 2 seconds
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.style.background = 'linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%)';
+                this.reset();
+                document.getElementById('date').valueAsDate = new Date();
+            }, 2000);
+        });
+        
+        // Show error message
+        function showError(message) {
+            const errorDiv = document.createElement('div');
+            errorDiv.className = 'error-message';
+            errorDiv.style.position = 'fixed';
+            errorDiv.style.top = '20px';
+            errorDiv.style.right = '20px';
+            errorDiv.style.backgroundColor = '#e74c3c';
+            errorDiv.style.color = 'white';
+            errorDiv.style.padding = '15px 25px';
+            errorDiv.style.borderRadius = '10px';
+            errorDiv.style.boxShadow = '0 5px 15px rgba(0, 0, 0, 0.3)';
+            errorDiv.style.zIndex = '1000';
+            errorDiv.style.opacity = '0';
+            errorDiv.style.transform = 'translateY(-20px)';
+            errorDiv.style.transition = 'opacity 0.3s, transform 0.3s';
+            errorDiv.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${message}`;
+            
+            document.body.appendChild(errorDiv);
+            
+            // Animate in
+            setTimeout(() => {
+                errorDiv.style.opacity = '1';
+                errorDiv.style.transform = 'translateY(0)';
+            }, 10);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                errorDiv.style.opacity = '0';
+                errorDiv.style.transform = 'translateY(-20px)';
+                setTimeout(() => {
+                    document.body.removeChild(errorDiv);
+                }, 300);
+            }, 3000);
+        }
+        
+        // Add hover effect to form groups
+        document.addEventListener('DOMContentLoaded', function() {
+            const formGroups = document.querySelectorAll('.form-group');
+            formGroups.forEach(group => {
+                group.addEventListener('mouseenter', () => {
+                    group.style.transform = 'translateY(-5px)';
+                });
+                
+                group.addEventListener('mouseleave', () => {
+                    group.style.transform = 'translateY(0)';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

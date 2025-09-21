@@ -13,7 +13,7 @@ export function initCustomersTab() {
             document.getElementById('customer-id').value = '';
             document.getElementById('customer-modal').classList.remove('hidden');
         });
-    }
+    }    
     
     // ثبت فرم مشتری
     const customerForm = document.getElementById('customer-form');
@@ -43,9 +43,6 @@ export function initCustomersTab() {
         });
     }
     
-    // بارگذاری اولیه داده‌ها با صفحه 1
-    loadCustomers(1);
-    
     // بستن مودال‌ها
     document.querySelectorAll('.close-modal').forEach(button => {
         button.addEventListener('click', function() {
@@ -55,11 +52,17 @@ export function initCustomersTab() {
         });
     });
     
+    // دکمه خروجی اکسل
+    const exportCustomersBtn = document.getElementById('export-customers-btn');
+    if (exportCustomersBtn) {
+        exportCustomersBtn.addEventListener('click', exportCustomers);
+    }
+    
     // بارگذاری اولیه داده‌ها
     loadCustomers();
 }
 
-// تغییر تابع loadCustomers
+// ... (The rest of the existing functions: loadCustomers, renderCustomersPagination, renderCustomersTable, saveCustomer, etc. remain unchanged) ...
 export async function loadCustomers(page = 1, search = '', status = 'both') {
     try {
         const apiBaseUrl = window.location.origin;
@@ -130,7 +133,6 @@ export function renderCustomersPagination(meta, currentPage, search, status) {
     }
 }
 
-
 export function renderCustomersTable(customers) {
     const tbody = document.getElementById('customers-table-body');
     if (!tbody) return;
@@ -151,7 +153,6 @@ export function renderCustomersTable(customers) {
     customers.forEach(customer => {
         const row = document.createElement('tr');
         
-        // تمیز کردن شماره تلفن و کد ملی با حذف کاراکتر $
         const cleanPhone = customer.phone ? customer.phone.replace('$', '') : '-';
         const cleanNationalId = customer.nationalid ? customer.nationalid.replace('$', '') : '-';
            
@@ -192,7 +193,6 @@ export function renderCustomersTable(customers) {
         tbody.appendChild(row);
     });
     
-    // افزودن event listeners برای دکمه‌ها
     document.querySelectorAll('.view-customer').forEach(button => {
         button.addEventListener('click', function() {
             const customerId = this.getAttribute('data-id');
@@ -334,7 +334,6 @@ export async function viewCustomerDetails(customerId) {
         const data = await response.json();
         const customer = data.data;
         
-        // نمایش اطلاعات مشتری
         const customerInfo = document.getElementById('customer-detail-info');
         customerInfo.innerHTML = `
             <div>
@@ -393,5 +392,101 @@ export async function deleteCustomer(customerId) {
     } catch (error) {
         console.error('Error deleting customer:', error);
         showNotification(error.message || 'خطا در حذف داده‌ها', 'error');
+    }
+}
+
+// --------------------------- NEW FUNCTION ---------------------------
+// خروجی اکسل برای مشتریان
+export async function exportCustomers() {
+    try {
+        const apiBaseUrl = window.location.origin;
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            showNotification('لطفاً ابتدا وارد سیستم شوید');
+            return;
+        }
+
+        // خواندن فیلترهای فعلی (search و status)
+        const search = document.getElementById('customer-search')?.value || '';
+        const status = document.getElementById('customer-status-filter')?.value || 'both';
+
+        // نقطه شروع درخواست
+        let requestUrl = `${apiBaseUrl}/api/v1/customer`;
+        const params = new URLSearchParams();
+        if (search) params.set('context', encodeURIComponent(search));
+        if (status !== 'both') params.set('status', status);
+        if (params.toString()) {
+            requestUrl += `?${params.toString()}`;
+        }
+
+        const allItems = [];
+        const headers = {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        };
+
+        // فراخوانی اول و دنبال کردن pagination
+        let nextUrl = requestUrl;
+        while (nextUrl) {
+            const resp = await fetch(nextUrl, { headers });
+            if (!resp.ok) throw new Error(`خطا در دریافت داده‌ها: ${resp.status}`);
+
+            const json = await resp.json();
+
+            if (!json.data || !Array.isArray(json.data)) {
+                throw new Error('داده‌های دریافتی ساختار مورد انتظار را ندارند.');
+            }
+
+            allItems.push(...json.data);
+
+            const pageMeta = json.meta && json.meta.page;
+            if (pageMeta && pageMeta.next_page_uri) {
+                if (pageMeta.next_page_uri.startsWith('http')) {
+                    nextUrl = pageMeta.next_page_uri;
+                } else {
+                    nextUrl = apiBaseUrl.replace(/\/$/, '') + pageMeta.next_page_uri;
+                }
+            } else {
+                nextUrl = null;
+            }
+        }
+
+        if (allItems.length === 0) {
+            showNotification('هیچ داده‌ای برای خروجی وجود ندارد.', 'error');
+            return;
+        }
+
+        // نگاشت فیلدها به ستون‌های اکسل
+        const normalized = allItems.map(item => {
+            return {
+                'شناسه': item.customerid || '',
+                'نام': item.firstname || '',
+                'نام خانوادگی': item.lastname || '',
+                'نام کامل': item.fullname || '',
+                'تلفن': item.phone || '',
+                'ایمیل': item.email || '',
+                'کد ملی': item.nationalid || '',
+                'آدرس': item.address || '',
+                'بودجه': item.budget ? new Intl.NumberFormat('fa-IR').format(item.budget) : '',
+                'وضعیت': item.customerstatus || (item.isactive ? 'فعال' : 'غیرفعال'),
+                'خودرو درخواستی': item.requestedcarname || '',
+                'شعبه': item.branchname || '',
+                'کارشناس': item.saleagentname || '',
+                'توضیحات': item.description || ''
+            };
+        });
+
+        // تبدیل به شیت و ساخت فایل اکسل
+        const worksheet = XLSX.utils.json_to_sheet(normalized);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'مشتریان');
+
+        const nowStr = new Date().toLocaleDateString('fa-IR').replace(/\//g, '-');
+        const filename = `export_customers_${nowStr}.xlsx`;
+        XLSX.writeFile(workbook, filename);
+
+    } catch (error) {
+        console.error('exportCustomers error:', error);
+        showNotification('خطا هنگام خروجی گرفتن: ' + (error.message || error), 'error');
     }
 }

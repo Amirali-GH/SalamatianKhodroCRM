@@ -1,0 +1,59 @@
+﻿Unit Model.ResultCustomerContact;
+
+Interface
+
+Uses
+    MVCFramework.ActiveRecord,
+    MVCFramework.Nullables,
+    MVCFramework.Serializer.Commons,
+    System.Generics.Collections;
+
+Type
+    [MVCNameCase(ncLowerCase)]
+    TResultCustomerContact = Class
+    Private
+        Fphn: NullableString;     // شماره تماس مشتری
+        Ffnm: NullableString;     // نام
+        Flnm: NullableString;     // نام خانوادگی
+        Fncd: NullableString;     // کد ملی
+        Fvcd: NullableString;     // کد خودرو درخواستی
+        Fvnm: NullableString;     // نام خودرو درخواستی
+        Feml: NullableString;     // ایمیل
+        Fbdg: NullableDouble;     // بودجه تقریبی
+        Fadr: NullableString;     // آدرس
+        Fscd: NullableString;     // کد کارشناس فروش
+        Fsnm: NullableString;     // نام کارشناس فروش
+        Fdtc: NullableString;     // تاریخ آخرین تماس
+        Fsts: NullableString;     // وضعیت مشتری
+        Fnt1: NullableString;     // یادداشت ۱
+        Fnt2: NullableString;     // یادداشت ۲
+        Fnt3: NullableString;     // یادداشت ۳
+        Fptn: NullableString;     // شماره پلاک یا پیگیری
+        Fccd: NullableString;     // کد کمپین (مثلا منبع مشتری)
+        Fcnm: NullableString;     // نام کمپین
+    Public
+        Property phn: NullableString Read Fphn Write Fphn;   // شماره تماس
+        Property fnm: NullableString Read Ffnm Write Ffnm;   // نام
+        Property lnm: NullableString Read Flnm Write Flnm;   // نام خانوادگی
+        Property ncd: NullableString Read Fncd Write Fncd;   // کد ملی
+        Property vcd: NullableString Read Fvcd Write Fvcd;   // کد خودرو
+        Property vnm: NullableString Read Fvnm Write Fvnm;   // نام خودرو
+        Property eml: NullableString Read Feml Write Feml;   // ایمیل
+        Property bdg: NullableDouble Read Fbdg Write Fbdg;   // بودجه
+        Property adr: NullableString Read Fadr Write Fadr;   // آدرس
+        Property scd: NullableString Read Fscd Write Fscd;   // کد کارشناس فروش
+        Property snm: NullableString Read Fsnm Write Fsnm;   // نام کارشناس فروش
+        Property dtc: NullableString Read Fdtc Write Fdtc;   // تاریخ آخرین تماس
+        Property sts: NullableString Read Fsts Write Fsts;   // وضعیت مشتری
+        Property nt1: NullableString Read Fnt1 Write Fnt1;   // یادداشت ۱
+        Property nt2: NullableString Read Fnt2 Write Fnt2;   // یادداشت ۲
+        Property nt3: NullableString Read Fnt3 Write Fnt3;   // یادداشت ۳
+        Property ptn: NullableString Read Fptn Write Fptn;   // شماره پیگیری / پلاک
+        Property ccd: NullableString Read Fccd Write Fccd;   // کد کمپین
+        Property cnm: NullableString Read Fcnm Write Fcnm;   // نام کمپین
+    End;
+
+Implementation
+
+End.
+

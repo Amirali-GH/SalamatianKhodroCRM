@@ -1,0 +1,55 @@
+// Unit: Model.UserRole.pas
+
+unit Model.UserRole;
+
+interface
+
+uses
+  MVCFramework.Nullables,
+  MVCFramework.Serializer.Commons,
+  MVCFramework.ActiveRecord;
+
+Type
+    [MVCNameCase(ncLowerCase)]
+    [MVCTable('User_UserRole')]
+    [MVCEntityActions([eaRetrieve, eaCreate, eaUpdate, eaDelete])]
+    TUserRole = class(TMVCActiveRecord)
+    Private
+      [MVCTableField('UserRoleID', [foPrimaryKey])]
+      fUserRoleID: Integer;
+
+      [MVCTableField('Code')]
+      fCode: NullableString;
+
+      [MVCTableField('MainName')]
+      fMainName: String;
+
+      [MVCTableField('SecondName')]
+      fSecondName: NullableString;
+
+      [MVCTableField('IsActive')]
+      fIsActive: NullableBoolean;
+
+      [MVCTableField('IsSystemic')]
+      fIsSystemic: NullableBoolean;
+
+      [MVCTableField('Description')]
+      fDescription: NullableString;
+
+      [MVCTableField('CreatedAt', [foReadOnly])]
+      fCreatedAt: TNullable<TDateTime>;
+
+    Public
+        Property UserRoleID: Integer read fUserRoleID write fUserRoleID;
+        Property Code: NullableString read fCode write fCode;
+        Property MainName: String read fMainName write fMainName;
+        Property SecondName: NullableString read fSecondName write fSecondName;
+        Property IsActive: NullableBoolean read fIsActive write fIsActive;
+        Property IsSystemic: NullableBoolean read fIsSystemic write fIsSystemic;
+        Property Description: NullableString read fDescription write fDescription;
+        Property CreatedAt: TNullable<TDateTime> read fCreatedAt write fCreatedAt;
+    End;
+
+Implementation
+
+End.

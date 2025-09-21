@@ -1,0 +1,259 @@
+Unit Service.Car.Car;
+
+Interface
+
+Uses
+    System.SysUtils,
+    System.Generics.Collections,
+    MVCFramework.ActiveRecord,
+    MVCFramework.Nullables,
+    Model.Car.Car,
+    Service.Interfaces;
+
+Type
+    TCarService = Class(TInterfacedObject, ICarService)
+    Public
+        Function GetAllCars(Var APage: String; Const AStatus: String; Const AContext: String): TObjectList<TCar_Car>;
+        Function GetCarByID(Const AID: Integer): TCar_Car;
+        Function CreateCar(Const ACar: TCar_Car): TCar_Car;
+        Function UpdateCarPartial(Const AID: Integer; Const ACar: TCar_Car): TCar_Car;
+        Function DeleteCar(Const AID: Integer): Boolean;
+    End;
+
+Implementation
+
+Uses Utils, Math, StrUtils, WebModule.SalamtCRM;
+
+{ TCarService }
+
+//________________________________________________________________________________________
+Function TCarService.GetAllCars(Var APage: String; Const AStatus: String; Const AContext: String): TObjectList<TCar_Car>;
+Var
+    LCurrPage: Integer;
+    LFirstRec: Integer;
+    LActive, LSearchField: String;
+Begin
+    LCurrPage := 0;
+    TryStrToInt(APage, LCurrPage);
+
+    LCurrPage := Max(LCurrPage, 1);
+    LFirstRec := (LCurrPage - 1) * PAGE_SIZE;
+    APage := LCurrPage.ToString;
+
+    If (Not AContext.IsEmpty) then
+    Begin
+        LSearchField := Format(
+            '(Code LIKE %s OR MainName LIKE %s)',
+            [QuotedStr('%' + AContext + '%'), QuotedStr('%' + AContext + '%')]
+        );
+    End
+    Else
+    Begin
+        LSearchField := '';
+    End;
+
+    If (AStatus.IsEmpty) Or (AStatus.ToLower = 'active') then
+    Begin
+        LActive := 'IsActive = 1';
+    End
+    Else If (AStatus.ToLower = 'notactive') then
+    Begin
+        LActive := 'IsActive = 0';
+    End
+    Else
+    Begin
+        LActive := '1=1';
+    End;
+
+    If (Not LSearchField.IsEmpty) AND (Not LActive.IsEmpty) then
+    Begin
+        LActive := ' AND ' + LActive;
+    End;
+
+    Result := TMVCActiveRecord.Where<TCar_Car>(
+      LSearchField + LActive + ' ORDER BY Code ASC, MainName ASC limit ?,?',
+      [LFirstRec, PAGE_SIZE]);
+End;
+//________________________________________________________________________________________
+Function TCarService.GetCarByID(Const AID: Integer): TCar_Car;
+Begin
+    Result := TMVCActiveRecord.GetByPK<TCar_Car>(AID, False);
+End;
+//________________________________________________________________________________________
+Function TCarService.CreateCar(Const ACar: TCar_Car): TCar_Car;
+Var
+    LCopy: TCar_Car;
+Begin
+    LCopy := TCar_Car.Create;
+    Try
+        LCopy.Code := ACar.Code;
+        LCopy.MainName := ACar.MainName;
+        LCopy.SecondName := ACar.SecondName;
+        LCopy.CompanyID := ACar.CompanyID;
+        LCopy.CategoryID := ACar.CategoryID;
+        LCopy.Year := ACar.Year;
+        LCopy.FuelType := ACar.FuelType;
+        LCopy.Transmission := ACar.Transmission;
+        LCopy.EngineCapacity := ACar.EngineCapacity;
+        LCopy.HorsePower := ACar.HorsePower;
+        LCopy.Torque := ACar.Torque;
+        LCopy.Seats := ACar.Seats;
+        LCopy.DriveType := ACar.DriveType;
+        LCopy.BodyType := ACar.BodyType;
+        LCopy.RangeKM := ACar.RangeKM;
+        LCopy.SafetyRating := ACar.SafetyRating;
+        LCopy.BasePrice := ACar.BasePrice;
+        LCopy.IsActive := ACar.IsActive;
+        LCopy.Description := ACar.Description;
+
+        If (ACar.IsActive.HasValue) then
+        Begin
+            LCopy.IsActive := ACar.IsActive;
+        End
+        Else
+        Begin
+            LCopy.IsActive := True;
+        End;
+
+        LCopy.Insert;
+        Result := GetCarByID(LCopy.CarID);
+    Except
+        LCopy.Free;
+        Raise;
+    End;
+End;
+//________________________________________________________________________________________
+Function TCarService.UpdateCarPartial(Const AID: Integer; Const ACar: TCar_Car): TCar_Car;
+Var
+    LExisting: TCar_Car;
+Begin
+    LExisting := TMVCActiveRecord.GetByPK<TCar_Car>(AID, False);
+    If Not Assigned(LExisting) Then
+    Begin
+        Exit(nil);
+    End;
+
+    Try
+        If (ACar.Code.HasValue) Then
+        Begin
+            LExisting.Code := ACar.Code;
+        End;
+
+        If (Not ACar.MainName.IsEmpty) Then
+        Begin
+            LExisting.MainName := ACar.MainName;
+        End;
+
+        If (ACar.SecondName.HasValue) Then
+        Begin
+            LExisting.SecondName := ACar.SecondName;
+        End;
+
+        If (ACar.CompanyID.HasValue) Then
+        Begin
+            LExisting.CompanyID := ACar.CompanyID;
+        End;
+
+        If (ACar.CategoryID.HasValue) Then
+        Begin
+            LExisting.CategoryID := ACar.CategoryID;
+        End;
+
+        If (ACar.Year.HasValue) Then
+        Begin
+            LExisting.Year := ACar.Year;
+        End;
+
+        If (ACar.FuelType.HasValue) Then
+        Begin
+            LExisting.FuelType := ACar.FuelType;
+        End;
+
+        If (ACar.Transmission.HasValue) Then
+        Begin
+            LExisting.Transmission := ACar.Transmission;
+        End;
+
+        If (ACar.EngineCapacity.HasValue) Then
+        Begin
+            LExisting.EngineCapacity := ACar.EngineCapacity;
+        End;
+
+        If (ACar.HorsePower.HasValue) Then
+        Begin
+            LExisting.HorsePower := ACar.HorsePower;
+        End;
+
+        If (ACar.Torque.HasValue) Then
+        Begin
+            LExisting.Torque := ACar.Torque;
+        End;
+
+        If (ACar.Seats.HasValue) Then
+        Begin
+            LExisting.Seats := ACar.Seats;
+        End;
+
+        If (ACar.DriveType.HasValue) Then
+        Begin
+            LExisting.DriveType := ACar.DriveType;
+        End;
+
+        If (ACar.BodyType.HasValue) Then
+        Begin
+            LExisting.BodyType := ACar.BodyType;
+        End;
+
+        If (ACar.RangeKM.HasValue) Then
+        Begin
+            LExisting.RangeKM := ACar.RangeKM;
+        End;
+
+        If (ACar.SafetyRating.HasValue) Then
+        Begin
+            LExisting.SafetyRating := ACar.SafetyRating;
+        End;
+
+        If (ACar.BasePrice.HasValue) Then
+        Begin
+            LExisting.BasePrice := ACar.BasePrice;
+        End;
+
+        If (ACar.IsActive.HasValue) Then
+        Begin
+            LExisting.IsActive := ACar.IsActive;
+        End;
+
+        If (ACar.Description.HasValue) Then
+        Begin
+            LExisting.Description := ACar.Description;
+        End;
+
+        LExisting.Update;
+        Result := LExisting;
+    Except
+        LExisting.Free;
+        Raise;
+    End;
+End;
+//________________________________________________________________________________________
+Function TCarService.DeleteCar(Const AID: Integer): Boolean;
+Var
+    LExisting: TCar_Car;
+Begin
+    LExisting := TMVCActiveRecord.GetByPK<TCar_Car>(AID, False);
+    If Not Assigned(LExisting) Then
+    Begin
+        Exit(False);
+    End;
+
+    Try
+        LExisting.Delete;
+        Result := True;
+    Finally
+        LExisting.Free;
+    End;
+End;
+//________________________________________________________________________________________
+
+End.

@@ -1,0 +1,152 @@
+﻿Unit Service.Novinhub;
+
+Interface
+
+Uses
+    System.SysUtils,
+    System.Classes,
+    System.Generics.Collections,
+    MVCFramework.ActiveRecord,
+    Model.Customer.Assignment,
+    Model.Branch.Branch,
+    Service.Interfaces;
+
+Type
+    TNovinhubService = Class(TInterfacedObject, INovinhubService)
+    private
+      function DownloadFile: string;
+    Public
+        procedure ImportAssignmentsFromExcel;
+    End;
+
+Implementation
+
+Uses
+    System.IOUtils,
+    System.Net.HttpClient, // Using the standard client
+    Math,
+
+    // FireDAC Units
+    FireDAC.Stan.Intf,
+    FireDAC.Stan.Option,
+    FireDAC.Stan.Param,
+    FireDAC.Stan.Error,
+    FireDAC.DatS,
+    FireDAC.Phys.Intf,
+    FireDAC.DApt.Intf,
+    FireDAC.Stan.Async,
+    FireDAC.DApt,
+    FireDAC.Comp.Client,
+    FireDAC.Comp.DataSet,
+    System.Net.HttpClientComponent;
+
+{ TNovinhubService }
+
+function TNovinhubService.DownloadFile: string;
+var
+  LHttpClient: TNetHTTPClient;
+  LSavePath: string;
+  LUrl: string;
+begin
+  // TODO: آدرس API واقعی خود را در اینجا قرار دهید
+  LUrl := 'https://api.your-novinhub.com/export/excel';
+  LSavePath := TPath.Combine(TPath.GetTempPath, 'novinhub_data_' + GUIDToString(TGUID.NewGuid) + '.csv');
+
+  LHttpClient := TNetHTTPClient.Create(nil);
+  try
+    // برای سادگی، فرض می‌کنیم فایل با موفقیت دانلود می‌شود
+    // در یک پروژه واقعی، باید کد مدیریت خطا (try..except) برای دانلود قرار دهید
+    //LHttpClient.Get(LUrl, LSavePath);
+    Result := './expor.xlsx';
+  finally
+    LHttpClient.Free;
+  end;
+end;
+
+procedure TNovinhubService.ImportAssignmentsFromExcel;
+var
+    LBranches: TObjectList<TBranch>;
+    LBranchIndex, i, LBatchSize, LRowCount: Integer;
+    LCsvFile: TStringList;
+    LRowData: TArray<string>;
+    LPhone, LUserName: string;
+    LFDConnection: TFDConnection;
+    LFDQuery: TFDQuery;
+begin
+    // Step 1: Get the list of active branches using ActiveRecord
+    LBranches := TMVCActiveRecord.where<TBranch>('IsActive = ?', [True]);
+    try
+        if LBranches.Count = 0 then
+            raise Exception.Create('هیچ شعبه فعالی برای تخصیص یافت نشد.');
+
+        // Step 2: Download the CSV file
+        LCsvFile := TStringList.Create;
+        try
+            LCsvFile.LoadFromFile(DownloadFile);
+            LRowCount := LCsvFile.Count - 1; // Exclude header row
+
+            if LRowCount <= 0 then
+              Exit; // No data to import
+
+            // Step 3: Get the underlying FireDAC connection from MVCFramework
+            LFDConnection := TFDConnection(TMVCActiveRecord.CurrentConnection.CloneConnection);
+            LFDQuery := TFDQuery.Create(nil);
+            try
+                LFDQuery.Connection := LFDConnection;
+
+                // Step 4: Start transaction using FireDAC
+                LFDConnection.StartTransaction;
+                try
+                  for i := 1 to LCsvFile.Count - 1 do
+                  begin
+                    LRowData := LCsvFile[i].Split([',']);
+                    if (Length(LRowData) < 2) or (Trim(LRowData[0]).IsEmpty) then
+                      Continue;
+
+                    LPhone := Trim(LRowData[0]);
+                    LUserName := Trim(LRowData[1]);
+
+                    LFDQuery.SQL.Text :=
+                      'INSERT INTO customer_assignment (Phone, BranchID, SourceCollectingDataID, UserName) ' +
+                      'VALUES (:Phone, :BranchID, :SourceCollectingDataID, :UserName)';
+
+                    LFDQuery.ParamByName('Phone').AsString := LPhone;
+                    LFDQuery.ParamByName('BranchID').AsInteger := LBranches[LBranchIndex].BranchID;
+                    LFDQuery.ParamByName('SourceCollectingDataID').AsInteger := 1;
+                    LFDQuery.ParamByName('UserName').AsString := LUserName;
+                    LFDQuery.ExecSQL;
+
+                    Inc(LBranchIndex);
+                    if LBranchIndex >= LBranches.Count then
+                      LBranchIndex := 0;
+                  end;
+
+                  LFDConnection.Commit;
+                except
+                  LFDConnection.Rollback;
+                  raise;
+                end;
+
+                            finally
+                                LFDQuery.Free;
+                            end;
+                        finally
+            LCsvFile.Free;
+        end;
+    finally
+        LBranches.Free;
+    end;
+end;
+
+function CleanPhone(const APhone: string): string;
+var
+  C: Char;
+begin
+  Result := '';
+  for C in APhone do
+    if C in ['0'..'9'] then
+      Result := Result + C;
+end;
+
+
+end.

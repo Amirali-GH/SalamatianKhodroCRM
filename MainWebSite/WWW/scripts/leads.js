@@ -1,6 +1,6 @@
 import { currentState } from './state.js';
-import { renderLeadsTable } from './ui.js';
-import { mockLeadsApi } from './Temp.js';
+import { showNotification } from './systemAdmin.js';
+
 
 export function renderPagination() {
     const paginationNumbers = document.getElementById('pagination-numbers');
@@ -8,148 +8,235 @@ export function renderPagination() {
     const nextPageBtn = document.getElementById('next-page');
     const currentPageSpan = document.getElementById('current-page');
     const totalPagesSpan = document.getElementById('total-pages');
+    
+    // محافظت در برابر مقادیر نامعتبر
+    const totalPages = Math.max(1, parseInt(currentState.totalPages) || 1);
+    let currentPage = Math.min(Math.max(1, parseInt(currentState.currentPage) || 1), totalPages);
+    currentState.currentPage = currentPage;
 
-    // به‌روزرسانی متن صفحه جاری
-    currentPageSpan.textContent = currentState.currentPage;
-    totalPagesSpan.textContent = currentState.totalPages || '-'; // اگر totalPages معتبر نیست، خط تیره نمایش داده شود
+    currentPageSpan.textContent = currentPage;
+    totalPagesSpan.textContent = totalPages;
 
-    // پاک کردن شماره‌های قبلی
     paginationNumbers.innerHTML = '';
 
-    // اگر totalPages معتبر باشد، شماره‌های صفحات را نمایش بده
-    if (currentState.totalPages) {
-        for (let i = 1; i <= currentState.totalPages; i++) {
-            const pageBtn = document.createElement('button');
-            pageBtn.textContent = i;
-            pageBtn.classList.add('pagination-btn', 'border', 'border-gray-300', 'px-3', 'py-1', 'mx-1', 'rounded');
-            if (i === currentState.currentPage) {
-                pageBtn.classList.add('bg-purple-500', 'text-white');
-            }
-            pageBtn.addEventListener('click', () => {
-                currentState.currentPage = i;
-                fetchLeads();
-            });
-            paginationNumbers.appendChild(pageBtn);
+    function addPageButton(page, isActive = false) {
+        const btn = document.createElement('button');
+        btn.textContent = page;
+        btn.className = "pagination-btn border border-gray-300 px-3 py-1 mx-1 rounded";
+        if (isActive) {
+            btn.classList.add("bg-purple-500", "text-white");
+            btn.setAttribute('aria-current', 'page');
+            btn.disabled = true;
+        } else {
+            btn.onclick = () => {
+                if (currentState.currentPage !== page) {
+                    currentState.currentPage = page;
+                    fetchLeads();
+                }
+            };
         }
-    } else {
-        // فقط شماره صفحه جاری را نمایش بده
-        const pageBtn = document.createElement('button');
-        pageBtn.textContent = currentState.currentPage;
-        pageBtn.classList.add('pagination-btn', 'border', 'border-gray-300', 'px-3', 'py-1', 'mx-1', 'rounded', 'bg-purple-500', 'text-white');
-        paginationNumbers.appendChild(pageBtn);
+        paginationNumbers.appendChild(btn);
     }
 
-    // مدیریت فعال/غیرفعال بودن دکمه‌ها
-    prevPageBtn.disabled = !currentState.prevPageUri;
-    nextPageBtn.disabled = !currentState.nextPageUri;
+    function addEllipsis() {
+        const span = document.createElement('span');
+        span.textContent = "...";
+        span.className = "px-2";
+        paginationNumbers.appendChild(span);
+    }
+
+    // ساده‌تر و قابل‌اعتماد: اگر تعداد صفحات کم است، همه را نشان بده
+    if (totalPages <= 7) {
+        for (let i = 1; i <= totalPages; i++) {
+            addPageButton(i, i === currentPage);
+        }
+    } else {
+        // همیشه صفحه ۱
+        addPageButton(1, currentPage === 1);
+
+        // محاسبه بازه وسط (از 2 تا totalPages - 1)
+        let start = Math.max(2, currentPage - 3);  // تغییر به -3 برای بازه وسیع‌تر
+        let end = Math.min(totalPages - 1, currentPage + 3);
+        // و در نزدیکی انتها:
+        if (currentPage >= totalPages - 4) {  // تنظیم به -4
+            start = Math.max(2, totalPages - 6);  // برای نمایش حدود 7 دکمه
+            end = totalPages - 1;
+        }
+
+        // اگر در نزدیکی ابتدای لیست هستیم، بازه را جابجا کن تا همیشه 5 دکمه وسط (اگر ممکن بود) نمایش داده شود
+        if (currentPage <= 4) {
+            start = 2;
+            end = 5;
+        }
+
+        // اگر در نزدیکی انتها هستیم، بازه را جابجا کن
+        if (currentPage >= totalPages - 3) {
+            start = Math.max(2, totalPages - 4);
+            end = totalPages - 1;
+        }
+
+        // بیضی سمت چپ اگر بین 1 و start شکاف باشه
+        if (start > 2) addEllipsis();
+
+        // صفحات وسط
+        for (let i = start; i <= end; i++) {
+            addPageButton(i, i === currentPage);
+        }
+
+        // بیضی سمت راست اگر بین end و last شکاف باشه
+        if (end < totalPages - 1) addEllipsis();
+
+        // همیشه صفحه آخر
+        addPageButton(totalPages, currentPage === totalPages);
+    }
+
+    // کنترل prev/next
+    prevPageBtn.style.display = (currentPage === 1) ? 'none' : 'inline-block';
+    nextPageBtn.style.display = (currentPage === totalPages) ? 'none' : 'inline-block';
+}
+
+let searchTimeout;
+export function handleSearch(e) {
+    clearTimeout(searchTimeout);
+    currentState.searchQuery = e.target.value;
+    
+    searchTimeout = setTimeout(() => {
+        currentState.currentPage = 1;
+        fetchLeads();
+    }, 500);
+}
+
+export function renderLeadsTable() {
+    const tbody = document.getElementById('leads-table-body');
+    if (!tbody) return;
+
+    tbody.innerHTML = '';
+
+    if (currentState.leads.length === 0) {
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="py-8 text-center text-gray-500">
+                    <i class="material-icons text-4xl mb-2">info</i>
+                    <p>موردی یافت نشد</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    currentState.leads.forEach((lead) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                <input type="checkbox" class="lead-checkbox" data-id="${lead.id}">
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${lead.phone || ''}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${lead.name || ''}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">${lead.status || ''}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-center">
+                <button class="text-purple-600 hover:text-purple-900 edit-assignment" data-id="${lead.id}" title="ویرایش">
+                    <i class="material-icons text-base">edit</i>
+                </button>
+                <button class="text-red-600 hover:text-red-900 delete-assignment" data-id="${lead.id}" title="حذف">
+                    <i class="material-icons text-base">delete</i>
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
 }
 
 export async function fetchLeads() {
-    const { searchQuery, selectedBranch } = currentState;
-
     try {
+        // بررسی صریح محدوده صفحه
+        const totalPages = Math.max(1, parseInt(currentState.totalPages) || 1);
+        if (currentState.currentPage < 1 || currentState.currentPage > totalPages) {
+            currentState.currentPage = Math.min(Math.max(1, currentState.currentPage), totalPages);
+            console.warn(`صفحه ${currentState.currentPage} خارج از محدوده است، تنظیم به صفحه معتبر`);
+        }
+
         const apiBaseUrl = window.location.origin;
         const token = localStorage.getItem('authToken');
-        
+
         if (!token) {
-            alert('لطفاً ابتدا وارد سیستم شوید');
+            showNotification('لطفاً ابتدا وارد سیستم شوید');
             return;
         }
 
-        // ساخت URL با پارامترها
-        let url = `${apiBaseUrl}/api/v1/phoneassignment?page=${currentState.currentPage}`;
-        
-        if (currentState.user.userrolename !== 'admin' && currentState.user.branchid) {
-            url += `&branchid=${currentState.user.branchid}`;
+        const urlObj = new URL('/api/v1/phoneassignment', apiBaseUrl);
+        const params = new URLSearchParams();
+        params.set('page', currentState.currentPage);
+
+        if (currentState.user && currentState.user.userrolename !== 'admin' && currentState.user.branchid) {
+            params.set('branchid', currentState.user.branchid);
         }
-        if (searchQuery) {
-            url += `&search=${encodeURIComponent(searchQuery)}`;
+        if (currentState.searchQuery) {
+            params.set('search', currentState.searchQuery);
         }
-        if (selectedBranch) {
-            url += `&branchid=${selectedBranch}`;
+        if (currentState.selectedBranch) {
+            params.set('branchid', currentState.selectedBranch);
         }
+        // افزودن pageSize به درخواست اگر API پشتیبانی می‌کند
+        params.set('page_size', currentState.pageSize);
+
+        urlObj.search = params.toString();
+        const url = urlObj.toString();
 
         const response = await fetch(url, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
         });
 
-        if (!response.ok) {
-            throw new Error(`خطا در دریافت داده‌ها: ${response.status}`);
-        }
+        if (!response.ok) throw new showNotification(`خطا در دریافت داده‌ها: ${response.status}`, 'error');
 
         const data = await response.json();
-        console.log('API Response:', data); // لاگ برای دیباگ
-
-        if (data.meta.is_success) {
-            // تبدیل داده‌های API به فرمت مورد نیاز
-            const mappedData = data.data.map(item => ({
+        if (data.meta && data.meta.is_success) {
+            const mappedData = (data.data || []).map(item => ({
                 id: item.assignmentid,
-                phone: item.phone,
-                name: item.username,
-                status: item.sourcename,
-                assignedAt: new Date().toLocaleDateString('fa-IR'),
-                lastContact: ''
+                phone: item.phone || '',
+                name: item.username || '',
+                status: item.sourcename || ''
             }));
 
-            // به‌روزرسانی حالت
             currentState.leads = mappedData;
-            currentState.currentPage = parseInt(data.meta.page.page_num);
-            currentState.pageSize = parseInt(data.meta.page.page_size);
-            currentState.nextPageUri = data.meta.page.next_page_uri;
-            currentState.prevPageUri = data.meta.page.prev_page_uri;
-
-            // اگر total_size معتبر نیست، از count و page_num برای تخمین تعداد صفحات استفاده نکنیم
-            currentState.totalPages = data.meta.page.total_size > 0 
-                ? Math.ceil(data.meta.page.total_size / currentState.pageSize)
-                : null; // null برای نشان دادن عدم وجود total_size معتبر
+            currentState.currentPage = parseInt(data.meta.page.page_num) || currentState.currentPage;
+            currentState.nextPageUri = data.meta.page.next_page_uri || null;
+            currentState.prevPageUri = data.meta.page.prev_page_uri || null;
+            currentState.totalRecords = data.meta.page.total_size;
+            currentState.pageSize = parseInt(data.meta.page.page_size) || currentState.pageSize;
+            currentState.totalPages = Math.ceil(currentState.totalRecords / currentState.pageSize) || 1;
 
             renderLeadsTable();
             renderPagination();
         } else {
-            alert('خطا در دریافت داده‌ها');
+            showNotification('خطا در دریافت داده‌ها از سرور یا پاسخ ناموفق', 'error');
         }
     } catch (error) {
         console.error('Error fetching leads:', error);
-        alert('خطا در ارتباط با سرور');
+        showNotification('خطا در ارتباط با سرور: ' + (error.message || error), 'error');
     }
 }
 
-export async function loadBranches() {
+export async function loadBranchesInLeads() {
     try {
         const apiBaseUrl = window.location.origin;
         const token = localStorage.getItem('authToken');
-        
         if (!token) {
             console.error('No auth token found');
             return;
         }
-        
         const response = await fetch(`${apiBaseUrl}/api/v1/branch`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
         });
-        
-        if (!response.ok) {
-            throw new Error(`خطا در دریافت شعب: ${response.status}`);
-        }
+        if (!response.ok) throw new Error(`خطا در دریافت شعب: ${response.status}`);
         
         const data = await response.json();
-        
-        if (!data.data || !Array.isArray(data.data)) {
-            throw new Error('ساختار داده‌های دریافتی نامعتبر است');
-        }
+        if (!data.data || !Array.isArray(data.data)) throw new Error('ساختار داده‌های دریافتی نامعتبر است');
         
         currentState.branches = data.data;
         const branchSelect = document.getElementById('branch-filter');
         
         if (branchSelect) {
             branchSelect.innerHTML = '<option value="">همه شعب</option>';
-            
             currentState.branches.forEach(branch => {
                 if (branch.branchid && branch.mainname) {
                     const option = document.createElement('option');
@@ -158,12 +245,6 @@ export async function loadBranches() {
                     branchSelect.appendChild(option);
                 }
             });
-            
-            // انتخاب اولین شعبه به صورت پیش‌فرض
-            if (currentState.branches.length > 0 && !currentState.selectedBranch) {
-                currentState.selectedBranch = currentState.branches[0].branchid;
-                branchSelect.value = currentState.selectedBranch;
-            }
         }
     } catch (error) {
         console.error('Error loading branches:', error);
@@ -174,9 +255,121 @@ export async function loadBranches() {
     }
 }
 
+// --- New Functions for CRUD Operations ---
+
+export function closeAssignmentModal() {
+    document.getElementById('assignment-modal').classList.add('hidden');
+}
+
+export async function openAssignmentModal(assignmentId = null) {
+    const modal = document.getElementById('assignment-modal');
+    const title = document.getElementById('assignment-modal-title');
+    const form = document.getElementById('assignment-form');
+    const branchSelect = document.getElementById('assignment-branch');
+
+    // Populate branch dropdown
+    branchSelect.innerHTML = '<option value="">انتخاب شعبه...</option>';
+    currentState.branches.forEach(branch => {
+        const option = document.createElement('option');
+        option.value = branch.branchid;
+        option.textContent = branch.mainname;
+        branchSelect.appendChild(option);
+    });
+
+    if (assignmentId) {
+        // --- Edit Mode ---
+        title.textContent = 'ویرایش تخصیص';
+        try {
+            const apiBaseUrl = window.location.origin;
+            const token = localStorage.getItem('authToken');
+            const response = await fetch(`${apiBaseUrl}/api/v1/phoneassignment/${assignmentId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (!response.ok) throw new Error('تخصیص مورد نظر یافت نشد');
+            
+            const result = await response.json();
+            const assignment = result.data;
+            
+            document.getElementById('assignment-id').value = assignment.assignmentid;
+            document.getElementById('assignment-phone').value = assignment.phone || '';
+            document.getElementById('assignment-username').value = assignment.username || '';
+            branchSelect.value = assignment.branchid || '';
+        } catch (error) {
+            showNotification('خطا در دریافت اطلاعات برای ویرایش: ' + error.message, 'error');
+            return;
+        }
+    } else {
+        // --- Add Mode ---
+        title.textContent = 'افزودن شماره جدید';
+        form.reset();
+        document.getElementById('assignment-id').value = '';
+    }
+    modal.classList.remove('hidden');
+}
+
+export async function saveAssignment(e) {
+    e.preventDefault();
+    const assignmentId = document.getElementById('assignment-id').value;
+    const assignmentData = {
+        phone: document.getElementById('assignment-phone').value,
+        username: document.getElementById('assignment-username').value,
+        branchid: parseInt(document.getElementById('assignment-branch').value),
+        sourcecollectingdataid: 3 // Fixed value as requested
+    };
+
+    if (!assignmentData.phone || !assignmentData.branchid) {
+        showNotification('لطفا شماره تماس و شعبه را انتخاب کنید.');
+        return;
+    }
+
+    try {
+        const apiBaseUrl = window.location.origin;
+        const token = localStorage.getItem('authToken');
+        const url = assignmentId ? `${apiBaseUrl}/api/v1/phoneassignment/${assignmentId}` : `${apiBaseUrl}/api/v1/phoneassignment`;
+        const method = assignmentId ? 'PUT' : 'POST';
+
+        const response = await fetch(url, {
+            method: method,
+            headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(assignmentData)
+        });
+
+        const responseData = await response.json();
+        if (!response.ok) throw new Error(responseData.meta.description || 'خطا در ذخیره‌سازی');
+
+        showNotification(responseData.meta.description, 'success');
+        closeAssignmentModal();
+        fetchLeads(); // Refresh table
+    } catch (error) {
+        showNotification(error.message, 'error');
+    }
+}
+
+export async function deleteAssignment(assignmentId) {
+    if (!confirm('آیا از حذف این تخصیص اطمینان دارید؟')) return;
+
+    try {
+        const apiBaseUrl = window.location.origin;
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(`${apiBaseUrl}/api/v1/phoneassignment/${assignmentId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const responseData = await response.json();
+        if (!response.ok) throw new Error(responseData.meta.description || 'خطا در حذف');
+        
+        showNotification(responseData.meta.description, 'success');
+        fetchLeads(); // Refresh table
+    } catch (error) {
+        showNotification(error.message, 'error');
+    }
+}
+
+// --- Other existing functions ---
+
 export function handleSort(field) {
-    alert('مرتب سازی در این نسخه پشتیبانی نمی شود.');
-    return;
+    showNotification('مرتب سازی در این نسخه پشتیبانی نمی شود.');
 }
 
 export function handleBranchChange(e) {
@@ -185,127 +378,122 @@ export function handleBranchChange(e) {
     fetchLeads();
 }
 
-export function closeModal() {
-    document.getElementById('lead-modal').classList.add('hidden');
-    currentState.currentLead = null;
-}
-
-// انتخاب/عدم انتخاب همه مشتریان
 export function toggleSelectAll(e) {
     const isChecked = e.target.checked;
     currentState.selectedLeads = isChecked ? currentState.leads.map(lead => lead.id) : [];
-
-    document.querySelectorAll('.lead-checkbox').forEach(checkbox => {
-        checkbox.checked = isChecked;
-    });
-}
-
-
-export function handleSearch(e) {
-    currentState.searchQuery = e.target.value;
-    currentState.currentPage = 1; // بازگشت به صفحه اول
-    fetchLeads();
+    document.querySelectorAll('.lead-checkbox').forEach(checkbox => checkbox.checked = isChecked);
 }
 
 export function handlePageSizeChange(e) {
-    currentState.pageSize = parseInt(e.target.value);
-    currentState.currentPage = 1;
-    fetchLeads();
+    const newPageSize = parseInt(e.target.value);
+    if (newPageSize > 0) {
+        currentState.pageSize = newPageSize;
+        currentState.currentPage = 1;
+        fetchLeads();
+    }
 }
 
 export function changePage(direction) {
     const newPage = currentState.currentPage + direction;
-    console.log('Changing to page:', newPage);
-
-    // بررسی وجود URL برای صفحه بعدی یا قبلی
-    if (direction === 1 && !currentState.nextPageUri) {
-        console.log('No next page available');
-        return;
-    }
-    if (direction === -1 && !currentState.prevPageUri) {
-        console.log('No previous page available');
-        return;
-    }
-
-    if (newPage > 0) {
+    if (newPage >= 1 && newPage <= currentState.totalPages) {
         currentState.currentPage = newPage;
         fetchLeads();
     }
 }
 
-// ذخیره نتیجه تماس
-export async function saveContactResult(e) {
-    e.preventDefault();
-
-    const result = document.getElementById('contact-result').value;
-    const notes = document.getElementById('contact-notes').value;
-
-    if (!currentState.currentLead) return;
-
-    // شبیه‌سازی ارسال به سرور
-    try {
-        // در محیط واقعی، این‌جا درخواست fetch به سرور ارسال می‌شود
-        const response = await mockSaveContactApi(
-            currentState.currentLead.id,
-            result,
-            notes
-        );
-
-        if (response.success) {
-            alert('نتیجه تماس با موفقیت ثبت شد');
-            closeModal();
-            fetchLeads(); // تازه‌سازی داده‌ها
-        } else {
-            alert('خطا در ثبت نتیجه تماس');
-        }
-    } catch (error) {
-        alert('خطا در ارتباط با سرور');
-    }
-}
-
-// شبیه‌سازی ذخیره نتیجه تماس
-export function mockSaveContactApi(leadId, result, notes) {
-    return new Promise((resolve) => {
-        setTimeout(() => {
-            resolve({ success: true });
-        }, 1000);
-    });
-}
 
 // خروجی اکسل
-export function exportLeads() {
-    let dataToExport = [];
+export async function exportLeads() {
+    try {
+        const apiBaseUrl = window.location.origin;
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            showNotification('لطفاً ابتدا وارد سیستم شوید');
+            return;
+        }
 
-    if (currentState.selectedLeads.length > 0) {
-        // خروجی رکوردهای انتخاب شده
-        dataToExport = currentState.leads.filter(lead =>
-            currentState.selectedLeads.includes(lead.id)
-        );
-    } else {
-        // خروجی کل داده‌های فیلتر شده
-        // در محیط واقعی، این‌جا باید داده‌ها را از سرور دریافت کنید
-        dataToExport = [...currentState.leads];
+        // تعیین branchid (اولویت به فیلتر انتخاب‌شده، در غیر اینصورت branch کاربر)
+        const branchId = currentState.selectedBranch || (currentState.user && currentState.user.branchid);
+        if (!branchId) {
+            showNotification('برای خروجی گرفتن، شناسه شعبه (branchid) لازم است.',  'error');
+            return;
+        }
+
+        // نقطه شروع درخواست (بدون page => طبق گفته شما سرور کل مخزن را برمی‌فرستد)
+        let requestUrl = `${apiBaseUrl}/api/v1/phoneassignment?branchid=${encodeURIComponent(branchId)}`;
+
+        // اگر خواستید فیلتر جستجو را هم اعمال کنید:
+        if (currentState.searchQuery) {
+            requestUrl += `&context=${encodeURIComponent(currentState.searchQuery)}`;
+        }
+
+        const allItems = [];
+
+        // تابع کمکی برای ساخت headers
+        const headers = {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        };
+
+        // فراخوانی اول و احتمال دنبال کردن pagination اگر سرور صفحات را برگرداند
+        let nextUrl = requestUrl;
+        while (nextUrl) {
+            const resp = await fetch(nextUrl, { headers });
+            if (!resp.ok) throw new Error(`خطا در دریافت داده‌ها: ${resp.status}`);
+
+            const json = await resp.json();
+
+            // ساختار داده‌ی مورد انتظار: json.data => array
+            if (!json.data || !Array.isArray(json.data)) {
+                throw new Error('داده‌های دریافتی ساختار مورد انتظار را ندارند.');
+            }
+
+            allItems.push(...json.data);
+
+            // اگر متا شامل next_page_uri باشد، آن را دنبال کن (ممکن است مقدار نسبی باشد)
+            const pageMeta = json.meta && json.meta.page;
+            if (pageMeta && pageMeta.next_page_uri) {
+                // next_page_uri ممکن است آدرس نسبی باشد؛ اگر نسبی بود آن را به apiBaseUrl وصل می‌کنیم
+                if (pageMeta.next_page_uri.startsWith('http')) {
+                    nextUrl = pageMeta.next_page_uri;
+                } else {
+                    // حذف اسلش اضافی
+                    nextUrl = apiBaseUrl.replace(/\/$/, '') + pageMeta.next_page_uri;
+                }
+            } else {
+                nextUrl = null;
+            }
+        }
+
+        if (allItems.length === 0) {
+            showNotification('هیچ داده‌ای برای خروجی وجود ندارد.', 'error');
+            return;
+        }
+
+        // نگاشت فیلدها به ستون‌های اکسل (انعطاف‌پذیر: از چند نام احتمالی فیلد استفاده می‌کنیم)
+        const normalized = allItems.map(item => {
+            const phone = item.phone ?? '';
+            const username = item.username ?? '';
+            const sourcename = item.sourcename ?? '';
+
+            return {
+                'شماره تماس': phone,
+                'نام کاربری': username,
+                'منبع': sourcename
+            };
+        });
+
+        // تبدیل به شیت و ساخت فایل اکسل (نیاز به کتابخانه XLSX/SheetJS در صفحه)
+        const worksheet = XLSX.utils.json_to_sheet(normalized);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'مخزن_مشتریان');
+
+        const nowStr = new Date().toLocaleDateString('fa-IR').replace(/\//g, '-');
+        const filename = `export_leads_branch_${branchId}_${nowStr}.xlsx`;
+        XLSX.writeFile(workbook, filename);
+
+    } catch (error) {
+        console.error('exportLeads error:', error);
+        showNotification('خطا هنگام خروجی گرفتن: ' + (error.message || error), 'error');
     }
-
-    if (dataToExport.length === 0) {
-        alert('هیچ داده‌ای برای خروجی وجود ندارد');
-        return;
-    }
-
-    // تبدیل داده‌ها به فرمت مورد نیاز برای اکسل
-    const worksheet = XLSX.utils.json_to_sheet(dataToExport.map(lead => ({
-        'شماره تماس': lead.phone,
-        'نام': lead.firstName,
-        'نام خانوادگی': lead.lastName,
-        'کد ملی': lead.nationalCode,
-        'وضعیت': lead.status,
-        'تاریخ تخصیص': lead.assignedAt,
-        'آخرین تماس': lead.lastContact
-    })));
-
-    const workbook = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(workbook, worksheet, 'مشتریان');
-
-    // تولید فایل و دانلود
-    XLSX.writeFile(workbook, `خروجی_مشتریان_${new Date().toLocaleDateString('fa-IR')}.xlsx`);
 }

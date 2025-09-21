@@ -1,0 +1,198 @@
+﻿Unit Controller.User;
+
+Interface
+
+Uses
+    System.JSON,
+    MVCFramework,
+    MVCFramework.Commons,
+    MVCFramework.SQLGenerators.MSSQL,
+    MVCFramework.ActiveRecord,
+    MVCFramework.Nullables,
+    FireDAC.Phys.MSSQL,
+    System.Variants,
+    System.Generics.Collections,
+    Model.User,
+    IdHash,
+    Service.Interfaces,
+    WebModule.SalamtCRM;
+
+Type
+    [MVCPath(BASE_API_V1 + '/user')]
+    TUserController = class(TMVCController)
+    Public
+        [MVCPath('')]
+        [MVCHTTPMethods([httpGET])]
+        Procedure GetAllUser([MVCInject] AUserService: IUserService);
+
+        [MVCPath('')]
+        [MVCHTTPMethods([httpGET])]
+        Procedure GetUserByID([MVCInject] AUserService: IUserService);
+
+        [MVCPath('')]
+        [MVCHTTPMethods([httpDELETE])]
+        Procedure RemoveUser([MVCInject] AUserService: IUserService);
+
+        [MVCPath('')]
+        [MVCHTTPMethods([httpPost])]
+        Procedure SignupNormalUser([MVCInject] AUserService: IUserService);
+
+        [MVCPath('/EmailVerification')]
+        [MVCHTTPMethods([httpPut])]
+        Procedure EmailVerification(
+          Const [MVCFromQueryString('userID', '0')] userID: String;
+          Const [MVCFromQueryString('IsEmailVerify', '0')] IsEmailVerify: Boolean
+        );
+
+        [MVCPath('/getUserAllFields')]
+        [MVCHTTPMethod([httpGET])]
+        Procedure GetUserAllFields([MVCFromQueryString('userID', 0)] Const userID: Int64);
+
+        [MVCPath('')]
+        [MVCHTTPMethod([httpPOST])]
+        Procedure AddUser([MVCInject] AUserService: IUserService);
+
+        [MVCPath('')]
+        [MVCHTTPMethod([httpPUT])]
+        Procedure UpdateUser([MVCInject] AUserService: IUserService);
+
+        [MVCPath('')]
+        [MVCHTTPMethod([httpDelete])]
+        Procedure DeleteUser([MVCInject] AUserService: IUserService);
+End;
+
+Implementation
+
+Uses
+    System.SysUtils,
+    FireDAC.Comp.Client,
+    FireDAC.Stan.Param,
+    MVCFramework.Logger,
+    MVCFramework.Serializer.Commons,
+    MVCFramework.DataSet.Utils,
+    JsonDataObjects;
+
+
+//______________________________________________________________________________
+Procedure TUserController.GetUserAllFields(Const userID: Int64);
+Var
+    user: Model.TUser;
+Begin
+    user := AUserService.GetUserByID(userID);
+    If Assigned(user) then
+        Render(user)
+    Else
+        Render(HTTP_STATUS.NotFound, 'User_Not_Found');
+End;
+//______________________________________________________________________________
+Procedure TUserController.GetAllUser;
+Var
+    userList: TObjectList<Model.TUser>;
+Begin
+    userList := AUserService.GetAllUsers;
+    If (userList.Count > 0) Then
+        Render(userList)
+    Else
+        Render(HTTP_STATUS.NoContent, 'List_Is_Empty');
+
+End;
+//______________________________________________________________________________
+Procedure TUserController.UpdateUser(AUserService: IUserService);
+Var
+    UpdatedUser: TUser;
+Begin
+    UpdatedUser := Context.Request.BodyAs<TUser>;
+    Try
+        Try
+            UpdatedUser := Context.Request.BodyAs<TUser>;
+            AUserService.UpdateUser(UpdatedUser);
+            Render(HTTP_STATUS.Ok, 'User_Updated');
+        Except
+            On E: Exception do
+            Begin
+                Render(HTTP_STATUS.BadRequest, E.Message);
+            End;
+        End;
+    Finally
+        UpdatedUser.Free;
+    End;
+End;
+//______________________________________________________________________________
+Procedure TUserController.DeleteUser([MVCInject] AUserService: IUserService);
+Var
+    LUserID: Integer;
+    User: TUser;
+Begin
+    LUserID := Context.Request.QueryStringParam('userID').ToInteger;
+    Try
+        User := AUserService.GetByID(LUserID);
+        If (Not Assigned(User)) then
+        Begin
+            Render(HTTP_STATUS.NotFound, 'User_Not_Found');
+            Exit;
+        End;
+
+        User.isActive := False;
+        User.Update();
+        Render(HTTP_STATUS.OK, 'User_Deleted');
+    Except
+        Render(HTTP_STATUS.InternalServerError, 'Error_Deleting_User');
+    End;
+end;
+//______________________________________________________________________________
+Procedure TUserController.GetAllUser(AUserService: IUserService);
+Begin
+    Render(HTTP_STATUS.Ok, AUserService.GetAll);
+End;
+//______________________________________________________________________________
+Procedure TUserController.GetUserByID(AUserService: IUserService);
+Var
+    LUserID: Integer;
+Begin
+    LUserID := Context.Request.QueryStringParam('userID').ToInteger;
+    Render(HTTP_STATUS.Ok, AUserService.GetByID(LUserID));
+End;
+//______________________________________________________________________________
+Procedure TUserController.AddUser(AUserService: IUserService);
+var
+    LNewUser: TUser;
+    LNewUserID: Integer;
+begin
+    LNewUser := Context.Request.BodyAs<TUser>;
+    try
+        // 2. اعتبارسنجی ورودی‌ها
+        if (LNewUser.userName.IsNull or LNewUser.userName.Value.IsEmpty) or
+           (LNewUser.passwordHash.IsNull or LNewUser.passwordHash.Value.IsEmpty) or
+           (LNewUser.Email.IsNull and LNewUser.Phone.IsNull) then
+        begin
+            Raise EMVCException.Create(HTTP_STATUS.BadRequest,'Username, Password and (Email or Phone) are required!');
+        end;
+
+
+        LNewUserID := AUserService.CreateUser(LNewUser).ID;
+
+
+        Context.Response.StatusCode := 201;
+        Context.Response.Body.SetJSONValue(TJSONString.Create('message'), 'User created successfully.');
+        Context.Response.Body.SetJSONValue(TJSONNumber.Create(LNewUserID), 'id');
+        Render(Context.Response.Body);
+
+    Except
+        On E: Exception do
+        Begin
+            Render(HTTP_STATUS.BadRequest, E.Message);
+        End;
+    End;
+End;
+//______________________________________________________________________________
+Procedure TUserController.RemoveUser([MVCInject] AUserService: IUserService);
+Var
+    FDStoredProc: TFDStoredProc;
+    LUser: TUser;
+Begin
+    LUser := Context.Request.BodyAs<TUser>;
+    LUser.Delete(True);
+End;
+//______________________________________________________________________________
+
+End.

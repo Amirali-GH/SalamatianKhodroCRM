@@ -1,0 +1,309 @@
+﻿Unit Service.User;
+
+Interface
+
+Uses
+    System.Generics.Collections,
+    MVCFramework.Container,
+    Model.User,
+    Model.UserRole,
+    Model.Branch.Branch,
+    Service.Interfaces,
+    WebModule.SalamtCRM;
+
+Type
+    TUserService = class(TInterfacedObject, IUserService)
+    Public
+        Function GetAllUsers(Var APage: String; Const AStatus: String; Const AContext: String; Var ATotalSize: Integer): TObjectList<TUser>;
+        Function GetUserInfo(Const AID: Integer): TUserInfo;
+        Function GetUserByID(Const AID: Integer): TUser;
+        Function CreateUser(Const AUser: TUser): TUser;
+        Function UpdateUserPartial(Const AID: Integer; Const AUser: TUser): TUser;
+        Function DeleteUser(Const AID: Integer): Boolean;
+    End;
+
+
+implementation
+
+Uses
+    Utils, Math, StrUtils,
+    MVCFramework.ActiveRecord,
+    System.SysUtils,
+    System.NetEncoding;
+
+{ TUserService }
+
+//________________________________________________________________________________________
+Function TUserService.GetAllUsers(Var APage: String; Const AStatus: String; Const AContext: String;
+  Var ATotalSize: Integer): TObjectList<TUser>;
+VAR
+    LCurrPage: Integer;
+    LFirstRec: Integer;
+    LHasActive: Boolean;
+    LSQLBase, LSQL, LFilter, LRQL: String;
+    LParams: TArray<Variant>;
+Begin
+    ATotalSize := 0;
+    LCurrPage := 0;
+    TryStrToInt(APage, LCurrPage);
+
+    LCurrPage := Max(LCurrPage, 1);
+    LFirstRec := (LCurrPage - 1) * PAGE_SIZE;
+    APage := LCurrPage.ToString;
+
+    // BASE QUERY
+    LFilter := '';
+    LSQLBase := 'SELECT * FROM user_user WHERE 1=1';
+    SetLength(LParams, 0);
+
+    // FILTER BY BRANCH ID
+    LHasActive := True;
+    If (AStatus.Contains('inactive')) THEN
+    Begin
+        LRQL := 'eq(IsActive,0)';
+        LFilter := LFilter + ' AND IsActive = ?';
+        LParams := LParams + [0];
+    End
+    Else IF (AStatus.Contains('active')) then
+    Begin
+        LRQL := 'eq(IsActive,1)';
+        LFilter := LFilter + ' AND IsActive = ?';
+        LParams := LParams + [1];
+    END
+    Else
+    Begin
+        LHasActive := False;
+    End;
+
+    // FILTER BY SOURCE ID
+    IF (NOT AContext.IsEmpty) THEN
+    BEGIN
+        If (LHasActive) then
+        Begin
+            LRQL := Format('and(%s, or(like(LastName,%s), like(Phone, %s)))',
+              [LRQL, QuotedStr(AContext), QuotedStr(AContext)]);
+        End
+        Else
+        Begin
+            LRQL := Format('or(like(LastName,%s), like(Phone, %s))',
+              [QuotedStr(AContext), QuotedStr(AContext)]);
+        End;
+
+        LFilter := LFilter + ' AND (LastName LIEK ? OR Phone LIKE ?)';
+        LParams := LParams + [QuotedStr(AContext), QuotedStr(AContext)];
+    END;
+
+    // DATA QUERY
+    LSQL := LSQLBase + LFilter + ' ORDER BY UserName ASC LIMIT ?, ?';
+    LParams := LParams + [LFirstRec, PAGE_SIZE];
+
+    ATotalSize := TMVCActiveRecord.Count<TUser>(LRQL);
+    RESULT := TMVCActiveRecord.Select<TUser>(LSQL, LParams);
+END;
+//________________________________________________________________________________________
+Function TUserService.GetUserByID(Const AID: Integer): TUser;
+Begin
+    Result := TMVCActiveRecord.GetByPK<TUser>(AID, False);
+End;
+//________________________________________________________________________________________
+Function TUserService.GetUserInfo(Const AID: Integer): TUserInfo;
+Var
+    LUser: TUser;
+    LRole: TUserRole;
+    LBranch: TBranch;
+    LInfo: TUserInfo;
+Begin
+    LUser := TMVCActiveRecord.GetByPK<TUser>(AID, False);
+    If not Assigned(LUser) then
+    Begin
+        Exit(nil);
+    End;
+
+    LInfo := TUserInfo.Create;
+
+    LInfo.UserID      := LUser.UserID;
+    LInfo.UserName    := LUser.UserName;
+    LInfo.FirstName   := LUser.FirstName;
+    LInfo.LastName    := LUser.LastName;
+    LInfo.Email       := LUser.Email;
+    LInfo.Phone       := LUser.Phone;
+    LInfo.UserRoleID  := LUser.UserRoleID;
+    LInfo.BranchID    := LUser.BranchID;
+    LInfo.LastLogin   := LUser.LastLogin;
+    LInfo.Description := LUser.Description;
+
+    If LUser.UserRoleID.HasValue then
+    Begin
+        LRole := TMVCActiveRecord.GetByPK<TUserRole>(LUser.UserRoleID.Value, False);
+        Try
+            If Assigned(LRole) then
+            Begin
+                LInfo.UserRoleName := LRole.MainName;
+            End;
+        Finally
+            LRole.Free;
+        End;
+    End;
+
+    If LUser.BranchID.HasValue then
+    Begin
+        LBranch := TMVCActiveRecord.GetByPK<TBranch>(LUser.BranchID.Value, True);
+        Try
+            If Assigned(LBranch) then
+            Begin
+                LInfo.BranchName := LBranch.MainName;
+            End;
+        Finally
+            LBranch.Free;
+        End;
+    End;
+
+    Result := LInfo;
+    LUser.Free;
+End;
+//________________________________________________________________________________________
+Function TUserService.CreateUser(Const AUser: TUser): TUser;
+Var
+    LSaltBytes: TBytes;
+    LPasswordWithSalt: TBytes;
+    LCopy: TUser;
+Begin
+    LCopy := TUser.Create;
+    Try
+        LCopy.UserName := AUser.UserName;
+        LCopy.FirstName := AUser.FirstName;
+        LCopy.LastName := AUser.LastName;
+        LCopy.Phone := AUser.Phone;
+        LCopy.Email := AUser.Email;
+        LCopy.BranchID := AUser.BranchID;
+        LCopy.UserRoleID := AUser.UserRoleID;
+        LCopy.Description := AUser.Description;
+
+        SetLength(LSaltBytes, 16);
+        Randomize;
+        For var i := 0 to High(LSaltBytes) do
+        Begin
+            LSaltBytes[i] := Byte(Random(256));
+        End;
+
+        LCopy.Salt := TNetEncoding.Base64.EncodeBytesToString(LSaltBytes);
+        LPasswordWithSalt := TEncoding.UTF8.GetBytes(AUser.PasswordHash) + LSaltBytes;
+
+        LCopy.PasswordHash := HashPassword(
+          TNetEncoding.Base64.EncodeBytesToString(LPasswordWithSalt)
+        );
+
+
+        If (AUser.IsActive.HasValue) then
+        Begin
+            LCopy.IsActive := AUser.IsActive;
+        End
+        Else
+        Begin
+            LCopy.IsActive := True;
+        End;
+
+        LCopy.Insert;
+        Result := GetUserByID(LCopy.UserID);
+    Except
+        LCopy.Free;
+        Raise;
+    End;
+
+End;
+//________________________________________________________________________________________
+Function TUserService.UpdateUserPartial(Const AID: Integer; Const AUser: TUser): TUser;
+Var
+  LExisting: TUser;
+  LSaltBytes: TBytes;
+  LPasswordWithSalt: TBytes;
+Begin
+    LExisting := TMVCActiveRecord.GetByPK<TUser>(AID, False);
+    If Not Assigned(LExisting) Then
+        Exit(nil);
+
+    Try
+        // فیلدهای معمولی (همان الگوی قبلی: فقط زمانیکه HasValue باشد بروز می‌شوند)
+        If AUser.UserName.HasValue then
+          LExisting.UserName := AUser.UserName;
+
+        If AUser.FirstName.HasValue then
+          LExisting.FirstName := AUser.FirstName;
+
+        If AUser.LastName.HasValue then
+          LExisting.LastName := AUser.LastName;
+
+        If AUser.Email.HasValue then
+          LExisting.Email := AUser.Email;
+
+        If AUser.Phone.HasValue then
+          LExisting.Phone := AUser.Phone;
+
+        If AUser.UserRoleID.HasValue then
+          LExisting.UserRoleID := AUser.UserRoleID;
+
+        If AUser.BranchID.HasValue then
+          LExisting.BranchID := AUser.BranchID;
+
+        If AUser.IsActive.HasValue then
+          LExisting.IsActive := AUser.IsActive;
+
+        If AUser.Description.HasValue then
+          LExisting.Description := AUser.Description;
+
+        // === مهم: مدیریت تغییر رمز ===
+        // اگر مقدار PasswordHash در AUser غیر خالی است => در واقع رمز جدید ارسال شده
+        // (کد پروژه شما در CreateUser این رفتار را داشت: AUser.PasswordHash حاوی plaintext است)
+        If (Not AUser.PasswordHash.IsEmpty) then
+        Begin
+          // تولید salt جدید (همانند CreateUser: 16 بایت)
+          SetLength(LSaltBytes, 16);
+          Randomize;
+          For var i := 0 to High(LSaltBytes) do
+            LSaltBytes[i] := Byte(Random(256));
+
+          // ذخیره‌ی salt (base64)
+          LExisting.Salt := TNetEncoding.Base64.EncodeBytesToString(LSaltBytes);
+
+          // محاسبه‌ی hash برابر با CreateUser: base64( utf8(password) + salt ) -> HashPassword(...)
+          LPasswordWithSalt := TEncoding.UTF8.GetBytes(AUser.PasswordHash) + LSaltBytes;
+          LExisting.PasswordHash := HashPassword(
+            TNetEncoding.Base64.EncodeBytesToString(LPasswordWithSalt)
+          );
+        End;
+
+        // توجه: اگر فقط AUser.Salt ارسال شده ولی رمز تغییر نکرده، بهتر است از قبول Salt ورودی خودداری کنید
+        // (در صورت نیاز می‌توانید منطقی اضافه کنید تا Salt تنها در شرایط خاص پذیرفته شود).
+
+        If AUser.LastLogin.HasValue then
+          LExisting.LastLogin := AUser.LastLogin;
+
+        LExisting.Update;
+        Result := LExisting;
+    Except
+        LExisting.Free;
+        Raise;
+    End;
+End;
+//________________________________________________________________________________________
+Function TUserService.DeleteUser(Const AID: Integer): Boolean;
+Var
+    LExisting: TUser;
+Begin
+    LExisting := TMVCActiveRecord.GetByPK<TUser>(AID, False);
+    If Not Assigned(LExisting) Then
+    Begin
+        Exit(False);
+    End;
+
+    Try
+        LExisting.Delete;
+        Result := True;
+    Finally
+        LExisting.Free;
+    End;
+End;
+//________________________________________________________________________________________
+
+End.
+

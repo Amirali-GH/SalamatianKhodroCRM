@@ -1,7 +1,21 @@
 import { handleLogin, handleLogout } from './auth.js';
-import { handleFileSelect, handleDrop, loadUploadedFiles, preventDefaults, highlight, unhighlight, uploadFile, downloadSampleExcel } from './fileHandling.js';
-import { handleSearch, handleSort, toggleSelectAll, exportLeads, changePage, handlePageSizeChange, closeModal, saveContactResult, handleBranchChange } from './leads.js';
-import { loadPage } from './ui.js';
+import { loadUploadedFiles, uploadFile, downloadSampleExcel } from './fileHandling.js';
+import { loadUploadedFilesContract, uploadFileContract, downloadSampleContractExcel } from './contract.js';
+import { loadPage, handleFileSelect_Contract, handleFileSelect_CustomerContact, handleDrop, preventDefaults, highlight, unhighlight } from './ui.js';
+import { handleImages, uploadImages, loadPastImageUploads } from './image-upload.js';
+import { 
+    changePage,
+    loadBranchesInLeads, 
+    handleSearch, 
+    handleBranchChange, 
+    exportLeads, 
+    closeAssignmentModal, 
+    saveAssignment,
+    openAssignmentModal,
+    deleteAssignment,
+    fetchLeads } from './leads.js';
+import { currentState } from './state.js';
+
 
 export function setupEventListeners() {
     const loginForm = document.getElementById('login-form');
@@ -66,8 +80,8 @@ export function setupUploadPageListeners() {
     const fileDetailsModal = document.getElementById('file-details-modal');
     
     if (dropArea && fileInput) {
+        fileInput.addEventListener('change', handleFileSelect_CustomerContact);
         dropArea.addEventListener('click', () => fileInput.click());
-        fileInput.addEventListener('change', handleFileSelect);
 
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
             dropArea.addEventListener(eventName, preventDefaults, false);
@@ -100,17 +114,6 @@ export function setupUploadPageListeners() {
         });
     }
 
-    // اضافه کردن event listener برای جستجو
-
-    if (searchBtn && searchInput) {
-        searchBtn.addEventListener('click', handleSearch);
-        searchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                handleSearch();
-            }
-        });
-    }
-
     // اضافه کردن event listener برای modal تأیید آپلود
     if (confirmModal) {
         confirmModal.addEventListener('click', (e) => {
@@ -133,34 +136,31 @@ export function setupUploadPageListeners() {
    
 }
 
-export function setupLeadsPageListeners() {
+export function setupAssignedNumbersListner() {
+    console.log("Assigned numbers page initialized");
+
+    // --- Element Listeners ---
     const searchInput = document.getElementById('search-input');
-    const sortableHeaders = document.querySelectorAll('.sortable-header');
-    const selectAll = document.getElementById('select-all');
+    const branchFilter = document.getElementById('branch-filter');
     const exportBtn = document.getElementById('export-btn');
     const prevPage = document.getElementById('prev-page');
     const nextPage = document.getElementById('next-page');
-    const pageSize = document.getElementById('page-size');
-    const closeModalBtn = document.getElementById('close-modal');
-    const contactForm = document.getElementById('contact-form');
-
-    const branchFilter = document.getElementById('branch-filter');
-    if (branchFilter) {
-        branchFilter.addEventListener('change', handleBranchChange);
-    }
+    const addAssignmentBtn = document.getElementById('add-assignment-btn');
+    const assignmentModal = document.getElementById('assignment-modal');
+    const assignmentForm = document.getElementById('assignment-form');
+    const leadsTableBody = document.getElementById('leads-table-body');
 
     if (searchInput) {
         searchInput.addEventListener('input', handleSearch);
     }
 
-    if (sortableHeaders.length > 0) {
-        sortableHeaders.forEach(header => {
-            header.addEventListener('click', () => handleSort(header.dataset.sort));
-        });
-    }
-
-    if (selectAll) {
-        selectAll.addEventListener('change', toggleSelectAll);
+    if (branchFilter) {
+        branchFilter.addEventListener('change', handleBranchChange);
+        if (currentState.user && currentState.user.userrolename === 'admin') {
+            branchFilter.classList.remove('hidden');
+        } else {
+            branchFilter.classList.add('hidden');
+        }
     }
 
     if (exportBtn) {
@@ -175,16 +175,146 @@ export function setupLeadsPageListeners() {
         nextPage.addEventListener('click', () => changePage(1));
     }
 
-    if (pageSize) {
-        pageSize.addEventListener('change', handlePageSizeChange);
+    if (addAssignmentBtn) {
+        if (currentState.user && currentState.user.userrolename === 'admin') {
+            branchFilter.classList.remove('hidden');
+        } else {
+            branchFilter.classList.add('hidden');
+        }
+      
+        addAssignmentBtn.addEventListener('click', () => openAssignmentModal());
     }
 
-    if (closeModalBtn) {
-        closeModalBtn.addEventListener('click', closeModal);
+    if (assignmentForm) {
+        assignmentForm.addEventListener('submit', saveAssignment);
     }
 
-    if (contactForm) {
-        contactForm.addEventListener('submit', saveContactResult);
+    if (assignmentModal) {
+        assignmentModal.querySelectorAll('.close-modal-btn').forEach(btn => {
+            btn.addEventListener('click', closeAssignmentModal);
+        });
+    }
+
+    // --- Event Delegation for table actions ---
+    if (leadsTableBody) {
+        leadsTableBody.addEventListener('click', (e) => {
+            const editBtn = e.target.closest('.edit-assignment');
+            if (editBtn) {
+                const id = editBtn.dataset.id;
+                openAssignmentModal(id);
+                return;
+            }
+
+            const deleteBtn = e.target.closest('.delete-assignment');
+            if (deleteBtn) {
+                const id = deleteBtn.dataset.id;
+                deleteAssignment(id);
+                return;
+            }
+        });
+    }
+
+    // --- Initial Data Load ---
+    loadBranchesInLeads().then(() => {
+        fetchLeads();
+    });
+}
+
+export function setupContractPageListeners() {
+    loadUploadedFilesContract();
+
+    const dropArea = document.getElementById('drop-area');
+    const fileInput = document.getElementById('file-input');
+    const selectFileBtn = document.getElementById('select-file-btn');
+    const uploadBtn = document.getElementById('upload-btn');
+    const sampleBtn = document.getElementById('sample-btn');
+    const searchInput = document.getElementById('search-input');
+    
+    ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, preventDefaults, false);
+    });
+
+    ['dragenter', 'dragover'].forEach(eventName => {
+        dropArea.addEventListener(eventName, highlight, false);
+    });
+
+    ['dragleave', 'drop'].forEach(eventName => {
+        dropArea.addEventListener(eventName, unhighlight, false);
+    });
+
+    dropArea.addEventListener('drop', handleDrop, false);
+    dropArea.addEventListener('click', (e) => {
+            // Prevent triggering file input if the button itself is clicked
+        if (e.target.id !== 'select-file-btn') {
+            fileInput.click()
+        }
+    });
+    // FIX: Specific listener for the button
+    selectFileBtn.addEventListener('click', () => fileInput.click());
+    
+    fileInput.addEventListener('change', handleFileSelect_Contract, false);
+    
+    uploadBtn.addEventListener('click', uploadFileContract, false);
+    
+    sampleBtn.addEventListener('click', downloadSampleContractExcel, false);
+    
+    document.querySelectorAll('.close-modal').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.getElementById('file-details-modal').classList.add('hidden');
+        });
+    });
+}
+
+export function setupImageUploadPageListeners() {
+    // بارگذاری آپلودهای گذشته
+    loadPastImageUploads();
+
+    const dropArea = document.getElementById('drop-area');
+    const fileInput = document.getElementById('image-input');
+    const selectBtn = document.getElementById('select-images-btn');
+    const uploadBtn = document.getElementById('upload-images-btn');
+    const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+    // انتخاب فایل از input
+    if (fileInput) {
+        fileInput.addEventListener('change', (e) => handleImages(e.target.files));
+    }
+
+    // کلیک روی drop-area برای انتخاب
+    if (dropArea && fileInput) {
+        dropArea.addEventListener('click', () => fileInput.click());
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(event => {
+            dropArea.addEventListener(event, preventDefaults, false);
+        });
+        ['dragenter', 'dragover'].forEach(event => {
+            dropArea.addEventListener(event, highlight, false);
+        });
+        ['dragleave', 'drop'].forEach(event => {
+            dropArea.addEventListener(event, unhighlight, false);
+        });
+    }
+
+    // کلیک روی دکمه انتخاب فایل
+    if (selectBtn && fileInput) {
+        selectBtn.addEventListener('click', () => fileInput.click());
+    }
+
+    // کلیک روی دکمه آپلود
+    if (uploadBtn) {
+        uploadBtn.addEventListener('click', uploadImages);
+        uploadBtn.disabled = true; // تا وقتی عکسی انتخاب نشده
+    }
+
+    // منو موبایل
+    if (mobileMenuBtn) {
+        mobileMenuBtn.addEventListener('click', toggleSidebar);
+    }
+
+    // بستن سایدبار با کلیک روی overlay
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', closeSidebar);
     }
 }
 

@@ -1,0 +1,125 @@
+﻿Unit Controller.Lead.PhoneAssignment;
+
+Interface
+
+Uses
+    System.SysUtils,
+    System.Classes,
+    System.Generics.Collections,
+    MVCFramework,
+    MVCFramework.Commons,
+    MVCFramework.ActiveRecord,
+    MVCFramework.Nullables,
+    Service.Interfaces,
+    Model.Lead.PhoneAssignment,
+    WebModule.SalamtCRM;
+
+Type
+    [MVCPath(BASE_API_V1 + '/phoneassignment')]
+    TPhoneAssignmentController = Class(TMVCController)
+    Public
+        [MVCPath('')]
+        [MVCHTTPMethods([httpGET])]
+        [MVCProduces(TMVCMediaType.APPLICATION_JSON)]
+        [MVCConsumes(TMVCMediaType.APPLICATION_JSON)]
+        Procedure GetAllAssignments(Const [MVCInject] APhoneAssignmentService: IPhoneAssignmentService);
+
+    End;
+
+Implementation
+
+Uses
+    MVCFramework.Serializer.Commons,
+    System.JSON, FireDAC.Stan.Error;
+
+{ TPhoneAssignmentController }
+
+//________________________________________________________________________________________
+Procedure TPhoneAssignmentController.GetAllAssignments(Const APhoneAssignmentService: IPhoneAssignmentService);
+Var
+    LAssignmentList: TObjectList<TPhoneAssignment>;
+    LEqualIndex: Integer;
+    LPageArrayData: TArray<string>;
+    LCurrPage, LPageData, Key, Value, LBranchID, LSourceID: String;
+    LMetaJSON, LPageJSON: TJSONObject;
+    LTotalSize: Integer;
+Begin
+    LMetaJSON := TJSONObject.Create;
+    Try
+        Try
+            LCurrPage := Context.Request.Params['page'];
+            LBranchID := Context.Request.Params['branch_id'];
+            LSourceID := Context.Request.Params['source_id'];
+
+            LAssignmentList := APhoneAssignmentService.GetAllAssignments(LCurrPage, LBranchID, LSourceID, LTotalSize);
+
+            If Assigned(LAssignmentList) then
+            Begin
+                LPageJSON := TJSONObject.Create;
+                Try
+                    LPageArrayData := GetPaginationData(lCurrPage.ToInteger,
+                                                        LTotalSize,
+                                                        PAGE_SIZE,
+                                                        BASE_API_V1 + '/phoneassignment?page=($page)')
+                                                      .ToString.Split([';']);
+                    For LPageData in LPageArrayData do
+                    Begin
+                        LEqualIndex := LPageData.IndexOf('=');
+                        If (LEqualIndex > 0) then
+                        Begin
+                            Key := LPageData.Substring(0, LEqualIndex).Trim;
+                            Value := LPageData.Substring(LEqualIndex + 1).Trim;
+                            LPageJSON.AddPair(Key, Value);
+                        End;
+                    End;
+
+                    LMetaJSON.AddPair('page', LPageJSON);
+                    LMetaJSON.AddPair('data_type', 'list<vw_phone_assignment>');
+                    LMetaJSON.AddPair('count', LAssignmentList.Count);
+                    LMetaJSON.AddPair('total_size', LTotalSize);
+                    LMetaJSON.AddPair('is_success', True);
+                    LMetaJSON.AddPair('description', 'لیست تخصیص های تلفن');
+
+                    Render(HTTP_STATUS.OK,
+                        ObjectDict(False)
+                          .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                          .Add('data', LAssignmentList,
+                              Procedure(Const Obj: TObject; Const Links: IMVCLinks)
+                              Begin
+                                  Links.AddRefLink
+                                        .Add(HATEOAS._TYPE, TMVCMediaType.APPLICATION_JSON)
+                                        .Add(HATEOAS.HREF, Format(BASE_API_V1 + '/phoneassignment/%s', [TPhoneAssignment(Obj).Phone]))
+                                        .Add(HATEOAS.REL, 'self');
+                              End)
+                    );
+                Finally
+                    LAssignmentList.Free;
+                End;
+            End
+            Else
+            Begin
+                Raise Exception.Create('هنگام خواندن تخصیص های تلفن خطایی رخ داده است!');
+            End;
+        Except
+            On E: Exception do
+            Begin
+                LMetaJSON.AddPair('data_type', 'list<vw_phone_assignment>');
+                LMetaJSON.AddPair('count', 0);
+                LMetaJSON.AddPair('total_size', 0);
+                LMetaJSON.AddPair('is_success', False);
+                LMetaJSON.AddPair('description', E.Message);
+
+                Render(HTTP_STATUS.InternalServerError,
+                    ObjectDict(True)
+                      .Add('meta', StrToJSONObject(LMetaJSON.ToString))
+                      .Add('data', TList.Create)
+                );
+            End;
+        End;
+    Finally
+        LMetaJSON.Free;
+    End;
+End;
+//______________________________________________________________________________
+
+End.

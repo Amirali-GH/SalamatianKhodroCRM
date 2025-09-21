@@ -1,0 +1,71 @@
+﻿Unit Service.Customer.Customer;
+
+Interface
+
+Uses
+    System.SysUtils,
+    System.Generics.Collections,
+    MVCFramework.ActiveRecord,
+    MVCFramework.Nullables,
+    Model.View.PhoneAssignment,
+    Service.Interfaces;
+
+Type
+    TPhoneAssignmentService = Class(TInterfacedObject, IPhoneAssignmentService)
+    Public
+        Function GetAllAssignments(Var APage: String; Const ABranchID: String;
+          Const ASourceID: String; Out ATotalSize: Integer): TObjectList<TPhoneAssignment>;
+    End;
+
+Implementation
+
+Uses Utils, Math, StrUtils, WebModule.SalamtCRM;
+
+{ TPhoneAssignmentService }
+
+Function TPhoneAssignmentService.GetAllAssignments(Var APage: String;
+  Const ABranchID: String; Const ASourceID: String;
+  Out ATotalSize: Integer): TObjectList<TPhoneAssignment>;
+VAR
+    LCurrPage: Integer;
+    LFirstRec: Integer;
+    LSQLBase, LSQL, LFilter: String;
+    LParams: TArray<Variant>;
+BEGIN
+    LCurrPage := 0;
+    TryStrToInt(APage, LCurrPage);
+    LCurrPage := Max(LCurrPage, 1);
+    LFirstRec := (LCurrPage - 1) * PAGE_SIZE;
+    APage := LCurrPage.ToString;
+
+    // BASE QUERY
+    LFilter := '';
+    LSQLBase := ' FROM vw_phone_assignment WHERE 1=1';
+    SetLength(LParams, 0);
+
+    // FILTER BY BRANCH ID
+    IF NOT ABranchID.IsEmpty THEN
+    BEGIN
+        LFilter := LFilter + ' AND BranchID = ?';
+        LParams := LParams + [ABranchID.ToInteger];
+    END;
+
+    // FILTER BY SOURCE ID
+    IF NOT ASourceID.IsEmpty THEN
+    BEGIN
+        LFilter := LFilter + ' AND SourceCollectingDataID = ?';
+        LParams := LParams + [ASourceID.ToInteger];
+    END;
+
+    // DATA QUERY
+    LSQL := 'SELECT * ' + LSQLBase + LFilter + ' ORDER BY Phone ASC LIMIT ?, ?';
+    LParams := LParams + [LFirstRec, PAGE_SIZE];
+
+    RESULT := TMVCActiveRecord.Select<TPhoneAssignment>(LSQL, LParams);
+
+    // GET TOTAL COUNT FOR PAGINATION
+    LSQL := 'SELECT COUNT(*) ' + LSQLBase + LFilter;
+    ATotalSize := TMVCActiveRecord.ExecuteQuery(LSQL, LParams, False).First.AsInteger;
+END;
+
+End.

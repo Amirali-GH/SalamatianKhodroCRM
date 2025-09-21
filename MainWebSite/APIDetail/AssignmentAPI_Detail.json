@@ -1,0 +1,494 @@
+GET http://127.0.0.1:8435/api/v1/phoneassignment?branchid=2&sourceid=1
+
+Output Code 200:
+{
+    "meta": {
+        "page": {
+            "next_page_uri": "/api/v1/phoneassignment?page=2",
+            "default_page_size": "20",
+            "page_num": "1",
+            "page_size": "20",
+            "total_size": 254
+        },
+        "data_type": "list<vw_phone_assignment>",
+        "count": 20,
+        "is_success": true,
+        "description": "لیست تخصیص های تلفن"
+    },
+    "data": [
+        {
+            "assignmentid": 11896,
+            "phone": "1130386880",
+            "branchid": 2,
+            "branchname": "چهارباغ",
+            "sourcecollectingdataid": 1,
+            "sourcename": "نوین هاب",
+            "username": "vahid.khaghanii",
+            "links": [
+                {
+                    "href": "/api/v1/phoneassignment/1130386880",
+                    "type": "application/json",
+                    "rel": "self"
+                }
+            ]
+        },
+        {
+            "assignmentid": 11347,
+            "phone": "1171133227",
+            "branchid": 2,
+            "branchname": "چهارباغ",
+            "sourcecollectingdataid": 1,
+            "sourcename": "نوین هاب",
+            "username": "majidjalali7131",
+            "links": [
+                {
+                    "href": "/api/v1/phoneassignment/1171133227",
+                    "type": "application/json",
+                    "rel": "self"
+                }
+            ]
+        },
+        {
+            "assignmentid": 11932,
+            "phone": "1271002248",
+            "branchid": 2,
+            "branchname": "چهارباغ",
+            "sourcecollectingdataid": 1,
+            "sourcename": "نوین هاب",
+            "username": "keyvani8193",
+            "links": [
+                {
+                    "href": "/api/v1/phoneassignment/1271002248",
+                    "type": "application/json",
+                    "rel": "self"
+                }
+            ]
+        },
+        {
+            "assignmentid": 11959,
+            "phone": "1287089704",
+            "branchid": 2,
+            "branchname": "چهارباغ",
+            "sourcecollectingdataid": 1,
+            "sourcename": "نوین هاب",
+            "username": "mahdi_.9704",
+            "links": [
+                {
+                    "href": "/api/v1/phoneassignment/1287089704",
+                    "type": "application/json",
+                    "rel": "self"
+                }
+            ]
+        },
+        {
+            "assignmentid": 11977,
+            "phone": "1288388799",
+            "branchid": 2,
+            "branchname": "چهارباغ",
+            "sourcecollectingdataid": 1,
+            "sourcename": "نوین هاب",
+            "username": "niko.pish_dabestan",
+            "links": [
+                {
+                    "href": "/api/v1/phoneassignment/1288388799",
+                    "type": "application/json",
+                    "rel": "self"
+                }
+            ]
+        },
+        {
+            "assignmentid": 11554,
+            "phone": "5269856549",
+            "branchid": 2,
+            "branchname": "چهارباغ",
+            "sourcecollectingdataid": 1,
+            "sourcename": "نوین هاب",
+            "username": "_samii_mousavi_",
+            "links": [
+                {
+                    "href": "/api/v1/phoneassignment/5269856549",
+                    "type": "application/json",
+                    "rel": "self"
+                }
+            ]
+        },
+        {
+            "assignmentid": 11950,
+            "phone": "5650022712",
+            "branchid": 2,
+            "branchname": "چهارباغ",
+            "sourcecollectingdataid": 1,
+            "sourcename": "نوین هاب",
+            "username": "rasol_kazemzadeh",
+            "links": [
+                {
+                    "href": "/api/v1/phoneassignment/5650022712",
+                    "type": "application/json",
+                    "rel": "self"
+                }
+            ]
+        },
+        {
+            "assignmentid": 10231,
+            "phone": "9006570085",
+            "branchid": 2,
+            "branchname": "چهارباغ",
+            "sourcecollectingdataid": 1,
+            "sourcename": "نوین هاب",
+            "username": "mohammadreza_org07",
+            "links": [
+                {
+                    "href": "/api/v1/phoneassignment/9006570085",
+                    "type": "application/json",
+                    "rel": "self"
+                }
+            ]
+        },
+        {
+            "assignmentid": 10852,
+            "phone": "9009703899",
+            "branchid": 2,
+            "branchname": "چهارباغ",
+            "sourcecollectingdataid": 1,
+            "sourcename": "نوین هاب",
+            "username": "cafeteria_reza",
+            "links": [
+                {
+                    "href": "/api/v1/phoneassignment/9009703899",
+                    "type": "application/json",
+                    "rel": "self"
+                }
+            ]
+        },
+        {
+            "assignmentid": 10708,
+            "phone": "9012130000",
+            "branchid": 2,
+            "branchname": "چهارباغ",
+            "sourcecollectingdataid": 1,
+            "sourcename": "نوین هاب",
+            "username": "_sajan_",
+            "links": [
+                {
+                    "href": "/api/v1/phoneassignment/9012130000",
+                    "type": "application/json",
+                    "rel": "self"
+                }
+            ]
+        },
+        {
+            "assignmentid": 11761,
+            "phone": "9021259767",
+            "branchid": 2,
+            "branchname": "چهارباغ",
+            "sourcecollectingdataid": 1,
+            "sourcename": "نوین هاب",
+            "username": "cheryy_yadak",
+            "links": [
+                {
+                    "href": "/api/v1/phoneassignment/9021259767",
+                    "type": "application/json",
+                    "rel": "self"
+                }
+            ]
+        },
+        {
+            "assignmentid": 11527,
+            "phone": "9021926500",
+            "branchid": 2,
+            "branchname": "چهارباغ",
+            "sourcecollectingdataid": 1,
+            "sourcename": "نوین هاب",
+            "username": "ehsan.mohammadi.7177",
+            "links": [
+                {
+                    "href": "/api/v1/phoneassignment/9021926500",
+                    "type": "application/json",
+                    "rel": "self"
+                }
+            ]
+        },
+        {
+            "assignmentid": 10537,
+            "phone": "9025100209",
+            "branchid": 2,
+            "branchname": "چهارباغ",
+            "sourcecollectingdataid": 1,
+            "sourcename": "نوین هاب",
+            "username": "abcd.efg7076",
+            "links": [
+                {
+                    "href": "/api/v1/phoneassignment/9025100209",
+                    "type": "application/json",
+                    "rel": "self"
+                }
+            ]
+        },
+        {
+            "assignmentid": 11806,
+            "phone": "9026486931",
+            "branchid": 2,
+            "branchname": "چهارباغ",
+            "sourcecollectingdataid": 1,
+            "sourcename": "نوین هاب",
+            "username": "giity_0707",
+            "links": [
+                {
+                    "href": "/api/v1/phoneassignment/9026486931",
+                    "type": "application/json",
+                    "rel": "self"
+                }
+            ]
+        },
+        {
+            "assignmentid": 10411,
+            "phone": "9028889965",
+            "branchid": 2,
+            "branchname": "چهارباغ",
+            "sourcecollectingdataid": 1,
+            "sourcename": "نوین هاب",
+            "username": "negar.rm758",
+            "links": [
+                {
+                    "href": "/api/v1/phoneassignment/9028889965",
+                    "type": "application/json",
+                    "rel": "self"
+                }
+            ]
+        },
+        {
+            "assignmentid": 10555,
+            "phone": "9029699109",
+            "branchid": 2,
+            "branchname": "چهارباغ",
+            "sourcecollectingdataid": 1,
+            "sourcename": "نوین هاب",
+            "username": "mhtb_1996",
+            "links": [
+                {
+                    "href": "/api/v1/phoneassignment/9029699109",
+                    "type": "application/json",
+                    "rel": "self"
+                }
+            ]
+        },
+        {
+            "assignmentid": 11680,
+            "phone": "9034529411",
+            "branchid": 2,
+            "branchname": "چهارباغ",
+            "sourcecollectingdataid": 1,
+            "sourcename": "نوین هاب",
+            "username": "m.mahdavi.11",
+            "links": [
+                {
+                    "href": "/api/v1/phoneassignment/9034529411",
+                    "type": "application/json",
+                    "rel": "self"
+                }
+            ]
+        },
+        {
+            "assignmentid": 10753,
+            "phone": "9037439311",
+            "branchid": 2,
+            "branchname": "چهارباغ",
+            "sourcecollectingdataid": 1,
+            "sourcename": "نوین هاب",
+            "username": "darvishi_9311",
+            "links": [
+                {
+                    "href": "/api/v1/phoneassignment/9037439311",
+                    "type": "application/json",
+                    "rel": "self"
+                }
+            ]
+        },
+        {
+            "assignmentid": 11446,
+            "phone": "9103014151",
+            "branchid": 2,
+            "branchname": "چهارباغ",
+            "sourcecollectingdataid": 1,
+            "sourcename": "نوین هاب",
+            "username": "amin.at39",
+            "links": [
+                {
+                    "href": "/api/v1/phoneassignment/9103014151",
+                    "type": "application/json",
+                    "rel": "self"
+                }
+            ]
+        },
+        {
+            "assignmentid": 11230,
+            "phone": "9103456321",
+            "branchid": 2,
+            "branchname": "چهارباغ",
+            "sourcecollectingdataid": 1,
+            "sourcename": "نوین هاب",
+            "username": "paiiz.kha",
+            "links": [
+                {
+                    "href": "/api/v1/phoneassignment/9103456321",
+                    "type": "application/json",
+                    "rel": "self"
+                }
+            ]
+        }
+    ]
+}
+
+
+---------------------------------------------------------------------------
+
+
+Get http://127.0.0.1:8435/api/v1/phoneassignment/11966
+output Code 200:
+{
+    "meta": {
+        "data_type": "model_customer_assignment",
+        "count": 1,
+        "is_success": true,
+        "description": "تخصیص به کد 1270217135 یافت شد."
+    },
+    "data": {
+        "assignmentid": 11966,
+        "phone": "1270217135",
+        "branchid": 9,
+        "sourcecollectingdataid": 1,
+        "username": "samanehdaei"
+    }
+}
+
+
+output Code 404:
+{
+    "meta": {
+        "data_type": "model_customer_assignment",
+        "count": 0,
+        "is_success": false,
+        "description": "تخصیص یافت نشد"
+    },
+    "data": {}
+}
+
+----------------------------------------------------------------------------------------
+
+Post http://127.0.0.1:8435/api/v1/phoneassignment
+
+Body:
+{
+    "phone": "9133754366",
+    "branchid": 1,
+    "sourcecollectingdataid": 2,
+    "username": "AmirAli"
+}
+
+Output Code 201:
+{
+    "meta": {
+        "data_type": "model_customer_assignment",
+        "count": 1,
+        "is_success": true,
+        "url": "/api/v1/assignment/12012",
+        "description": "تخصیص با موفقیت ذخیره شد."
+    },
+    "data": {
+        "assignmentid": 12012,
+        "phone": "9133754366",
+        "branchid": 1,
+        "sourcecollectingdataid": 2,
+        "username": "AmirAli"
+    }
+}
+
+Output Code 409:
+{
+    "meta": {
+        "data_type": "model_customer_assignment",
+        "count": 0,
+        "is_success": false,
+        "description": "شماره تلفن تخصیص تکراری است"
+    },
+    "data": {}
+}
+----------------------------------------------------------------------
+
+Put http://127.0.0.1:8435/api/v1/phoneassignment/12017
+
+Body:
+{
+    "phone": "9330913728",
+    "branchid": 1,
+    "sourcecollectingdataid": 2,
+    "username": "AmirAli"
+}
+
+output Code 404:
+{
+    "meta": {
+        "data_type": "model_customer_assignment",
+        "count": 0,
+        "is_success": false,
+        "description": "تخصیص یافت نشد"
+    },
+    "data": {}
+}
+
+output Code 409:
+{
+    "meta": {
+        "data_type": "model_customer_assignment",
+        "count": 0,
+        "is_success": false,
+        "description": "شماره تلفن تخصیص تکراری است"
+    },
+    "data": {}
+}
+
+output Code 200:
+{
+    "meta": {
+        "data_type": "model_customer_assignment",
+        "count": 1,
+        "is_success": true,
+        "description": "تخصیص با موفقیت بروزرسانی شد."
+    },
+    "data": {
+        "assignmentid": 12017,
+        "phone": "93390913728",
+        "branchid": 1,
+        "sourcecollectingdataid": 2,
+        "username": "AmirAli"
+    }
+}
+
+-----------------------------------------------------------------------------------------
+
+
+Delete http://127.0.0.1:8435/api/v1/phoneassignment/1001
+
+output Code 404:
+{
+    "meta": {
+        "data_type": "integer",
+        "count": 0,
+        "is_success": false,
+        "description": "تخصیص مورد نظر یافت نشد!"
+    },
+    "data": {}
+}
+
+output Code 200:
+{
+    "meta": {
+        "data_type": "integer",
+        "count": 1,
+        "is_success": true,
+        "description": "تخصیص با موفقیت حذف شد."
+    },
+    "data": {
+        "assignmentid": 12018
+    }
+}

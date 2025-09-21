@@ -1,0 +1,10 @@
+﻿{
+    "branchid": 1,
+    "code": "BR001",
+    "mainname": "شعبه مرکزی تهران",
+    "secondname": "دفتر اصلی",
+    "locationid": 101,
+    "phone": "021-12345678",
+    "isactive": true,
+    "description": "شعبه اصلی شرکت در تهران"
+}

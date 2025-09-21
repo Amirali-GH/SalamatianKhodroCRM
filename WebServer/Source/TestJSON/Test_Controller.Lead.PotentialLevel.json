@@ -1,0 +1,9 @@
+﻿{
+    "potentiallevelid": 1,
+    "code": "PL001",
+    "name": "بالا",
+    "description": "سطح پتانسیل بالا برای مشتریان با احتمال خرید زیاد",
+    "color": "#FF0000",
+    "priority": 1
+}
+

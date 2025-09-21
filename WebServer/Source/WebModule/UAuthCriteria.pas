@@ -1,0 +1,119 @@
+﻿Unit UAuthCriteria;
+
+Interface
+
+Uses
+    MVCFramework,
+    System.Generics.Collections;
+
+Type
+    TAuthCriteria = Class(TInterfacedObject, IMVCAuthenticationHandler)
+    Public
+        Procedure OnRequest(const AContext: TWebContext; const AControllerQualifiedClassName,
+         AActionName: string; var AAuthenticationRequired: Boolean);
+        Procedure OnAuthentication(const AContext: TWebContext; const AUserName, APassword: string;
+         AUserRoles: TList<string>; var AIsValid: Boolean;
+         const ASessionData: TDictionary<string, string>);
+        Procedure OnAuthorization(const AContext: TWebContext; AUserRoles: TList<string>;
+          const AControllerQualifiedClassName: string; const AActionName: string;
+          var AIsAuthorized: Boolean);
+    End;
+
+Implementation
+
+Uses
+    System.SysUtils,
+    System.StrUtils,
+    System.NetEncoding,
+    WebModule.SalamtCRM,
+    MVCFramework.ActiveRecord,
+    MVCFramework.Nullables,
+    MVCFramework.Logger,
+    Model.User,
+    Cashe.UserRole,
+    System.DateUtils;
+
+{ TAuthCriteria }
+
+//________________________________________________________________________________________
+Procedure TAuthCriteria.OnAuthentication(const AContext: TWebContext; Const AUserName,
+  APassword: String; AUserRoles: TList<string>; var AIsValid: Boolean;
+  const ASessionData: TDictionary<string, string>);
+Var
+    LUser: TUser;
+    LHashedPassword: String;
+    LPasswordBytes: TBytes;
+    LSaltBytes: TBytes;
+    LCombinedBytes: TBytes;
+    LContext: TWebContext;
+Begin
+    AIsValid := False;
+    LContext := AContext;
+    LUser := TMVCActiveRecord.GetOneByWhere<TUser>(
+      'username = ? and isactive=1', [AUserName], True);
+
+    Try
+        If Assigned(LUser) then
+        Begin
+            LSaltBytes := TNetEncoding.Base64.DecodeStringToBytes(LUser.Salt);
+
+            // ترکیب پسورد و salt
+            LPasswordBytes := TEncoding.UTF8.GetBytes(APassword);
+            SetLength(LCombinedBytes, Length(LPasswordBytes) + Length(LSaltBytes));
+
+            Move(LPasswordBytes[0], LCombinedBytes[0], Length(LPasswordBytes));
+            Move(LSaltBytes[0], LCombinedBytes[Length(LPasswordBytes)], Length(LSaltBytes));
+
+            // هش کردن
+            LHashedPassword := HashPassword(
+              TNetEncoding.Base64.EncodeBytesToString(LCombinedBytes)
+            );
+
+            If SameStr(LHashedPassword, LUser.PasswordHash) then
+            Begin
+                AIsValid := True;
+                AUserRoles.Add(GetRoleNameByID(LUser.UserRoleID.ValueOrDefault));
+
+                ASessionData.AddOrSetValue('userid', LUser.UserID.ToString);
+                ASessionData.AddOrSetValue('role', LUser.UserRoleID.GetValue.ToString);
+
+                LUser.LastLogin := Now;
+                LUser.Update;
+            End;
+        End;
+    Finally
+        LUser.Free;
+    End;
+End;
+//________________________________________________________________________________________
+Procedure TAuthCriteria.OnAuthorization(const AContext: TWebContext;
+    AUserRoles: TList<string>; const AControllerQualifiedClassName, AActionName: string;
+    var AIsAuthorized: Boolean);
+Begin
+    AIsAuthorized := True;
+End;
+//________________________________________________________________________________________
+Procedure TAuthCriteria.OnRequest(const AContext: TWebContext;
+  const AControllerQualifiedClassName, AActionName: string;
+  var AAuthenticationRequired: Boolean);
+Begin
+    if AContext.Request.PathInfo.StartsWith('/api/login', True) then
+    Begin
+        AAuthenticationRequired := False
+    End
+    Else if AContext.Request.PathInfo.StartsWith('/logooff', True) then
+    Begin
+        AAuthenticationRequired := False
+    End
+    Else if AContext.Request.PathInfo.StartsWith('/api/v1/user', True) AND (AActionName = 'AddUser') then
+    Begin
+        AAuthenticationRequired := False
+    End
+    else
+    Begin
+        AAuthenticationRequired := True;
+    End;
+End;
+//________________________________________________________________________________________
+
+End.

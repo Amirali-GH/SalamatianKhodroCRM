@@ -1,0 +1,71 @@
+:root {
+    --primary-color: #8e44ad;
+    --primary-light: #9b59b6;
+    --primary-dark: #7d3c98;
+}
+
+* {
+    font-family: Vazir, sans-serif
+}
+
+body {
+    background: #f5f7fa;
+    color: #333
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    color: #fff;
+    padding: 0.5rem 1rem;
+    display: inline-block
+}
+
+.btn-outline {
+    border: 1px solid var(--primary-color);
+    padding: 0.4rem 0.8rem
+}
+
+.drag-area {
+    border: 2px dashed #ccc;
+    border-radius: 0.5rem
+}
+
+.drag-area.active {
+    border-color: var(--primary-color);
+    background: rgba(142, 68, 173, 0.03)
+}
+
+.progress-bar {
+    height: 8px;
+    background: #e0e0e0;
+    border-radius: 4px;
+    overflow: hidden
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--primary-color);
+    width: 0
+}
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5)
+}
+
+.modal-content {
+    background: #fff;
+    border-radius: 8px;
+    padding: 1rem;
+    max-width: 600px;
+    width: 90%
+}
+
+.pagination-btn {
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px
+}

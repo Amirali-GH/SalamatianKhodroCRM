@@ -1,0 +1,48 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <PropertyGroup>
+        <ProjectGuid>{A54105DF-ECA0-4E2A-8777-4C5E0AB18B13}</ProjectGuid>
+    </PropertyGroup>
+    <ItemGroup>
+        <Projects Include="WebServerGoftino\GoftinoWebhook.dproj">
+            <Dependencies/>
+        </Projects>
+        <Projects Include="WebServer\Project.SalamatianCutomer.dproj">
+            <Dependencies/>
+        </Projects>
+    </ItemGroup>
+    <ProjectExtensions>
+        <Borland.Personality>Default.Personality.12</Borland.Personality>
+        <Borland.ProjectType/>
+        <BorlandProject>
+            <Default.Personality/>
+        </BorlandProject>
+    </ProjectExtensions>
+    <Target Name="GoftinoWebhook">
+        <MSBuild Projects="WebServerGoftino\GoftinoWebhook.dproj"/>
+    </Target>
+    <Target Name="GoftinoWebhook:Clean">
+        <MSBuild Projects="WebServerGoftino\GoftinoWebhook.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="GoftinoWebhook:Make">
+        <MSBuild Projects="WebServerGoftino\GoftinoWebhook.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Project_SalamatianCutomer">
+        <MSBuild Projects="WebServer\Project.SalamatianCutomer.dproj"/>
+    </Target>
+    <Target Name="Project_SalamatianCutomer:Clean">
+        <MSBuild Projects="WebServer\Project.SalamatianCutomer.dproj" Targets="Clean"/>
+    </Target>
+    <Target Name="Project_SalamatianCutomer:Make">
+        <MSBuild Projects="WebServer\Project.SalamatianCutomer.dproj" Targets="Make"/>
+    </Target>
+    <Target Name="Build">
+        <CallTarget Targets="GoftinoWebhook;Project_SalamatianCutomer"/>
+    </Target>
+    <Target Name="Clean">
+        <CallTarget Targets="GoftinoWebhook:Clean;Project_SalamatianCutomer:Clean"/>
+    </Target>
+    <Target Name="Make">
+        <CallTarget Targets="GoftinoWebhook:Make;Project_SalamatianCutomer:Make"/>
+    </Target>
+    <Import Project="$(BDS)\Bin\CodeGear.Group.Targets" Condition="Exists('$(BDS)\Bin\CodeGear.Group.Targets')"/>
+</Project>

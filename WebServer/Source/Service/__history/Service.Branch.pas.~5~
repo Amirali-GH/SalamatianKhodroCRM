@@ -1,0 +1,192 @@
+Unit Service.Branch;
+
+Interface
+
+Uses
+    System.Generics.Collections,
+    MVCFramework.Container,
+    Model.Branch,
+    Service.Interfaces,
+    WebModule.SalamtCRM;
+
+Type
+    TBranchService = Class(TInterfacedObject, IBranchService)
+    Public
+        Function GetAll: TObjectList<TBranch>;
+        Function GetInfo(Const AID: Integer): TBranchInfo;
+        Function GetByID(const AID: Integer): TBranch;
+        Function CreateBranch(ABranch: TBranch): TBranch;
+        Function UpdateBranch(ABranch: TBranch): TBranch;
+        Procedure DeleteBranch(const AID: Integer);
+    End;
+
+
+implementation
+
+uses
+  MVCFramework.ActiveRecord,
+  System.SysUtils,
+  System.NetEncoding;
+
+{ TBranchService }
+
+//________________________________________________________________________________________
+Function TBranchService.GetAll: TObjectList<TBranch>;
+Begin
+    Result := TMVCActiveRecord.All<TBranch>;
+End;
+//________________________________________________________________________________________
+Function TBranchService.GetByID(Const AID: Integer): TBranch;
+Begin
+    Result := TMVCActiveRecord.GetByPK<TBranch>(AID, True);
+End;
+//________________________________________________________________________________________
+Function TBranchService.GetInfo(Const AID: Integer): TBranchInfo;
+Var
+    LBranch: TBranch;
+    LRole: TBranchRole;
+    LBranch: TBranch;
+    LInfo: TBranchInfo;
+Begin
+    LBranch := TMVCActiveRecord.GetByPK<TBranch>(AID, True);
+    If not Assigned(LBranch) then
+    Begin
+        Exit(nil);
+    End;
+
+    LInfo := TBranchInfo.Create;
+
+    LInfo.BranchID      := LBranch.BranchID;
+    LInfo.BranchName    := LBranch.BranchName;
+    LInfo.FirstName   := LBranch.FirstName;
+    LInfo.LastName    := LBranch.LastName;
+    LInfo.Email       := LBranch.Email;
+    LInfo.Phone       := LBranch.Phone;
+    LInfo.BranchRoleID  := LBranch.BranchRoleID;
+    LInfo.BranchID    := LBranch.BranchID;
+    LInfo.LastLogin   := LBranch.LastLogin;
+    LInfo.Description := LBranch.Description;
+
+    If LBranch.BranchRoleID.HasValue then
+    Begin
+        LRole := TMVCActiveRecord.GetByPK<TBranchRole>(LBranch.BranchRoleID.Value, True);
+        Try
+            If Assigned(LRole) then
+            Begin
+                LInfo.BranchRoleName := LRole.MainName;
+            End;
+        Finally
+            LRole.Free;
+        End;
+    End;
+
+    If LBranch.BranchID.HasValue then
+    Begin
+        LBranch := TMVCActiveRecord.GetByPK<TBranch>(LBranch.BranchID.Value, True);
+        Try
+            If Assigned(LBranch) then
+            Begin
+                LInfo.BranchName := LBranch.MainName;
+            End;
+        Finally
+            LBranch.Free;
+        End;
+    End;
+
+    Result := LInfo;
+    LBranch.Free;
+End;
+//________________________________________________________________________________________
+Function TBranchService.CreateBranch(ABranch: TBranch): TBranch;
+Var
+    LSaltBytes: TBytes;
+    LPasswordWithSalt: TBytes;
+Begin
+    ABranch.isActive := True;
+
+    SetLength(LSaltBytes, 16);
+    Randomize;
+    For var i := 0 to High(LSaltBytes) do
+    Begin
+        LSaltBytes[i] := Byte(Random(256));
+    End;
+
+    ABranch.Salt := TNetEncoding.Base64.EncodeBytesToString(LSaltBytes);
+    LPasswordWithSalt := TEncoding.UTF8.GetBytes(ABranch.PasswordHash) + LSaltBytes;
+
+    ABranch.PasswordHash := HashPassword(
+      TNetEncoding.Base64.EncodeBytesToString(LPasswordWithSalt)
+    );
+
+    ABranch.Insert;
+    Result := ABranch;
+End;
+//________________________________________________________________________________________
+Function TBranchService.UpdateBranch(ABranch: TBranch): TBranch;
+Var
+    LExistingBranch: TBranch;
+Begin
+    LExistingBranch := TMVCActiveRecord.GetByPK<TBranch>(ABranch.BranchID);
+    Try
+        if not ABranch.BranchName.HasValue then
+          ABranch.BranchName := LExistingBranch.BranchName;
+
+        If not ABranch.FirstName.HasValue then
+          ABranch.FirstName := LExistingBranch.FirstName;
+
+        If not ABranch.LastName.HasValue then
+          ABranch.LastName := LExistingBranch.LastName;
+
+        If not ABranch.Email.HasValue then
+          ABranch.Email := LExistingBranch.Email;
+
+        If not ABranch.Phone.HasValue then
+          ABranch.Phone := LExistingBranch.Phone;
+
+        If not ABranch.BranchRoleID.HasValue then
+          ABranch.BranchRoleID := LExistingBranch.BranchRoleID;
+
+        If not ABranch.BranchID.HasValue then
+          ABranch.BranchID := LExistingBranch.BranchID;
+
+        If not ABranch.IsActive.HasValue then
+          ABranch.IsActive := LExistingBranch.IsActive;
+
+        If not ABranch.Description.HasValue then
+          ABranch.Description := LExistingBranch.Description;
+
+        If ABranch.PasswordHash.IsEmpty then
+          ABranch.PasswordHash := LExistingBranch.PasswordHash;
+
+        If ABranch.Salt.IsEmpty then
+          ABranch.Salt := LExistingBranch.Salt;
+
+        If ABranch.LastLogin.HasValue then
+          ABranch.LastLogin := LExistingBranch.LastLogin;
+
+        ABranch.Update;
+        Result := ABranch;
+    Finally
+        LExistingBranch.Free;
+    End;
+End;
+//________________________________________________________________________________________
+Procedure TBranchService.DeleteBranch(Const AID: Integer);
+Var
+    LBranch: TBranch;
+Begin
+    LBranch := TMVCActiveRecord.GetByPK<TBranch>(AID, True);
+    Try
+        If Assigned(LBranch) then
+        Begin
+            LBranch.isActive := False;
+            LBranch.Update;
+        End;
+    Finally
+        LBranch.Free;
+    End;
+End;
+//________________________________________________________________________________________
+
+End.
+

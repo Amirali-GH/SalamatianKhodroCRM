@@ -1,0 +1,27 @@
+# سرور خود را آپدیت کنید
+sudo apt update
+sudo apt upgrade -y
+
+# پایتون 3 و PIP را نصب کنید
+sudo apt install python3 python3-pip -y
+
+# نسخه‌های نصب شده را بررسی کنید
+python3 --version
+pip3 --version
+
+# فایل نصب گوگل کروم را دانلود کنید
+wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
+
+# بسته دانلود شده را نصب کنید
+sudo dpkg -i google-chrome-stable_current_amd64.deb
+
+# اگر در حین نصب خطای وابستگی (dependency) رخ داد، با دستور زیر آن را برطرف کنید
+sudo apt-get install -f -y
+
+# فایل نصب را پاک کنید
+rm google-chrome-stable_current_amd64.deb
+
+pip3 install -r requirements.txt
+
+اسکریپت را با دستور زیر اجرا کنید:
+python3 your_script.py

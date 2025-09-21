@@ -1,0 +1,20 @@
+Uses Utils, Math, StrUtils;
+
+Var
+    LCurrPage: Integer;
+    LFirstRec: Integer;
+    LRQL, LIsActive: String;
+Begin
+    LCurrPage := 0;
+    TryStrToInt(APage, LCurrPage);
+
+    LCurrPage := Max(LCurrPage, 1);
+    LFirstRec := (LCurrPage - 1) * PAGE_SIZE;
+    APage := LCurrPage.ToString;
+
+    LIsActive := IfThen(AOnlyActive, '1', '0');
+    Result := TMVCActiveRecord.Where<TBranch>(
+      'IsActive=? ORDER BY Code ASC, MainName ASC limit ?,?',
+      [LIsActive, LFirstRec, PAGE_SIZE]);
+End;
+//________________________________________________________________________________________

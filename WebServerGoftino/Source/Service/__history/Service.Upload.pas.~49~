@@ -1,0 +1,67 @@
+﻿Unit Service.Upload;
+
+Interface
+
+Uses
+    System.Classes,
+    System.Generics.Collections,
+    MVCFramework.Container,
+    Service.Interfaces,
+    WebModule.SalamtCRM;
+
+Type
+    TUploadService = class(TInterfacedObject, IUploadFileService)
+    Public
+        Function GetSalesConsultantSheet(Const AStream: TStream): Boolean;
+    End;
+
+implementation
+
+Uses
+  MVCFramework.ActiveRecord,
+  System.SysUtils,
+  System.IOUtils,
+  MVCFramework.Commons;
+
+
+{ TUploadService }
+//________________________________________________________________________________________
+Function TUploadService.GetSalesConsultantSheet(Const AStream: TStream): Boolean;
+Var
+    LGUID: TGUID:
+    LFilePath: String;
+    LFileStream: TFileStream;
+Begin
+    Result := False;
+    Try
+        LFilePath := dotEnv.Env('output.salesConsultant.sheet', '');
+        If (LFilePath.IsEmpty) then
+        Begin
+            raise Exception.Create('مسیر فایل برای ذخیره در .env تعریف نشده است: output.salesConsultant.sheet');
+        End;
+
+        If (not DirectoryExists(ExtractFilePath(LFilePath))) then
+        Begin
+            ForceDirectories(ExtractFilePath(LFilePath));
+        End;
+
+        CreateGUID(LGUID);
+        LFileStream := TFileStream.Create(TPath.Combine(LFilePath, LGUID.ToString) , fmCreate);
+        Try
+            LFileStream.CopyFrom(AStream, 0);
+        Finally
+            LFileStream.Free;
+        End;
+
+        Result := True;
+    Except
+        On E: Exception do
+        Begin
+            raise Exception.Create(E.Message);
+        End;
+    End;
+End;
+//________________________________________________________________________________________
+
+End.
+

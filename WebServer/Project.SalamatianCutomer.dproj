@@ -5,9 +5,8 @@
         <FrameworkType>VCL</FrameworkType>
         <Base>True</Base>
         <Config Condition="'$(Config)'==''">Debug</Config>
-        <Platform Condition="'$(Platform)'==''">Win32</Platform>
-        <ProjectName Condition="'$(ProjectName)'==''">Project.SalamatianCutomer</ProjectName>
-        <TargetedPlatforms>1</TargetedPlatforms>
+        <Platform Condition="'$(Platform)'==''">Linux64</Platform>
+        <TargetedPlatforms>131</TargetedPlatforms>
         <AppType>Console</AppType>
         <MainSource>Project.SalamatianCutomer.dpr</MainSource>
     </PropertyGroup>
@@ -120,9 +119,16 @@
         <BT_BuildType>Debug</BT_BuildType>
         <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
         <VerInfo_Locale>1033</VerInfo_Locale>
+        <DCC_ExeOutput>..\MainWebSite</DCC_ExeOutput>
+        <Manifest_File>(None)</Manifest_File>
+        <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Base_Win64)'!=''">
         <DCC_UsePackage>vclwinx;DataSnapServer;fmx;vclie;DbxCommonDriver;bindengine;IndyIPCommon;VCLRESTComponents;DBXMSSQLDriver;FireDACCommonODBC;emsclient;appanalytics;IndyProtocols;vclx;dbxcds;vcledge;FmxTeeUI;DBXFirebirdDriver;FireDACSqliteDriver;DbxClientDriver;soapmidas;TeeUI;dbexpress;Python;inet;PythonVcl;vcltouch;FireDACDBXDriver;fmxdae;CustomIPTransport;FireDACMSSQLDriver;IndySystem;ibxbindings;vclFireDAC;FireDACCommon;DataSnapServerMidas;FireDACODBCDriver;emsserverresource;bindcompdbx;rtl;FireDACMySQLDriver;DBXSqliteDriver;DBXSybaseASEDriver;vclimg;DataSnapFireDAC;inetdbxpress;FireDAC;xmlrtl;ibxpress;dsnap;FireDACDb2Driver;DBXOracleDriver;DBXInformixDriver;vclib;fmxobj;bindcompvclsmp;DataSnapNativeClient;DatasnapConnectorsFreePascal;emshosting;FireDACCommonDriver;IndyIPClient;bindcompvclwinx;emsedge;bindcompfmx;inetdb;ibmonitor;FireDACASADriver;Tee;vclactnband;fmxFireDAC;FireDACInfxDriver;DBXMySQLDriver;VclSmp;DataSnapCommon;fmxase;DBXOdbcDriver;dbrtl;FireDACOracleDriver;TeeDB;FireDACMSAccDriver;DataSnapIndy10ServerTransport;DataSnapConnectors;vcldsnap;DBXInterBaseDriver;FireDACMongoDBDriver;FireDACTDataDriver;Skia.Package.VCL;vcldb;SynEditDR;bindcomp;inetstn;IndyCore;RESTBackendComponents;FireDACADSDriver;RESTComponents;IndyIPServer;vcl;dsnapxml;adortl;dsnapcon;DataSnapClient;DataSnapProviderClient;DBXDb2Driver;emsclientfiredac;FireDACPgDriver;FireDACDSDriver;tethering;bindcompvcl;CloudService;DBXSybaseASADriver;FMXTee;PythonFmx;soaprtl;soapserver;FireDACIBDriver;$(DCC_UsePackage)</DCC_UsePackage>
+        <DCC_Namespace>Winapi;System.Win;Data.Win;Datasnap.Win;Web.Win;Soap.Win;Xml.Win;$(DCC_Namespace)</DCC_Namespace>
+        <BT_BuildType>Debug</BT_BuildType>
+        <VerInfo_Keys>CompanyName=;FileDescription=$(MSBuildProjectName);FileVersion=1.0.0.0;InternalName=;LegalCopyright=;LegalTrademarks=;OriginalFilename=;ProgramID=com.embarcadero.$(MSBuildProjectName);ProductName=$(MSBuildProjectName);ProductVersion=1.0.0.0;Comments=</VerInfo_Keys>
+        <VerInfo_Locale>1033</VerInfo_Locale>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1)'!=''">
         <DCC_Define>DEBUG;$(DCC_Define)</DCC_Define>
@@ -136,6 +142,9 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_1_Win32)'!=''">
         <DCC_RemoteDebug>false</DCC_RemoteDebug>
+        <VerInfo_Locale>1033</VerInfo_Locale>
+        <Manifest_File>(None)</Manifest_File>
+        <AppDPIAwarenessMode>none</AppDPIAwarenessMode>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Cfg_2)'!=''">
         <DCC_LocalDebugSymbols>false</DCC_LocalDebugSymbols>
@@ -152,9 +161,72 @@
         <DCCReference Include="Source\Service\Service.Goftino.pas"/>
         <DCCReference Include="Source\WebModule\WebModule.SalamtCRM.pas">
             <Form>WMSalamtCustomer</Form>
-            <FormType>dfm</FormType>
             <DesignClass>TWebModule</DesignClass>
         </DCCReference>
+        <DCCReference Include="Source\WebModule\UAuthCriteria.pas"/>
+        <DCCReference Include="Source\Model\Model.Branch.Branch.pas"/>
+        <DCCReference Include="Source\Model\Model.Sale.Campaign.pas"/>
+        <DCCReference Include="Source\Model\Model.CarModel.pas"/>
+        <DCCReference Include="Source\Model\Model.Contract.pas"/>
+        <DCCReference Include="Source\Model\Model.Lead.CustomerStatus.pas"/>
+        <DCCReference Include="Source\Model\Model.Document.pas"/>
+        <DCCReference Include="Source\Model\Model.InteractionType.pas"/>
+        <DCCReference Include="Source\Model\Model.Lead.PotentialLevel.pas"/>
+        <DCCReference Include="Source\Model\Model.UserRole.pas"/>
+        <DCCReference Include="Source\Model\Model.User.pas"/>
+        <DCCReference Include="Source\Service\Service.User.pas"/>
+        <DCCReference Include="Source\WebModule\Service.Interfaces.pas"/>
+        <DCCReference Include="Source\Controller\Controller.User.pas"/>
+        <DCCReference Include="Source\Controller\Controller.Upload.pas"/>
+        <DCCReference Include="Source\Service\Service.Upload.pas"/>
+        <DCCReference Include="Source\Cashe\Cashe.UserRole.pas"/>
+        <DCCReference Include="..\WebServerGoftino\Source\WebHook\Webhook.Goftino.pas"/>
+        <DCCReference Include="Source\Model\Model.ResultCustomerContact.pas"/>
+        <DCCReference Include="Source\Controller\Controller.Branch.Branch.pas"/>
+        <DCCReference Include="Source\Service\Service.Branch.Branch.pas"/>
+        <DCCReference Include="Source\Model\Model.Lead.ResultContactCustomer.pas"/>
+        <DCCReference Include="Source\Model\Model.Customer.Customer.pas"/>
+        <DCCReference Include="Source\Model\Model.Lead.FileResultContactCustomer.pas"/>
+        <DCCReference Include="Source\Model\Model.Organization.Employee.pas"/>
+        <DCCReference Include="Source\Model\Model.Sale.SaleAgent.pas"/>
+        <DCCReference Include="Source\Utils\Utils.pas"/>
+        <DCCReference Include="Source\Utils\SolarCalendarPackage.pas"/>
+        <DCCReference Include="Source\Controller\Controller.Sale.Campaign.pas"/>
+        <DCCReference Include="Source\Service\Service.Sale.Campaign.pas"/>
+        <DCCReference Include="Source\Service\Service.Lead.FileResultContactCustomer.pas"/>
+        <DCCReference Include="Source\Controller\Controller.Lead.FileResultContactCustomer.pas"/>
+        <DCCReference Include="Source\Service\Service.Lead.PotentialLevel.pas"/>
+        <DCCReference Include="Source\Controller\Controller.Lead.PotentialLevel.pas"/>
+        <DCCReference Include="Source\Service\Service.Customer.Customer.pas"/>
+        <DCCReference Include="Source\Controller\Controller.Customer.Customer.pas"/>
+        <DCCReference Include="Source\Model\Model.Car.Category.pas"/>
+        <DCCReference Include="Source\Model\Model.Car.Company.pas"/>
+        <DCCReference Include="Source\Model\Model.Car.Car.pas"/>
+        <DCCReference Include="Source\Service\Service.Lead.CustomerStatus.pas"/>
+        <DCCReference Include="Source\Controller\Controller.Lead.CustomerStatus.pas"/>
+        <DCCReference Include="Source\Service\Service.Car.Car.pas"/>
+        <DCCReference Include="Source\Controller\Controller.Car.Car.pas"/>
+        <DCCReference Include="Source\Service\Service.Car.Category.pas"/>
+        <DCCReference Include="Source\Controller\Controller.Car.Category.pas"/>
+        <DCCReference Include="Source\Service\Service.Car.Company.pas"/>
+        <DCCReference Include="Source\Controller\Controller.Car.Company.pas"/>
+        <DCCReference Include="Source\Model\Model.Organization.SaleAgentContract.pas"/>
+        <DCCReference Include="Source\Service\Service.Organization.SaleAgentContract.pas"/>
+        <DCCReference Include="Source\Controller\Controller.Organization.SaleAgentContract.pas"/>
+        <DCCReference Include="Source\Service\Service.Organization.Employee.pas"/>
+        <DCCReference Include="Source\Controller\Controller.Organization.Employee.pas"/>
+        <DCCReference Include="Source\Model\Model.View.Leads.pas"/>
+        <DCCReference Include="Source\Model\Model.Lead.PhoneAssignment.pas"/>
+        <DCCReference Include="Source\Service\Service.Lead.PhoneAssignment.pas"/>
+        <DCCReference Include="Source\Controller\Controller.Lead.PhoneAssignment.pas"/>
+        <DCCReference Include="Source\Model\Model.ContractRaw.pas"/>
+        <DCCReference Include="Source\Service\Service.ContractUpload.pas"/>
+        <DCCReference Include="Source\Controller\Controller.ContractUpload.pas"/>
+        <DCCReference Include="Source\Model\Model.Contract.FileResultContract.pas"/>
+        <DCCReference Include="Source\Service\Service.Contract.FileResultContract.pas"/>
+        <DCCReference Include="Source\Controller\Controller.Contract.FileResultContract.pas"/>
+        <DCCReference Include="Source\Service\Service.UploadImage.pas"/>
+        <DCCReference Include="Source\Controller\Controller.UploadImage.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>
@@ -175,6 +247,10 @@
                 <Source>
                     <Source Name="MainSource">Project.SalamatianCutomer.dpr</Source>
                 </Source>
+                <Excluded_Packages>
+                    <Excluded_Packages Name="$(BDSBIN)\dcloffice2k290.bpl">Microsoft Office 2000 Sample Automation Server Wrapper Components</Excluded_Packages>
+                    <Excluded_Packages Name="$(BDSBIN)\dclofficexp290.bpl">Microsoft Office XP Sample Automation Server Wrapper Components</Excluded_Packages>
+                </Excluded_Packages>
             </Delphi.Personality>
             <Deployment Version="5">
                 <DeployFile LocalName="$(BDS)\Redist\iossimulator\libcgunwind.1.0.dylib" Class="DependencyModule">
@@ -192,9 +268,162 @@
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
-                <DeployFile LocalName="Win32\Debug\Project.SalamatianCutomer.exe" Configuration="Debug" Class="ProjectOutput">
+                <DeployFile LocalName="..\MainWebSite\.env" Configuration="Debug" Class="File">
+                    <Platform Name="Linux64">
+                        <Enabled>false</Enabled>
+                        <RemoteName>.env</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\MainWebSite\.env" Configuration="Release" Class="File">
+                    <Platform Name="Linux64">
+                        <Enabled>false</Enabled>
+                        <RemoteName>.env</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\MainWebSite\FDConnectionDefs.ini" Configuration="Debug" Class="File">
+                    <Platform Name="Linux64">
+                        <Enabled>false</Enabled>
+                        <RemoteName>FDConnectionDefs.ini</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\MainWebSite\FDConnectionDefs.ini" Configuration="Release" Class="File">
+                    <Platform Name="Linux64">
+                        <Enabled>false</Enabled>
+                        <RemoteName>FDConnectionDefs.ini</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\MainWebSite\Project.SalamatianCutomer.exe" Configuration="Debug" Class="ProjectOutput">
                     <Platform Name="Win32">
                         <RemoteName>Project.SalamatianCutomer.exe</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\MainWebSite\WWW\assets\favicon.ico" Configuration="Debug" Class="File">
+                    <Platform Name="Linux64">
+                        <RemoteDir>.\WWW\assets</RemoteDir>
+                        <Enabled>false</Enabled>
+                        <RemoteName>favicon.ico</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\MainWebSite\WWW\assets\favicon.ico" Configuration="Release" Class="File">
+                    <Platform Name="Linux64">
+                        <RemoteDir>.\WWW\assets</RemoteDir>
+                        <Enabled>false</Enabled>
+                        <RemoteName>favicon.ico</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\MainWebSite\WWW\assets\favicon.png" Configuration="Debug" Class="File">
+                    <Platform Name="Linux64">
+                        <RemoteDir>.\WWW\assets</RemoteDir>
+                        <Enabled>false</Enabled>
+                        <RemoteName>favicon.png</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\MainWebSite\WWW\assets\favicon.png" Configuration="Release" Class="File">
+                    <Platform Name="Linux64">
+                        <RemoteDir>.\WWW\assets</RemoteDir>
+                        <Enabled>false</Enabled>
+                        <RemoteName>favicon.png</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\MainWebSite\WWW\index.html" Configuration="Debug" Class="File">
+                    <Platform Name="Linux64">
+                        <RemoteDir>.\WWW</RemoteDir>
+                        <Enabled>false</Enabled>
+                        <RemoteName>index.html</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\MainWebSite\WWW\index.html" Configuration="Release" Class="File">
+                    <Platform Name="Linux64">
+                        <RemoteDir>.\WWW</RemoteDir>
+                        <Enabled>false</Enabled>
+                        <RemoteName>index.html</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\MainWebSite\WWW\scripts\script.js" Configuration="Debug" Class="File">
+                    <Platform Name="Linux64">
+                        <RemoteDir>.\WWW\scripts</RemoteDir>
+                        <Enabled>false</Enabled>
+                        <RemoteName>script.js</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\MainWebSite\WWW\scripts\script.js" Configuration="Release" Class="File">
+                    <Platform Name="Linux64">
+                        <RemoteDir>.\WWW\scripts</RemoteDir>
+                        <Enabled>false</Enabled>
+                        <RemoteName>script.js</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\MainWebSite\WWW\styles\style.css" Configuration="Debug" Class="File">
+                    <Platform Name="Linux64">
+                        <RemoteDir>.\WWW\styles</RemoteDir>
+                        <Enabled>false</Enabled>
+                        <RemoteName>style.css</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\MainWebSite\WWW\styles\style.css" Configuration="Release" Class="File">
+                    <Platform Name="Linux64">
+                        <RemoteDir>.\WWW\styles</RemoteDir>
+                        <Enabled>false</Enabled>
+                        <RemoteName>style.css</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\Website\WWW_V1\index.html" Configuration="Debug" Class="File">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\WWW\</RemoteDir>
+                        <RemoteName>index.html</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\Website\WWW_V1\scripts\script.js" Configuration="Debug" Class="File">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\WWW\scripts</RemoteDir>
+                        <RemoteName>script.js</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="..\Website\WWW_V1\styles\style.css" Configuration="Debug" Class="File">
+                    <Platform Name="Win32">
+                        <RemoteDir>.\WWW\style</RemoteDir>
+                        <RemoteName>style.css</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="FDConnectionDefs.ini" Configuration="Debug" Class="File">
+                    <Platform Name="Win32">
+                        <RemoteName>FDConnectionDefs.ini</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="Linux64\Debug\Project.SalamatianCutomer" Configuration="Debug" Class="ProjectOutput">
+                    <Platform Name="Linux64">
+                        <RemoteName>Project_SalamatianCutomer</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="Linux64\Release\Project.SalamatianCutomer" Configuration="Release" Class="ProjectOutput">
+                    <Platform Name="Linux64">
+                        <RemoteName>Project_SalamatianCutomer</RemoteName>
+                        <Overwrite>true</Overwrite>
+                    </Platform>
+                </DeployFile>
+                <DeployFile LocalName="Win32\Debug\.env" Configuration="Debug" Class="File">
+                    <Platform Name="Win32">
+                        <RemoteName>.env</RemoteName>
                         <Overwrite>true</Overwrite>
                     </Platform>
                 </DeployFile>
@@ -1055,11 +1284,11 @@
                 <Platform value="Android64">False</Platform>
                 <Platform value="iOSDevice64">False</Platform>
                 <Platform value="iOSSimARM64">False</Platform>
-                <Platform value="Linux64">False</Platform>
+                <Platform value="Linux64">True</Platform>
                 <Platform value="OSX64">False</Platform>
                 <Platform value="OSXARM64">False</Platform>
                 <Platform value="Win32">True</Platform>
-                <Platform value="Win64">False</Platform>
+                <Platform value="Win64">True</Platform>
             </Platforms>
         </BorlandProject>
         <ProjectFileVersion>12</ProjectFileVersion>

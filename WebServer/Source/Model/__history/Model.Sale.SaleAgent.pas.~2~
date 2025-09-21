@@ -1,0 +1,61 @@
+Unit Model.Sale.SaleAgent;
+
+Interface
+
+Uses
+    MVCFramework.ActiveRecord,
+    MVCFramework.Nullables,
+    System.Generics.Collections;
+
+Type
+    [MVCNameCase(ncLowerCase)]
+    [MVCTable('Sale_SaleAgent')]
+    [MVCEntityActions([eaRetrieve, eaCreate, eaUpdate, eaDelete])]
+    TSale_SaleAgent = Class(TMVCActiveRecord)
+    Private
+        FSaleAgentID: Int32;
+        FEmployeeID: Int32;
+        FCode: String;
+        FTargetAmount: NullableDouble;
+        FRegion: NullableString;
+        FCommissionRate: NullableDouble;
+        FIsActive: NullableBoolean;
+        FIsSystemic: NullableBoolean;
+        FDescription: NullableString;
+        FCreatedAt: NullableTDateTime;
+
+    Public
+        [MVCTableField('SaleAgentID', [foPrimaryKey])]
+        Property SaleAgentID: Int32 Read FSaleAgentID Write FSaleAgentID;
+
+        [MVCTableField('EmployeeID')]
+        Property EmployeeID: Int32 Read FEmployeeID Write FEmployeeID;
+
+        [MVCTableField('Code')]
+        Property Code: String Read FCode Write FCode;
+
+        [MVCTableField('TargetAmount')]
+        Property TargetAmount: NullableDouble Read FTargetAmount Write FTargetAmount;
+
+        [MVCTableField('Region')]
+        Property Region: NullableString Read FRegion Write FRegion;
+
+        [MVCTableField('CommissionRate')]
+        Property CommissionRate: NullableDouble Read FCommissionRate Write FCommissionRate;
+
+        [MVCTableField('IsActive')]
+        Property IsActive: NullableBoolean Read FIsActive Write FIsActive;
+
+        [MVCTableField('IsSystemic')]
+        Property IsSystemic: NullableBoolean Read FIsSystemic Write FIsSystemic;
+
+        [MVCTableField('Description')]
+        Property Description: NullableString Read FDescription Write FDescription;
+
+        [MVCTableField('CreatedAt')]
+        Property CreatedAt: NullableTDateTime Read FCreatedAt Write FCreatedAt;
+    End;
+
+Implementation
+
+End.

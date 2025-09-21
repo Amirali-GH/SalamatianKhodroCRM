@@ -1,0 +1,230 @@
+Unit Service.Organization.Employee;
+
+Interface
+
+Uses
+    System.SysUtils,
+    System.Generics.Collections,
+    MVCFramework.ActiveRecord,
+    MVCFramework.Nullables,
+    Model.Organization.Employee,
+    Service.Interfaces;
+
+Type
+    TEmployeeService = Class(TInterfacedObject, IEmployeeService)
+    Public
+        Function GetAllEmployees(Var APage: String; Const AStatus: String; Const AContext: String;
+          Const AEmployeeRoleID: String; Out ATotalSize: Integer): TObjectList<TOrganization_Employee>;
+        Function GetEmployeeByID(Const AID: Integer): TOrganization_Employee;
+        Function CreateEmployee(Const AEmployee: TOrganization_Employee): TOrganization_Employee;
+        Function UpdateEmployeePartial(Const AID: Integer; Const AEmployee: TOrganization_Employee): TOrganization_Employee;
+        Function DeleteEmployee(Const AID: Integer): Boolean;
+    End;
+
+Implementation
+
+Uses Utils, Math, StrUtils, WebModule.SalamtCRM;
+
+{ TEmployeeService }
+
+//________________________________________________________________________________________
+Function TEmployeeService.GetAllEmployees(Var APage: String; Const AStatus: String;
+  Const AContext: String; Const AEmployeeRoleID: String; Out ATotalSize: Integer): TObjectList<TOrganization_Employee>;
+Var
+    LCurrPage: Integer;
+    LFirstRec: Integer;
+    LActive, LSearchField, LSearchRoleID: String;
+Begin
+    LActive := '';
+    LSearchField := '';
+    LSearchRoleID := '';
+
+    LCurrPage := 0;
+    TryStrToInt(APage, LCurrPage);
+
+    LCurrPage := Max(LCurrPage, 1);
+    LFirstRec := (LCurrPage - 1) * PAGE_SIZE;
+    APage := LCurrPage.ToString;
+
+    ATotalSize := TMVCActiveRecord.Count<TOrganization_Employee>;
+
+    If (AEmployeeRoleID.IsEmpty) then
+    Begin
+        LSearchRoleID := 'EmployeeRoleID IS NOT NULL';
+    End
+    Else
+    Begin
+        LSearchRoleID := 'EmployeeRoleID = '+AEmployeeRoleID;
+    End;
+
+    If (Not AContext.IsEmpty) then
+    Begin
+        LSearchField := Format(
+            'AND (FirstName LIKE %s OR LastName LIKE %s OR NationalCode LIKE %s)',
+            [QuotedStr('%' + AContext + '%'), QuotedStr('%' + AContext + '%'), QuotedStr('%' + AContext + '%')]
+        );
+    End;
+
+    If (Not AStatus.IsEmpty) then
+    Begin
+        If AStatus.ToLower = 'active' then
+            LActive := 'IsActive = 1'
+        Else If AStatus.ToLower = 'notactive' then
+            LActive := 'IsActive = 0'
+        Else
+            LActive := Format('AND Status = %s', [QuotedStr(AStatus)]);
+    End;
+
+
+    Result := TMVCActiveRecord.Where<TOrganization_Employee>(
+      LSearchRoleID + LSearchField + LActive + ' ORDER BY LastName ASC, FirstName ASC LIMIT ?,?',
+      [LFirstRec, PAGE_SIZE]);
+End;
+//________________________________________________________________________________________
+Function TEmployeeService.GetEmployeeByID(Const AID: Integer): TOrganization_Employee;
+Begin
+    Result := TMVCActiveRecord.GetByPK<TOrganization_Employee>(AID, False);
+End;
+//________________________________________________________________________________________
+Function TEmployeeService.CreateEmployee(Const AEmployee: TOrganization_Employee): TOrganization_Employee;
+Var
+    LCopy: TOrganization_Employee;
+Begin
+    LCopy := TOrganization_Employee.Create;
+    Try
+        LCopy.FirstName := AEmployee.FirstName;
+        LCopy.LastName := AEmployee.LastName;
+        LCopy.NationalCode := AEmployee.NationalCode;
+        LCopy.BirthDate := AEmployee.BirthDate;
+        LCopy.HireDate := AEmployee.HireDate;
+        LCopy.PhoneNumber := AEmployee.PhoneNumber;
+        LCopy.Email := AEmployee.Email;
+        LCopy.Address := AEmployee.Address;
+        LCopy.Status := AEmployee.Status;
+        LCopy.Description := AEmployee.Description;
+
+        If (AEmployee.IsActive.HasValue) then
+        Begin
+            LCopy.IsActive := AEmployee.IsActive;
+        End
+        Else
+        Begin
+            LCopy.IsActive := True;
+        End;
+
+        If (AEmployee.IsSystemic.HasValue) then
+        Begin
+            LCopy.IsSystemic := AEmployee.IsSystemic;
+        End
+        Else
+        Begin
+            LCopy.IsSystemic := False;
+        End;
+
+        LCopy.Insert;
+        Result := GetEmployeeByID(LCopy.EmployeeID);
+    Except
+        LCopy.Free;
+        Raise;
+    End;
+End;
+//________________________________________________________________________________________
+Function TEmployeeService.UpdateEmployeePartial(Const AID: Integer; Const AEmployee: TOrganization_Employee): TOrganization_Employee;
+Var
+    LExisting: TOrganization_Employee;
+Begin
+    LExisting := TMVCActiveRecord.GetByPK<TOrganization_Employee>(AID, False);
+    If Not Assigned(LExisting) Then
+    Begin
+        Exit(nil);
+    End;
+
+    Try
+        If (AEmployee.FirstName.HasValue) Then
+        Begin
+            LExisting.FirstName := AEmployee.FirstName;
+        End;
+
+        If (Not AEmployee.LastName.IsEmpty) Then
+        Begin
+            LExisting.LastName := AEmployee.LastName;
+        End;
+
+        If (AEmployee.NationalCode.HasValue) Then
+        Begin
+            LExisting.NationalCode := AEmployee.NationalCode;
+        End;
+
+        If (AEmployee.BirthDate.HasValue) Then
+        Begin
+            LExisting.BirthDate := AEmployee.BirthDate;
+        End;
+
+        If (AEmployee.HireDate.HasValue) Then
+        Begin
+            LExisting.HireDate := AEmployee.HireDate;
+        End;
+
+        If (AEmployee.PhoneNumber.HasValue) Then
+        Begin
+            LExisting.PhoneNumber := AEmployee.PhoneNumber;
+        End;
+
+        If (AEmployee.Email.HasValue) Then
+        Begin
+            LExisting.Email := AEmployee.Email;
+        End;
+
+        If (AEmployee.Address.HasValue) Then
+        Begin
+            LExisting.Address := AEmployee.Address;
+        End;
+
+        If (AEmployee.Status <> esActive) Then
+        Begin
+            LExisting.Status := AEmployee.Status;
+        End;
+
+        If (AEmployee.IsActive.HasValue) Then
+        Begin
+            LExisting.IsActive := AEmployee.IsActive;
+        End;
+
+        If (AEmployee.IsSystemic.HasValue) Then
+        Begin
+            LExisting.IsSystemic := AEmployee.IsSystemic;
+        End;
+
+        If (AEmployee.Description.HasValue) Then
+        Begin
+            LExisting.Description := AEmployee.Description;
+        End;
+
+        LExisting.Update;
+        Result := LExisting;
+    Except
+        LExisting.Free;
+        Raise;
+    End;
+End;
+//________________________________________________________________________________________
+Function TEmployeeService.DeleteEmployee(Const AID: Integer): Boolean;
+Var
+    LExisting: TOrganization_Employee;
+Begin
+    LExisting := TMVCActiveRecord.GetByPK<TOrganization_Employee>(AID, False);
+    If Not Assigned(LExisting) Then
+    Begin
+        Exit(False);
+    End;
+
+    Try
+        LExisting.Delete;
+        Result := True;
+    Finally
+        LExisting.Free;
+    End;
+End;
+//________________________________________________________________________________________
+
+End.

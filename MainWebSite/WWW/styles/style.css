@@ -201,6 +201,14 @@ body.overflow-hidden {
 #notification-button{
     cursor: pointer;
 }
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
 
 /* اسکرول بار سفارشی فقط برای قسمت منوی سایدبار */
 .flex-1::-webkit-scrollbar {

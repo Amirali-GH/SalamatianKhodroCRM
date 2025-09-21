@@ -1,0 +1,79 @@
+Unit Service.View.PhoneAssignment;
+
+Interface
+
+Uses
+    System.SysUtils,
+    System.Generics.Collections,
+    MVCFramework.ActiveRecord,
+    MVCFramework.Nullables,
+    Model.View.PhoneAssignment,
+    Service.Interfaces;
+
+Type
+    TPhoneAssignmentService = Class(TInterfacedObject, IPhoneAssignmentService)
+    Public
+        Function GetAllAssignments(Var APage: String; Const ABranchID: String;
+          Const ASourceID: String; Out ATotalSize: Integer): TObjectList<TPhoneAssignmentService>;
+    End;
+
+Implementation
+
+Uses Utils, Math, StrUtils, WebModule.SalamtCRM;
+
+{ TEmployeeService }
+
+//________________________________________________________________________________________
+Function TEmployeeService.GetAllAssignments(Var APage: String; Const ABranchID: String;
+          Const ASourceID: String; Out ATotalSize: Integer): TObjectList<TPhoneAssignmentService>;
+Var
+    LCurrPage: Integer;
+    LFirstRec: Integer;
+    LActive, LSearchField, LSearchRoleID: String;
+Begin
+    LActive := '';
+    LSearchField := '';
+    LSearchRoleID := '';
+
+    LCurrPage := 0;
+    TryStrToInt(APage, LCurrPage);
+
+    LCurrPage := Max(LCurrPage, 1);
+    LFirstRec := (LCurrPage - 1) * PAGE_SIZE;
+    APage := LCurrPage.ToString;
+
+    ATotalSize := TMVCActiveRecord.Count<TOrganization_Employee>;
+
+    If (AEmployeeRoleID.IsEmpty) then
+    Begin
+        LSearchRoleID := ' (EmployeeRoleID IS NOT NULL) ';
+    End
+    Else
+    Begin
+        LSearchRoleID := Format(' (EmployeeRoleID = %s ) ',[AEmployeeRoleID]);
+    End;
+
+    If (Not AContext.IsEmpty) then
+    Begin
+        LSearchField := Format(
+            'AND (FirstName LIKE %s OR LastName LIKE %s OR NationalCode LIKE %s) ',
+            [QuotedStr('%' + AContext + '%'), QuotedStr('%' + AContext + '%'), QuotedStr('%' + AContext + '%')]
+        );
+    End;
+
+    If (Not AStatus.IsEmpty) then
+    Begin
+        If AStatus.ToLower = 'active' then
+            LActive := 'IsActive = 1'
+        Else If AStatus.ToLower = 'notactive' then
+            LActive := 'IsActive = 0';
+    End;
+
+
+    Result := TMVCActiveRecord.Where<TOrganization_Employee>(
+      LSearchRoleID + LSearchField + LActive + ' ORDER BY LastName ASC, FirstName ASC LIMIT ?,?',
+      [LFirstRec, PAGE_SIZE]);
+End;
+//________________________________________________________________________________________
+
+End.

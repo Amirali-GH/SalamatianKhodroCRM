@@ -1,0 +1,48 @@
+Unit Service.View.PhoneAssignment;
+
+Interface
+
+Uses
+    System.SysUtils,
+    System.Generics.Collections,
+    MVCFramework.ActiveRecord,
+    MVCFramework.Nullables,
+    Model.View.PhoneAssignment,
+    Service.Interfaces;
+
+Type
+    TPhoneAssignmentService = Class(TInterfacedObject, IPhoneAssignmentService)
+    Public
+        Function GetAllAssignments(Var APage: String; Const ABranchID: String;
+          Const ASourceID: String; Out ATotalSize: Integer): TObjectList<TPhoneAssignmentService>;
+    End;
+
+Implementation
+
+Uses Utils, Math, StrUtils, WebModule.SalamtCRM;
+
+{ TEmployeeService }
+
+//________________________________________________________________________________________
+Function TEmployeeService.GetAllAssignments(Var APage: String; Const ABranchID: String;
+          Const ASourceID: String; Out ATotalSize: Integer): TObjectList<TPhoneAssignmentService>;
+Var
+    LCurrPage: Integer;
+    LFirstRec: Integer;
+    LActive, LSearchField, LSearchRoleID: String;
+Begin
+    LActive := '';
+    LSearchField := '';
+    LSearchRoleID := '';
+
+    LCurrPage := 0;
+    TryStrToInt(APage, LCurrPage);
+
+    LCurrPage := Max(LCurrPage, 1);
+    LFirstRec := (LCurrPage - 1) * PAGE_SIZE;
+    APage := LCurrPage.ToString;
+
+End;
+//________________________________________________________________________________________
+
+End.

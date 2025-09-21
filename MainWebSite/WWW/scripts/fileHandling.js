@@ -1,28 +1,5 @@
 import { currentState } from './state.js';
-
-export function preventDefaults(e) {
-    e.preventDefault();
-    e.stopPropagation();
-}
-
-export function highlight() {
-    document.getElementById('drop-area').classList.add('active');
-}
-
-export function unhighlight() {
-    document.getElementById('drop-area').classList.remove('active');
-}
-
-export function handleDrop(e) {
-    const dt = e.dataTransfer;
-    const file = dt.files[0];
-    handleFile(file);
-}
-
-export function handleFileSelect(e) {
-    const file = e.target.files[0];
-    handleFile(file);
-}
+import { showNotification } from './systemAdmin.js';
 
 export function handleFile(file) {
     if (!file) return;
@@ -349,92 +326,6 @@ export async function loadUploadedFiles(currentPage = 1, currentSearchTerm = '')
     }
 }
 
-
-// تابع نمایش جزئیات فایل
-export async function showFileDetails(fileId) {
-    const modal = document.getElementById('file-details-modal');
-    const modalContent = document.getElementById('modal-content');
-    const fileNameBox = document.getElementById('file-name-text');
-    
-    // پاک کردن مقادیر قبلی
-    fileNameBox.textContent = '';
-    modalContent.innerHTML = `
-        <div class="flex justify-center items-center py-8">
-            <i class="material-icons animate-spin text-purple-600 mr-2">refresh</i>
-            <span>در حال بارگذاری جزئیات...</span>
-        </div>
-    `;
-    
-    // نمایش مدال
-    modal.classList.remove('hidden');
-
-    try {
-        const apiBaseUrl = window.location.origin;
-        const url = `${apiBaseUrl}/api/v1/file-result/${fileId}`;
-
-        const response = await fetch(url, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${currentState.token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(errorData.meta?.description || 'خطا در دریافت اطلاعات از سرور');
-        }
-
-        const fileDetails = await response.json();
-
-        if (fileDetails.meta && fileDetails.meta.is_success) {
-            const file = fileDetails.data;
-
-            // نمایش نام فایل
-            fileNameBox.textContent = file.filename;
-
-            // نمایش سایر جزئیات
-            modalContent.innerHTML = `
-                <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <strong class="block text-sm text-gray-600">حجم فایل:</strong>
-                            <p>${formatFileSize(file.filesize)}</p>
-                        </div>
-                        <div>
-                            <strong class="block text-sm text-gray-600">تاریخ آپلود:</strong>
-                            <p>${formatDate(file.uploadedat)}</p>
-                        </div>
-                        <div>
-                            <strong class="block text-sm text-gray-600">وضعیت:</strong>
-                            <span class="px-2 py-1 ${file.errormessage ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'} text-xs rounded-full">
-                                ${file.errormessage ? 'ناموفق' : 'موفق'}
-                            </span>
-                        </div>
-                    </div>
-                    ${file.errormessage ? `
-                    <div class="bg-red-50 p-3 rounded-lg mt-4">
-                        <strong class="block text-sm text-red-700 mb-1">پیغام خطا:</strong>
-                        <p class="text-red-700">${file.errormessage}</p>
-                    </div>
-                    ` : ''}
-                </div>
-            `;
-        } else {
-            throw new Error(fileDetails.meta?.description || 'خطا در دریافت اطلاعات');
-        }
-
-    } catch (error) {
-        console.error('Failed to fetch file details:', error);
-        modalContent.innerHTML = `
-            <div class="bg-red-50 text-red-700 p-3 rounded-lg">
-                <i class="material-icons mr-2">error</i>
-                <span>${error.message}</span>
-            </div>
-        `;
-    }
-}
-
 // تابع renderFilesList را به صورت زیر اصلاح می‌کنیم:
 export function renderFilesList(files) {
     const filesContainer = document.getElementById('files-container');
@@ -475,25 +366,12 @@ export function renderFilesList(files) {
                         <i class="material-icons text-xs mr-1">${errorIcon}</i>
                         ${statusText}
                     </span>
-                    <button class="details-btn px-3 py-1 bg-blue-100 text-blue-700 text-xs rounded-full hover:bg-blue-200 transition-colors flex items-center" 
-                            data-file-id="${file.fileuploadid}">
-                        <i class="material-icons text-xs mr-1">info</i>
-                        مشاهده جزئیات
-                    </button>
                 </div>
             </div>
         `;
     });
     
     filesContainer.innerHTML = filesHTML;
-
-    // اضافه کردن event listener برای دکمه‌های جزئیات
-    document.querySelectorAll('.details-btn').forEach(button => {
-        button.addEventListener('click', (e) => {
-            const fileId = e.currentTarget.getAttribute('data-file-id');
-            showFileDetails(fileId);
-        });
-    });
 }
 
 // تابع ایجاد pagination

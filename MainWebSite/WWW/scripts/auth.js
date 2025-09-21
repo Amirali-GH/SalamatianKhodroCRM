@@ -125,19 +125,6 @@ export function handleLogout() {
 }
 
 export async function getUserInfo() {
-    if (currentState.user && currentState.user.userid) {
-        // بررسی نقش کاربر و نمایش/مخفی کردن منوی ادمین
-        const adminMenuItem = document.getElementById('admin-menu-item');
-        if (adminMenuItem) {
-            if (currentState.user.role === 'admin') {
-                adminMenuItem.classList.remove('hidden');
-            } else {
-                adminMenuItem.classList.add('hidden');
-            }
-        }
-        return;
-    }
-
     const apiBaseUrl = window.location.origin;
     try {
         const response = await fetch(`${apiBaseUrl}/api/v1/user/0/info`, {
@@ -169,13 +156,29 @@ export async function getUserInfo() {
             branchFullNameEl.innerText = data.branchname || '';
         }
         
+           
         // نمایش منوی ادمین فقط برای کاربران با نقش admin
-        if (adminMenuItem) {
-            if (data.userrolename === 'admin') {
-                adminMenuItem.classList.remove('hidden');
-            } else {
-                adminMenuItem.classList.add('hidden');
+        if (currentState.user && currentState.user.userid) {
+            // بررسی نقش کاربر و نمایش/مخفی کردن منوی ادمین
+            const adminMenuItem = document.getElementById('admin-menu-item');
+            const uploadfileMenuItem = document.getElementById('upload-file-menu-item');
+            const imageuploadMenuItem = document.getElementById('image-upload-menu-item');
+            const contractMenuItem = document.getElementById('contract-menu-item');
+            
+            if (adminMenuItem && uploadfileMenuItem && imageuploadMenuItem && contractMenuItem) {
+                if (currentState.user.userrolename === 'admin') {
+                    adminMenuItem.classList.remove('hidden');
+                    uploadfileMenuItem.classList.remove('hidden');
+                    imageuploadMenuItem.classList.remove('hidden');
+                    contractMenuItem.classList.remove('hidden');
+                } else {
+                    adminMenuItem.classList.add('hidden');
+                    uploadfileMenuItem.classList.add('hidden');
+                    imageuploadMenuItem.classList.add('hidden');
+                    contractMenuItem.classList.add('hidden');                
+                }
             }
+            return;
         }
 
     } catch (error) {

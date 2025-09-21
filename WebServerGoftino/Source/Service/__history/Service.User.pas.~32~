@@ -1,0 +1,95 @@
+﻿Unit Service.User;
+
+Interface
+
+Uses
+    System.Generics.Collections,
+    MVCFramework.Container,
+    Model.User,
+    Service.Interfaces,
+    WebModule.SalamtCRM;
+
+Type
+    TUserService = class(TInterfacedObject, IUserService)
+    public
+      function GetAll: TObjectList<TUser>;
+      function GetByID(const AID: Integer): TUser;
+      function CreateUser(AUser: TUser): TUser;
+      function UpdateUser(AUser: TUser): TUser;
+      procedure DeleteUser(const AID: Integer);
+    end;
+
+
+implementation
+
+uses
+  MVCFramework.ActiveRecord,
+  System.SysUtils,
+  System.NetEncoding;
+
+{ TUserService }
+
+//________________________________________________________________________________________
+Function TUserService.GetAll: TObjectList<TUser>;
+Begin
+    Result := TMVCActiveRecord.All<TUser>;
+End;
+//________________________________________________________________________________________
+Function TUserService.GetByID(const AID: Integer): TUser;
+Begin
+    Result := TMVCActiveRecord.GetByPK<TUser>(AID, True);
+End;
+//________________________________________________________________________________________
+Function TUserService.CreateUser(AUser: TUser): TUser;
+Var
+    LSaltBytes: TBytes;
+    LPasswordWithSalt: TBytes;
+Begin
+    AUser.isActive := True;
+
+    SetLength(LSaltBytes, 16);
+    Randomize;
+    For var i := 0 to High(LSaltBytes) do
+    Begin
+        LSaltBytes[i] := Byte(Random(256));
+    End;
+
+    AUser.Salt := TNetEncoding.Base64.EncodeBytesToString(LSaltBytes);
+
+    // ترکیب پسورد و salt
+    LPasswordWithSalt := TEncoding.UTF8.GetBytes(AUser.PasswordHash) + LSaltBytes;
+
+    // هش کردن فقط یک بار
+    AUser.PasswordHash := HashPassword(
+      TNetEncoding.Base64.EncodeBytesToString(LPasswordWithSalt)
+    );
+
+    AUser.Insert;
+    Result := AUser;
+End;
+//________________________________________________________________________________________
+Function TUserService.UpdateUser(AUser: TUser): TUser;
+Begin
+    AUser.Update;
+    Result := AUser;
+End;
+//________________________________________________________________________________________
+Procedure TUserService.DeleteUser(Const AID: Integer);
+Var
+    LUser: TUser;
+Begin
+    LUser := TMVCActiveRecord.GetByPK<TUser>(AID, True);
+    Try
+        If Assigned(LUser) then
+        Begin
+            LUser.isActive := False;
+            LUser.Update;
+        End;
+    Finally
+        LUser.Free;
+    End;
+End;
+//________________________________________________________________________________________
+
+End.
+

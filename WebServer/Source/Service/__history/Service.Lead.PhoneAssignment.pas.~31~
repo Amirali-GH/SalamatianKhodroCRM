@@ -1,0 +1,168 @@
+Unit Service.Lead.PhoneAssignment;
+
+Interface
+
+Uses
+    System.SysUtils,
+    System.Generics.Collections,
+    MVCFramework.ActiveRecord,
+    MVCFramework.Nullables,
+    Model.Lead.PhoneAssignment,
+    Service.Interfaces;
+
+Type
+    TPhoneAssignmentService = Class(TInterfacedObject, IPhoneAssignmentService)
+    Public
+        Function GetAllAssignments(Var APage: String; Const ABranchID: String;
+          Const ASourceID: String; Out ATotalSize: Integer): TObjectList<TPhoneAssignment>;
+        Function GetAssignmentByID(Const AID: Int64): TCustomer_Assignment;
+        Function CreateAssignment(Const AAssignment: TCustomer_Assignment): TCustomer_Assignment;
+        Function UpdateAssignmentPartial(Const AID: Int64; Const AAssignment: TCustomer_Assignment): TCustomer_Assignment;
+        Function DeleteAssignment(Const AID: Int64): Boolean;
+    End;
+
+Implementation
+
+Uses Utils, Math, StrUtils, WebModule.SalamtCRM;
+
+{ TPhoneAssignmentService }
+
+//----------------------------------------------------------------------------------------
+Function TPhoneAssignmentService.GetAllAssignments(Var APage: String;
+  Const ABranchID: String; Const ASourceID: String;
+  Out ATotalSize: Integer): TObjectList<TPhoneAssignment>;
+VAR
+    LCurrPage: Integer;
+    LFirstRec: Integer;
+    LSQLBase, LSQL, LFilter, LRQL: String;
+    LParams: TArray<Variant>;
+Begin
+    ATotalSize := 0;
+    LCurrPage := 0;
+    TryStrToInt(APage, LCurrPage);
+
+    LCurrPage := Max(LCurrPage, 1);
+    LFirstRec := (LCurrPage - 1) * PAGE_SIZE;
+    APage := LCurrPage.ToString;
+
+    // BASE QUERY
+    LFilter := '';
+    LSQLBase := 'SELECT * FROM vw_phone_assignment WHERE 1=1';
+    SetLength(LParams, 0);
+
+    // FILTER BY BRANCH ID
+    IF (NOT ABranchID.IsEmpty) AND (ABranchID <> '0') THEN
+    BEGIN
+        LRQL := Format('eq(BranchID,%s)', [ABranchID]);
+        LFilter := LFilter + ' AND BranchID = ?';
+        LParams := LParams + [ABranchID.ToInteger];
+    END;
+
+    // FILTER BY SOURCE ID
+    IF (NOT ASourceID.IsEmpty) AND (ASourceID <> '0') THEN
+    BEGIN
+        If ABranchID.IsEmpty then
+        Begin
+            LRQL := Format('eq(SourceCollectingDataID,%s)', [ASourceID]);
+        End
+        Else
+        Begin
+            LRQL := LRQL + Format(' , eq(SourceCollectingDataID,%s)', [ASourceID]);
+        End;
+
+        LFilter := LFilter + ' AND SourceCollectingDataID = ?';
+        LParams := LParams + [ASourceID.ToInteger];
+    END;
+
+    // DATA QUERY
+    LSQL := LSQLBase + LFilter + ' ORDER BY Phone ASC LIMIT ?, ?';
+    LParams := LParams + [LFirstRec, PAGE_SIZE];
+
+    ATotalSize := TMVCActiveRecord.Count<TPhoneAssignment>(LRQL);
+    RESULT := TMVCActiveRecord.Select<TPhoneAssignment>(LSQL, LParams);
+END;
+//________________________________________________________________________________________
+Function TPhoneAssignmentService.GetAssignmentByID(Const AID: Int64): TCustomer_Assignment;
+Begin
+    Result := TMVCActiveRecord.GetByPK<TCustomer_Assignment>(AID, False);
+End;
+//________________________________________________________________________________________
+Function TPhoneAssignmentService.CreateAssignment(Const AAssignment: TCustomer_Assignment): TCustomer_Assignment;
+Var
+	  LCopy: TCustomer_Assignment;
+Begin
+    LCopy := TCustomer_Assignment.Create;
+    Try
+        LCopy.Phone := AAssignment.Phone;
+        LCopy.BranchID := AAssignment.BranchID;
+        LCopy.SourceCollectingDataID := AAssignment.SourceCollectingDataID;
+        LCopy.UserName := AAssignment.UserName;
+
+        LCopy.Insert;
+        Result := GetAssignmentByID(LCopy.AssignmentID);
+    Except
+        LCopy.Free;
+        Raise;
+    End;
+End;
+//________________________________________________________________________________________
+Function TPhoneAssignmentService.UpdateAssignmentPartial(Const AID: Int64; Const AAssignment: TCustomer_Assignment): TCustomer_Assignment;
+Var
+	  LExisting: TCustomer_Assignment;
+Begin
+    LExisting := TMVCActiveRecord.GetByPK<TCustomer_Assignment>(AID, False);
+    If Not Assigned(LExisting) Then
+    Begin
+        Exit(nil);
+    End;
+
+    Try
+        If (Not AAssignment.Phone.IsEmpty) Then
+        Begin
+            LExisting.Phone := AAssignment.Phone;
+        End;
+
+        If (AAssignment.BranchID <> 0) Then
+        Begin
+            LExisting.BranchID := AAssignment.BranchID;
+        End;
+
+        If (AAssignment.SourceCollectingDataID <> 0) Then
+        Begin
+            LExisting.SourceCollectingDataID := AAssignment.SourceCollectingDataID;
+        End;
+
+        If (AAssignment.UserName.HasValue) Then
+        Begin
+            LExisting.UserName := AAssignment.UserName;
+        End;
+
+        LExisting.Update;
+        Result := LExisting;
+    Except
+        LExisting.Free;
+        Raise;
+    End;
+End;
+//________________________________________________________________________________________
+Function TPhoneAssignmentService.DeleteAssignment(Const AID: Int64): Boolean;
+Var
+	  LExisting: TCustomer_Assignment;
+Begin
+    LExisting := TMVCActiveRecord.GetByPK<TCustomer_Assignment>(AID, False);
+    If Not Assigned(LExisting) Then
+    Begin
+        Exit(False);
+    End;
+
+    Try
+        LExisting.Delete;
+        Result := True;
+    Finally
+        LExisting.Free;
+    End;
+End;
+//________________________________________________________________________________________
+
+End.
+

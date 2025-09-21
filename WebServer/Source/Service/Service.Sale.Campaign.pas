@@ -1,0 +1,198 @@
+﻿Unit Service.Sale.Campaign;
+
+Interface
+
+Uses
+	 System.SysUtils,
+	 System.Generics.Collections,
+	 MVCFramework.ActiveRecord,
+	 MVCFramework.Nullables,
+	 Model.Sale.Campaign,
+   Service.Interfaces;
+
+Type
+	 TCampaignService = Class(TInterfacedObject, ICampaignService)
+		Public
+			Function GetAllCampaigns(Var APage: String; Const AStatus: String; Const AContext: String): TObjectList<TSale_Campaign>;
+			Function GetCampaignByID(Const AID: Integer): TSale_Campaign;
+			Function CreateCampaign(Const ACampaign: TSale_Campaign): TSale_Campaign;
+			Function UpdateCampaignPartial(Const AID: Integer; Const ACampaign: TSale_Campaign): TSale_Campaign;
+			Function DeleteCampaign(Const AID: Integer): Boolean;
+	 End;
+
+Implementation
+
+Uses Utils, Math, StrUtils, WebModule.SalamtCRM;
+
+{ TCampaignService }
+
+//________________________________________________________________________________________
+Function TCampaignService.GetAllCampaigns(Var APage: String; Const AStatus: String;
+  Const AContext: String): TObjectList<TSale_Campaign>;
+Var
+    LCurrPage: Integer;
+    LFirstRec: Integer;
+    LActive, LSearchField: String;
+Begin
+    LCurrPage := 0;
+    TryStrToInt(APage, LCurrPage);
+
+    LCurrPage := Max(LCurrPage, 1);
+    LFirstRec := (LCurrPage - 1) * PAGE_SIZE;
+    APage := LCurrPage.ToString;
+
+    If (Not AContext.IsEmpty) then
+    Begin
+        LSearchField := Format(
+            '(Code LIKE %s OR MainName LIKE %s)',
+            [QuotedStr('%' + AContext + '%'), QuotedStr('%' + AContext + '%')]
+        );
+    End
+    Else
+    Begin
+        LSearchField := '';
+    End;
+
+    If (AStatus.IsEmpty) Or (AStatus.ToLower = 'active') then
+    Begin
+        LActive := 'IsActive = 1';
+    End
+    Else If (AStatus.ToLower = 'notactive') then
+    Begin
+        LActive := 'IsActive = 0';
+    End
+    Else
+    Begin
+        LActive := '1=1';
+    End;
+
+    If (Not LSearchField.IsEmpty) AND (Not LActive.IsEmpty) then
+    Begin
+        LActive := ' AND ' + LActive;
+    End;
+
+    Result := TMVCActiveRecord.Where<TSale_Campaign>(
+      LSearchField + LActive + ' ORDER BY Code ASC, MainName ASC limit ?,?',
+      [LFirstRec, PAGE_SIZE]);
+End;
+//________________________________________________________________________________________
+Function TCampaignService.GetCampaignByID(Const AID: Integer): TSale_Campaign;
+Begin
+    Result := TMVCActiveRecord.GetByPK<TSale_Campaign>(AID, False);
+End;
+//________________________________________________________________________________________
+Function TCampaignService.CreateCampaign(Const ACampaign: TSale_Campaign): TSale_Campaign;
+Var
+	  LCopy: TSale_Campaign;
+Begin
+    LCopy := TSale_Campaign.Create;
+    Try
+        LCopy.Code := ACampaign.Code;
+        LCopy.MainName := ACampaign.MainName;
+        LCopy.StartDate := ACampaign.StartDate;
+        LCopy.EndDate := ACampaign.EndDate;
+        LCopy.Budget := ACampaign.Budget;
+        LCopy.Description := ACampaign.Description;
+
+        If (ACampaign.IsActive.HasValue) then
+        Begin
+            LCopy.IsActive := ACampaign.IsActive;
+        End
+        Else
+        Begin
+            LCopy.IsActive := True;
+        End;
+
+        LCopy.Insert;
+        Result := GetCampaignByID(LCopy.CampaignID);
+    Except
+        LCopy.Free;
+        Raise;
+    End;
+End;
+//________________________________________________________________________________________
+Function TCampaignService.UpdateCampaignPartial(Const AID: Integer; Const ACampaign: TSale_Campaign): TSale_Campaign;
+Var
+	  LExisting: TSale_Campaign;
+Begin
+    LExisting := TMVCActiveRecord.GetByPK<TSale_Campaign>(AID, False);
+    If Not Assigned(LExisting) Then
+    Begin
+        Exit(nil);
+    End;
+
+    Try
+        If (Not ACampaign.Code.IsEmpty) Then
+        Begin
+            LExisting.Code := ACampaign.Code;
+        End;
+
+        If (Not ACampaign.MainName.IsEmpty) Then
+        Begin
+            LExisting.MainName := ACampaign.MainName;
+        End;
+
+        If (ACampaign.SecondName.HasValue) Then
+        Begin
+            LExisting.SecondName := ACampaign.SecondName;
+        End;
+
+        If (ACampaign.StartDate.HasValue) Then
+        Begin
+            LExisting.StartDate := ACampaign.StartDate;
+        End;
+
+        If (ACampaign.EndDate.HasValue) Then
+        Begin
+            LExisting.EndDate := ACampaign.EndDate;
+        End;
+
+        If (ACampaign.Budget.HasValue) Then
+        Begin
+            LExisting.Budget := ACampaign.Budget;
+        End;
+
+        If (ACampaign.IsActive.HasValue) Then
+        Begin
+            LExisting.IsActive := ACampaign.IsActive;
+        End;
+
+        If (ACampaign.IsSystemic.HasValue) Then
+        Begin
+            LExisting.IsSystemic := ACampaign.IsSystemic;
+        End;
+
+        If (ACampaign.Description.HasValue) Then
+        Begin
+            LExisting.Description := ACampaign.Description;
+        End;
+
+        LExisting.Update;
+        Result := LExisting;
+    Except
+        LExisting.Free;
+        Raise;
+    End;
+End;
+//________________________________________________________________________________________
+Function TCampaignService.DeleteCampaign(Const AID: Integer): Boolean;
+Var
+	  LExisting: TSale_Campaign;
+Begin
+    LExisting := TMVCActiveRecord.GetByPK<TSale_Campaign>(AID, False);
+    If Not Assigned(LExisting) Then
+    Begin
+        Exit(False);
+    End;
+
+    Try
+        LExisting.Delete;
+        Result := True;
+    Finally
+        LExisting.Free;
+    End;
+End;
+//________________________________________________________________________________________
+
+End.
+

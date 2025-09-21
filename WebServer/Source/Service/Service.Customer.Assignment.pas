@@ -1,0 +1,124 @@
+Unit Service.Customer.Assignment;
+
+Interface
+
+Uses
+    System.SysUtils,
+    System.Generics.Collections,
+    MVCFramework.ActiveRecord,
+    MVCFramework.Nullables,
+    Model.Customer.Assignment,
+    Service.Interfaces;
+
+Type
+    TCustomerAssignmentService = Class(TInterfacedObject, ICustomerAssignmentService)
+    Public
+        Function GetAllAssignments(Var APage: String; Const AContext: String): TObjectList<TCustomer_Assignment>;
+        Function GetAssignmentByID(Const AID: Int64): TCustomer_Assignment;
+        Function CreateAssignment(Const AAssign: TCustomer_Assignment): TCustomer_Assignment;
+        Function UpdateAssignmentPartial(Const AID: Int64; Const AAssign: TCustomer_Assignment): TCustomer_Assignment;
+        Function DeleteAssignment(Const AID: Int64): Boolean;
+    End;
+
+Implementation
+
+Uses Utils, Math, StrUtils, WebModule.SalamtCRM;
+
+{ TCustomerAssignmentService }
+
+//________________________________________________________________________________________
+Function TCustomerAssignmentService.GetAllAssignments(Var APage: String; Const AContext: String): TObjectList<TCustomer_Assignment>;
+Var
+    LCurrPage, LFirstRec: Integer;
+    LSearchField: String;
+Begin
+    LCurrPage := 0;
+    TryStrToInt(APage, LCurrPage);
+    LCurrPage := Max(LCurrPage, 1);
+    LFirstRec := (LCurrPage - 1) * PAGE_SIZE;
+    APage := LCurrPage.ToString;
+
+    If (Not AContext.IsEmpty) Then
+        LSearchField := Format('(BranchID = %d)', [AContext])
+    Else
+        LSearchField := '1=1';
+
+    Result := TMVCActiveRecord.Where<TCustomer_Assignment>(
+      LSearchField + ' ORDER BY AssignmentID DESC limit ?,?',
+      [LFirstRec, PAGE_SIZE]);
+End;
+
+//________________________________________________________________________________________
+Function TCustomerAssignmentService.GetAssignmentByID(Const AID: Int64): TCustomer_Assignment;
+Begin
+    Result := TMVCActiveRecord.GetByPK<TCustomer_Assignment>(AID, False);
+End;
+
+//________________________________________________________________________________________
+Function TCustomerAssignmentService.CreateAssignment(Const AAssign: TCustomer_Assignment): TCustomer_Assignment;
+Var
+    LCopy: TCustomer_Assignment;
+Begin
+    LCopy := TCustomer_Assignment.Create;
+    Try
+        LCopy.Phone := AAssign.Phone;
+        LCopy.BranchID := AAssign.BranchID;
+        LCopy.SourceCollectingDataID := AAssign.SourceCollectingDataID;
+        LCopy.UserName := AAssign.UserName;
+        LCopy.Insert;
+        Result := GetAssignmentByID(LCopy.AssignmentID);
+    Except
+        LCopy.Free;
+        Raise;
+    End;
+End;
+
+//________________________________________________________________________________________
+Function TCustomerAssignmentService.UpdateAssignmentPartial(Const AID: Int64; Const AAssign: TCustomer_Assignment): TCustomer_Assignment;
+Var
+    LExisting: TCustomer_Assignment;
+Begin
+    LExisting := TMVCActiveRecord.GetByPK<TCustomer_Assignment>(AID, False);
+    If Not Assigned(LExisting) Then
+        Exit(nil);
+
+    Try
+        If (Not AAssign.Phone.IsEmpty) Then
+            LExisting.Phone := AAssign.Phone;
+
+        If (AAssign.BranchID <> 0) Then
+            LExisting.BranchID := AAssign.BranchID;
+
+        If (AAssign.SourceCollectingDataID <> 0) Then
+            LExisting.SourceCollectingDataID := AAssign.SourceCollectingDataID;
+
+        If (AAssign.UserName.HasValue) Then
+            LExisting.UserName := AAssign.UserName;
+
+        LExisting.Update;
+        Result := LExisting;
+    Except
+        LExisting.Free;
+        Raise;
+    End;
+End;
+
+//________________________________________________________________________________________
+Function TCustomerAssignmentService.DeleteAssignment(Const AID: Int64): Boolean;
+Var
+    LExisting: TCustomer_Assignment;
+Begin
+    LExisting := TMVCActiveRecord.GetByPK<TCustomer_Assignment>(AID, False);
+    If Not Assigned(LExisting) Then
+        Exit(False);
+
+    Try
+        LExisting.Delete;
+        Result := True;
+    Finally
+        LExisting.Free;
+    End;
+End;
+
+End.
+

@@ -1,0 +1,54 @@
+Unit Model.Car.Company;
+
+Interface
+
+Uses
+    MVCFramework.ActiveRecord,
+    MVCFramework.Nullables,
+    MVCFramework.Serializer.Commons,
+    System.Generics.Collections;
+
+Type
+    [MVCNameCase(ncLowerCase)]
+    [MVCTable('car_company')]
+    [MVCEntityActions([eaRetrieve, eaCreate, eaUpdate, eaDelete])]
+    TCar_Company = Class(TMVCActiveRecord)
+    Private
+        [MVCTableField('CompanyID', [foPrimaryKey])]
+        FCompanyID: Int32;
+
+        [MVCTableField('Code')]
+        FCode: NullableString;
+
+        [MVCTableField('MainName')]
+        FMainName: NullableString;
+
+        [MVCTableField('SecondName')]
+        FSecondName: NullableString;
+
+        [MVCTableField('IsActive')]
+        FIsActive: NullableBoolean;
+
+        [MVCTableField('IsSystemic', [foReadOnly])]
+        FIsSystemic: NullableBoolean;
+
+        [MVCTableField('Description')]
+        FDescription: NullableString;
+
+        [MVCTableField('CreatedAt', [foReadOnly])]
+        FCreatedAt: NullableTDateTime;
+
+    Public
+        Property CompanyID: Int32 Read FCompanyID Write FCompanyID;
+        Property Code: NullableString Read FCode Write FCode;
+        Property MainName: NullableString Read FMainName Write FMainName;
+        Property SecondName: NullableString Read FSecondName Write FSecondName;
+        Property IsActive: NullableBoolean Read FIsActive Write FIsActive;
+        Property IsSystemic: NullableBoolean Read FIsSystemic Write FIsSystemic;
+        Property Description: NullableString Read FDescription Write FDescription;
+        Property CreatedAt: NullableTDateTime Read FCreatedAt Write FCreatedAt;
+    End;
+
+Implementation
+
+End.

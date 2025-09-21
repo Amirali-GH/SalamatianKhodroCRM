@@ -1,0 +1,16 @@
+﻿                 {
+  "meta": {
+    "data_type": "model_lead_file_result_contact_customer",
+    "count": 1,
+    "is_success": true,
+    "description": "فایل با موفقیت ذخیره شد."
+  },
+  "data": {
+    "fileuploadid": 1,
+    "filename": "customer_contacts_20250905.csv",
+    "uploadedbyuserid": 1001,
+    "uploadedat": "2025-09-05T09:00:00",
+    "filesize": 1024000,
+    "errormessage": null
+  }
+}

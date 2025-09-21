@@ -1,0 +1,64 @@
+Passwrod: yeY92B9Zx3
+
+deploy_salamatian.sh
+
+systemctl list-units --type=service --state=running
+
+sudo lsof -i :8435
+
+sudo systemctl restart mysql
+
+sudo systemctl stop salamatian-api.service
+sudo systemctl daemon-reload
+sudo systemctl start salamatian-api.service
+sudo systemctl stop salamatian-api.service
+sudo systemctl restart salamatian-api.service
+sudo systemctl start salamatian-api.service
+
+cd /root/PAServer/scratch-dir/amira-AmirAli/Project.SalamatianCutomer
+cd /opt/SalamatianCRM
+cd /home/AmirAli/PAServer-23.0/paserver
+cd /var/www/SalamatianCRM
+cd /etc/SalamatianCRM
+nano /etc/SalamatianCRM/FDConnectionDefs.ini
+
+rm /root/PAServer/scratch-dir/amira-AmirAli/Project.SalamatianCutomer/Project_SalamatianCutomer
+rm /opt/SalamatianCRM/Project_SalamatianCutomer
+sudo mv /root/PAServer/scratch-dir/amira-AmirAli/Project.SalamatianCutomer/Project_SalamatianCutomer /opt/SalamatianCRM/
+
+
+scp -r D:\MyProject\SalamatSaleDepartment\MainWebSite\WWW\* AmirAli:/var/www/SalamatianCRM
+sudo chown -R appuser:appuser /var/www/SalamatianCRM
+
+scp -r D:/MyProject/SalamatSaleDepartment/MainWebSite/WWW/pages ^
+       D:/MyProject/SalamatSaleDepartment/MainWebSite/WWW/scripts ^
+       D:/MyProject/SalamatSaleDepartment/MainWebSite/WWW/styles ^
+       root@62.60.214.159:/var/www/SalamatianCRM
+
+
+CREATE USER 'botuser'@'localhost' IDENTIFIED BY 'H4Tm*HR0n=G'; 
+CREATE USER 'Heidary'@'10.8.0.%' IDENTIFIED BY 'MohamadReza@1384'; 
+CREATE USER 'webuser'@'localhost' IDENTIFIED BY 'bfrgV#%svNB871@42#jhgvds!';
+
+
+
+
+scp "D:\Apps\Rad12.3\PAServer\LinuxPAServer23.0.tar.gz" root@62.60.214.159:/home/AmirAli/
+
+scp "D:\MyProject\SalamatSaleDepartment\MainWebSite\.env" root@62.60.214.159:/opt/SalamatianCRM
+
+scp "D:\MyProject\SalamatSaleDepartment\MainWebSite\FDConnectionDefs.ini" root@62.60.214.159:/root/PAServer/scratch-dir/amira-AmirAli/Project.SalamatianCutomer
+
+scp "D:\MyProject\SalamatSaleDepartment\.env" root@62.60.214.159:/root/PAServer/scratch-dir/amira-AmirAli/Project.SalamatianCutomer
+
+######################################################################    Bots     ######################################################################
+# Deply:
+cd /opt/SalamatisanBot
+scp -r D:\MyProject\SalamatSaleDepartment\MainWebSite\WWW\python\.env AmirAli:/opt/SalamatisanBot
+
+cd py*
+uvicorn ImportPhone_Novinhub:app --host 0.0.0.0 --port 8000 --reload
+
+# Install:
+sudo apt-get update
+sudo apt-get install -y google-chrome-stable

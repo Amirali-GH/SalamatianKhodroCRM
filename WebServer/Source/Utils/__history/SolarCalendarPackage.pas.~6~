@@ -1,0 +1,1164 @@
+﻿unit SolarCalendarPackage;
+{$D-}    { disable debug information    }
+//{$S+}    { stack overflow checking      }
+{$R-}
+{$R Calendar_Images.res}
+Interface
+
+uses
+  Classes, SysUtils, DB, System.Types, ;
+
+type
+  TColorStyle = (csCustom, csPinkPink, csBlueBlue, csWhiteGray, csWhiteOrange, csWhiteRed, csWhiteWhite, csWhiteBlack);
+  TButtonStyle = (bsRound, bsRectangular);
+  TButtonType = (btLeftYear, btRightYear, btLayout, btLeftMonth, btRightMonth);
+  TDateKind = (dkSolar, dkGregorian);
+  TMonthPosition = (mpBottomRight, mpBottomCenter, mpRightYear, mpLeftYear);
+  TMonthObject = (moPopupMenu, moComboBox, moNone);
+  TGlyphType = (gtBlackArrowDown, gtCalendar, gtBlueArrowDown, gtGreenArrowDown);
+  TDivider = (dSlash, dBackSlash, dLine, dUnderScore, dDot, dComma);
+  TControlPosition = (cpLeftTop, cpLeftBottom, cpRightTop, cpRightBottom);
+  TFormat = (fLong, fShort);
+  TMonthType = (mtNumeral, mtAlphabet);
+  TMonthCaption = (mcSaturday = 0, mcSunday = 1, mcMonday = 2, mcTuesday = 3,
+                   mcWednesday = 4, mcThursday = 5, mcFriday = 6);
+  TMonthCaptionSet = set of TMonthCaption;
+  TDatePartType = (dptNone, dptYear, dptMonth, dptDay);
+  TDataFieldType = (dftSolar, dftGregorian);
+  TSolarSideBarPosition = (sbpLeft, sbpRight);
+  TCell = record
+    Col: integer;
+    Row: integer;
+  end;
+  TDateFormatInfo = record
+    YearPart: string;
+    YearPartLen: integer;
+  end;
+const
+  {***** Error Block *****}
+  ERR_INVALIDDATEFA = '.تاريخ وارد شده معتبر نمی‌باشد، لطفاً تاريخ صحيح را وارد نمائيد';
+  ERR_INVALIDDATEEN = 'Invalid date, Enter correct date please.';
+  {***** Error Block *****}
+  {***** Hint Block *****}
+  ST_ENNEXTYEARHINT = 'Next Year';
+  ST_ENPRIORYEARHINT = 'Prior Year';
+  ST_ENNEXTMONTHHINT = 'Next Month';
+  ST_ENPRIORMONTHHINT = 'Prior Month';
+  ST_FALAYOUTHINT = 'Persian';
+  ST_FANEXTYEARHINT = 'سال بعد';
+  ST_FAPRIORYEARHINT = 'سال قبل';
+  ST_FANEXTMONTHHINT = 'ماه بعد';
+  ST_FAPRIORMONTHHINT = 'ماه قبل';
+  ST_ENLAYOUTHINT = 'میلادی';
+  ST_FACURRENTYEAREDIT = 'سال جاری - كلیك كنید';
+  {***** Hint Block *****}
+  {***** Color Constants Block *****}
+  CL_ODDROWCOLOR = $00E1FFF9;     //InfoBk
+  CL_EVENROWCOLOR = $00FFEBDF;    //Blue
+  CL_DISABLECELLCOLOR = clWhite;//$00F0F0FF;
+  CL_BACKGROUNDCOLOR = clWhite; //$00BFBFBF;
+  CL_CAPTIONCOLOR = $004B4B4B;//clActiveCaption;//clNavy;
+  CL_SELECTEDCELLFONTCOLOR = 255;
+  CL_VACATIONDAYCOLOR = clMaroon;
+  CL_CELLFONTCOLOR = 0;
+  CL_WHITECOLOR = clwhite;
+  {***** Color Constants Block *****}
+  ST_PERSIANTODAY = '%s : امروز';
+  ST_ENGLISHTODAY = 'Today : %s';
+  ST_PERSIANYEAR = '%s سال';
+  ST_ENGLISHYEAR = 'Year %s';
+  ST_ABOUTSTR = 'Created by : Mohamad Khorsandi';
+  ST_VERSIONINFO = '3.7';
+  LayoutSet: array[TDateKind, 1..1] of String = (('C'), ('ش'));
+  DaySet: array[TDateKind, 1..7] of string = (
+     ('جمعه', 'شنبه', 'يکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه'),
+     ('Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'));
+  ShortDaySet: array[TDateKind, 1..7] of string = (
+     ('جمعه', 'شنبه', 'یک', 'دو', 'سه', 'چهار', 'پنج'),
+     ('Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'));
+
+  MonthSet: array[TDateKind, 1..12] of string = (
+     ('فروردين ماه', 'ارديبهشت ماه', 'خرداد ماه', 'تير ماه', 'مرداد ماه',
+      'شهريور ماه', 'مهر ماه', 'آبان ماه', 'آذر ماه', 'دي ماه', 'بهمن ماه', 'اسفند ماه'),
+     ('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
+      'September', 'October', 'November', 'December')
+      );
+
+  ShortMonthSet: array[TDateKind, 1..12] of string = (
+     ('فروردین', 'اردیبهشت', 'خرداد', 'تیر', 'مرداد',
+      'شهریور', 'مهر', 'آبان', 'آذر', 'دی', 'بهمن', 'اسفند'),
+     ('January', 'February', 'March', 'April', 'May', 'June', 'July', 'August',
+      'September', 'October', 'November', 'December')
+      );
+
+  LeapMonth: array[TDateKind] of Byte = (12 {Esfand}, 2 {February});
+  DaysOfMonths: array[TDateKind, 1..12] of Byte = (
+    (  31, 31, 31, 31,  31, 31,  30,  30,  30,  30,  30,  29 )
+    { Far, Ord, Kho, Tir, Mor, Sha, Meh, Aba, Aza, Day, Bah,^Esf },
+    (  31, 29, 31, 30,  31, 30,  31,  31,  30,  31,  30,  31 )
+    { Jan,^Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec });
+  DaysToMonth: array[TDateKind, 1..13] of Word = (
+    (   0,  31,  62,  93, 124, 155, 186, 216, 246, 276, 306, 336, 365 )
+    { Far, Ord, Kho, Tir, Mor, Sha, Meh, Aba, Aza, Day, Bah,^Esf, *** },
+    (   0,  31,  59,  90, 120, 151, 181, 212, 243, 273, 304, 334, 365 )
+    { Jan,^Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec, *** });
+type
+  TCustomSolarCalendar = class;
+  TSolarGrid = class;
+  TSolarTopPanel = class;
+
+  TPublicUtils = Class
+  public
+    class function MiladiDate(ADate: TDate): string;
+    class function FillDate(ADateKind: TDateKind): string;
+    class function MiladiFormat: string;
+    class function IncYear(ADate: string; DateKind: TDateKind; ANumberOfYear: integer = 1): string;
+    class function FullDigitConvert(Alpha: string): string;
+    class function ConvertToPersianAlpha(Number: integer): string;
+    class function IntGetRawDate(const Date: string): string;
+    class function IntGetDateWithDiv(Date: string; Divider: string): string;
+    class procedure ChangeColor(var Color1, Color2: TColor);
+    class function CheckPrevChar(MainString: string; Index: integer; Char: string): boolean;
+    class function ConcatenateDate(AYear, AMonth, ADay: Word; ADateKind: TDateKind): String;
+    class function ConvertDate(ADate: string; DateKind: TDateKind): string;
+    class function ConvertYear(ADate: string; DateKind: TDateKind): integer;
+    class function CountsSeparator(MainString: string): integer;
+    class function DateOfDay(DateKind: TDateKind; Days, Year: Word; var Month, Day: Word): Boolean;
+    class function DaysBetween(ANow, AThen: string; DateKind: TDateKind): integer;
+    class function DaysOfMonth(DateKind: TDateKind; Year, Month: Word): Word;
+    class function DaysToDate(DateKind: TDateKind; Year, Month, Day: Word): Word;
+    class function DecDay(ADate: string; DateKind: TDateKind; ANumberOfDay: integer = 1): string;
+    class function DecMonth(ADate: string; DateKind: TDateKind; ANumberOfMonth: integer = 1): string;
+    class function DecYear(ADate: string; DateKind: TDateKind; ANumberOfYear: integer = 1): string;
+    class function GetWeekOfTheYear(ADate: string; DateKind: TDateKind): word;
+    class function GotoDay(ADate: string; ADay: byte; DateKind: TDateKind): string;
+    class function GotoMonth(ADate: string; AMonth: byte; DateKind: TDateKind): string;
+    class function GotoYear(ADate: string; AYear: integer; DateKind: TDateKind): string;
+    class function GregorianToSolar(var Year, Month, Day: Word): Boolean; overload;
+    class function GregorianToSolar(ADate: TDate): string; overload;
+    class function SolarToGregorian(var Year, Month, Day: Word): Boolean; overload;
+    class function IncDay(ADate: string; DateKind: TDateKind; ANumberOfDay: integer = 1): string;
+    class function IncMonth(ADate: string; DateKind: TDateKind; ANumberOfMonth: integer = 1): string;
+    class function IntDayOfWeek(Date: string; DateKind: TDateKind): integer;
+    class function IntGetMonthRemainDay(Date: string; DateKind: TDateKind): integer;
+    class function IntGetWeekRemainDays(Date: string; DateKind: TDateKind): integer;
+    class function IntGetYearRemainDays(Date: string; DateKind: TDateKind): integer;
+    class function IsDateValid(DateKind: TDateKind; Year, Month, Day: Word): Boolean; overload;
+    class function IsDateValid(DateKind: TDateKind; ADate: string): Boolean; overload;
+    class function IsLeapYear(DateKind: TDateKind; Year: Word): Boolean;
+    class function MonthValidityCheck(Month: string): boolean;
+    class function ConvertMonth(ADate: string; DateKind: TDateKind): integer;
+    class procedure ResetYMD(Date: string; var Year, Month, Day: word; ADateKind: TDateKind);
+    class procedure SeparateParts(ADate: string; var YPart, MPart, DPart: string; ADateKind: TDateKind);
+    class procedure SeparateYMD(ADate: string; var Year, Month, Day: word; ADateKind: TDateKind);
+    class function GregorianToSolar(AMiladiDate: string): string; overload;
+    class function SolarToGregorian(ASolarDate: string): string; overload;
+    class function FixGregorianDate(ADate: string): string;
+  end;
+
+
+var
+  CBBmp: TBitMap;
+implementation
+
+uses DateUtils, StrUtils, Variants;
+
+class function TPublicUtils.FullDigitConvert(Alpha: string): string;
+begin
+  Result := Trim(Alpha) + ' ';
+end;
+class function TPublicUtils.ConvertToPersianAlpha(Number: integer): string;
+var
+  sStr: string;
+  sOutput: string;
+  iCounter: Integer;
+  jCounter: Integer;
+  iIndex: Integer;
+  iLen: Integer;
+  iNumber: Integer;
+  bLgc: boolean;
+begin
+  bLgc := False;
+  iCounter := 0;
+  jCounter := 0;
+  iNumber := Trunc(Number);
+  sStr := IntToStr(iNumber);
+  sOutput :='';
+  iLen := length(sStr);
+  if iNumber = 0 then
+    exit;
+  if sStr = '0' Then
+    sOutput := 'صفر';
+  for iIndex := iLen downto 1 Do
+  begin
+    iCounter := iCounter + 1;
+    if iCounter = 4 Then
+    begin
+      jCounter := jCounter + 1;
+      iCounter := 1;
+    end;
+    if ((iCounter = 1) and ((sStr[iIndex] <> '0') or (sStr[iIndex - 1] <> '0') or (sStr[iIndex - 2] <> '0'))) then
+    begin
+      if bLgc then
+        sOutput := ' و ' + sOutput;
+      case (jCounter) of
+        1:
+          begin
+            sOutput := 'هزار ' + sOutput;
+            bLgc := False;
+          end;
+        2:
+          begin
+            sOutput := 'ميليون ' + sOutput;
+            bLgc := False;
+          end;
+        3:
+          begin
+            sOutput := 'ميليارد ' + sOutput;
+            bLgc := False;
+          end;
+        4:
+          begin
+            sOutput := 'بيليون ' + sOutput;
+            bLgc := False;
+          end;
+        5:
+          begin
+            sOutput := 'تريليارد' + sOutput;
+            bLgc := False;
+          end;
+        6:
+          begin
+            sOutput := 'ن ' + sOutput;
+            bLgc := False;
+          end;
+        7:
+          begin
+            sOutput := 'ن ' + sOutput;
+            bLgc := False;
+          end;
+        8:
+          begin
+            sOutput := 'ن ' + sOutput;
+            bLgc := False;
+          end;
+        9:
+          begin
+            sOutput := 'ن ' + sOutput;
+            bLgc := False;
+          end;
+      end;
+    end;
+      if ((iCounter = 1) and (sStr[iIndex - 1] <> '1')) Then
+      begin
+        if ((bLgc) and (sStr[iIndex]<>'0')) Then
+          sOutput := ' و ' + sOutput;
+        case sStr[iIndex] of
+          '1':
+             begin
+               sOutput := 'يك ' + sOutput;
+               bLgc := True
+             end;
+          '2':
+             begin
+               sOutput := 'دو ' + sOutput;
+               bLgc := True
+             end;
+          '3':
+             begin
+               sOutput := 'سه ' + sOutput;
+               bLgc := True
+             end;
+          '4':
+             begin
+               sOutput := 'چهار ' + sOutput;
+               bLgc := True
+             end;
+          '5':
+             begin
+               sOutput := 'پنج ' + sOutput;
+               bLgc := True
+             end;
+          '6':
+             begin
+               sOutput := 'شش ' + sOutput;
+               bLgc := True
+             end;
+          '7':
+             begin
+               sOutput := 'هفت ' + sOutput;
+               bLgc := True
+             end;
+          '8':
+             begin
+               sOutput := 'هشت ' + sOutput;
+               bLgc := True
+             end;
+          '9':
+             begin
+               sOutput := 'نه ' + sOutput;
+               bLgc := True
+             end;
+        end;
+     end;
+     if iCounter = 2 then
+     begin
+       if ((bLgc) and (sStr[iIndex] <> '0') and (sStr[iIndex] <> '1')) then
+         sOutput := ' و ' + sOutput;
+        case sStr[iIndex] of
+          '2':
+             begin
+               sOutput := 'بيست ' + sOutput;
+               bLgc := True
+             end;
+          '3':
+             begin
+               sOutput := 'سي ' + sOutput;
+               bLgc := True
+             end;
+          '4':
+             begin
+               sOutput := 'چهل ' + sOutput;
+               bLgc:=true
+             end;
+          '5':
+             begin
+               sOutput := 'پنجاه ' + sOutput;
+               bLgc := True
+             end;
+          '6':
+             begin
+               sOutput := 'شصت ' + sOutput;
+               bLgc := True
+             end;
+          '7':
+             begin
+               sOutput := 'هفتاد ' + sOutput;
+               bLgc := True
+             end;
+          '8':
+             begin
+               sOutput := 'هشتاد ' + sOutput;
+               bLgc := True
+             end;
+          '9':
+             begin
+               sOutput := 'نود ' + sOutput;
+               bLgc := True
+             end;
+        end;
+      end;
+      If ((iCounter = 2) And (sStr[iIndex] = '1')) Then
+      Begin
+        If ((bLgc) And (sStr[iIndex] <> '0')) Then
+          sOutput := ' و ' + sOutput;
+        Case sStr[iIndex + 1] of
+          '0':
+             Begin
+               sOutput := 'ده ' + sOutput;
+               bLgc := True
+             End;
+          '1':
+             Begin
+               sOutput := 'يازده ' + sOutput;
+               bLgc := True
+             End;
+          '2':
+             Begin
+               sOutput := 'دوازده ' + sOutput;
+               bLgc := True
+             End;
+          '3':
+             Begin
+               sOutput := 'سيزده ' + sOutput;
+               bLgc := True
+             End;
+          '4':
+             Begin
+               sOutput := 'چهارده ' + sOutput;
+               bLgc := True
+             End;
+          '5':
+             Begin
+               sOutput := 'پانزده ' + sOutput;
+               bLgc := True
+             End;
+          '6':
+             Begin
+               sOutput := 'شانزده ' + sOutput;
+               bLgc := True
+             End;
+          '7':
+             Begin
+               sOutput := 'هفده ' + sOutput;
+               bLgc:=true
+              End;
+          '8':
+             Begin
+               sOutput := 'هجده ' + sOutput;
+               bLgc := True;
+             End;
+          '9':
+             Begin
+               sOutput := 'نوزده ' + sOutput;
+               bLgc := True;
+             End;
+          End;
+        End;
+      If iCounter = 3 Then
+      Begin
+        If ((bLgc) And (sStr[iIndex] <> '0')) Then
+          sOutput := ' و ' + sOutput;
+        Case sStr[iIndex] Of
+          '1':
+             Begin
+               sOutput := 'صد ' + sOutput;
+               bLgc:=true
+             End;
+          '2':
+             Begin
+               sOutput := 'دويست ' + sOutput;
+               bLgc := True
+             End;
+          '3':
+             Begin
+               sOutput := 'سيصد ' + sOutput;
+               bLgc := True
+             End;
+          '4':
+             Begin
+               sOutput := 'چهارصد ' + sOutput;
+               bLgc := True
+             End;
+          '5':
+             Begin
+               sOutput := 'پانصد ' + sOutput;
+               bLgc := True
+             End;
+          '6':
+             Begin
+               sOutput := 'ششصد ' + sOutput;
+               bLgc := True
+             End;
+          '7':
+             Begin
+               sOutput := 'هفتصد ' + sOutput;
+               bLgc := True
+             end;
+          '8':
+             Begin
+               sOutput := 'هشتصد ' + sOutput;
+               bLgc := True
+             End;
+          '9':
+             Begin
+               sOutput := 'نهصد '+ sOutput;
+               bLgc := True
+             End;
+        End;
+      End;
+    End;
+  Result := Trim(sOutput);
+end;
+class function TPublicUtils.IntGetRawDate(const Date: string): string;
+var
+  sTemp: string;
+begin
+  sTemp := '';
+  if Length(Trim(Date)) <> 0 then
+  begin
+    sTemp := Date;
+    Delete(sTemp, Pos('/', sTemp), 1);
+    Delete(sTemp, Pos('/', sTemp), 1);
+    Delete(sTemp, Pos('/', sTemp), 1);
+  end;
+  Result := sTemp;
+end;
+class function TPublicUtils.IntGetDateWithDiv(Date: string; Divider: string): string;
+var
+  sTemp: string;
+begin
+  sTemp := '';
+  if Length(Trim(Date)) <> 0 then
+  begin
+    sTemp := Date;
+    sTemp := StringReplace(sTemp, '/', Divider, [rfReplaceAll]);
+  end;
+  Result := sTemp;
+end;
+class function TPublicUtils.CheckPrevChar(MainString: string; Index: integer; Char: string): boolean;
+begin
+  if MainString[Index] = Char then
+    Result := true
+  else
+    Result := false;
+end;
+class function TPublicUtils.CountsSeparator(MainString: string): integer;
+var
+  iCounter: integer;
+  iSlash: integer;
+begin
+  iSlash := 0;
+  for iCounter := 1 to Length(MainString) do
+    if MainString[iCounter] = '/' then
+      Inc(iSlash);
+   Result := iSlash;
+end;
+
+class procedure TPublicUtils.SeparateParts(ADate: string; var YPart, MPart, DPart: string; ADateKind: TDateKind);
+var
+  sTemp: string;
+  dTemp: TDateTime;
+  lYear, lMonth, lDay: word;
+begin
+  if Length(Trim(ADate)) = 10 then
+  begin
+    if ADateKind = dkSolar then
+    begin
+      sTemp := ADate;
+      if Pos('/', sTemp) > 0 then
+        YPart := Copy(sTemp, 1, Pos('/', sTemp) - 1)
+      else
+        YPart := sTemp;
+      Delete(sTemp, 1, Pos('/', sTemp));
+      if Pos('/', sTemp) > 0 then
+        MPart := Copy(sTemp, 1, Pos('/', sTemp) - 1)
+      else
+        MPart := sTemp;
+      Delete(sTemp, 1, Pos('/', sTemp));
+      DPart := sTemp;
+    end
+    else
+    begin
+      dTemp := VarToDateTime(ADate);
+      DecodeDate(dTemp, lYear, lMonth, lDay);
+      YPart := IntToStr(lYear);
+      MPart := IntToStr(lMonth);
+      DPart := IntToStr(lDay);
+      MPart := DupeString('0', 2 - Length(MPart)) + MPart;
+      DPart := DupeString('0', 2 - Length(DPart)) + DPart;
+    end;
+  end;
+end;
+procedure TSolarDatePicker.InsertChar(MainString, Key: string; CaretPos: integer);
+var
+  sText: string;
+  iCaretPos: integer;
+begin
+  if Key <> #0 then
+  begin
+    sText := MainString;
+    iCaretPos := CaretPos;
+    Inc(iCaretPos);
+    Insert(Key, sText, iCaretPos);
+    Self.Text := sText;
+    Self.SelStart := iCaretPos;
+  end;  
+end;
+
+class function TPublicUtils.MiladiDate(ADate: TDate): string;
+var
+  dYear, dMonth, dDay: word;
+begin
+  DecodeDate(ADate, dYear, dMonth, dDay);
+  Result := ConcatenateDate(dYear, dMonth, dDay, dkGregorian);
+end;
+class function TPublicUtils.MiladiFormat: string;
+begin
+//  Result := 'yyyy/mm/dd';
+  {$IF CompilerVersion >= 23}
+     Result := FormatSettings.ShortDateFormat
+  {$ELSE}
+     Result := ShortDateFormat;
+  {$IFEND}
+end;
+class function TPublicUtils.MonthValidityCheck(Month: string): boolean;
+begin
+  Result := false;
+  if Length(Month) > 0 then
+  begin
+    if (Length(Month) = 1) and (StrToInt(Month) = 0) then
+      Result := true
+    else
+    if (StrToInt(Month) > 0) and (StrToInt(Month) < 13) then
+      Result := true;
+  end
+  else
+    Result := true;
+end;
+
+class function TPublicUtils.ConcatenateDate(AYear, AMonth, ADay: Word; ADateKind: TDateKind): String;
+var
+  lY, lM, lD: string;
+begin
+  lY := IntToStr(AYear);
+  lM := IntToStr(AMonth);
+  lD := IntToStr(ADay);
+  lM := DupeString('0', 2 - Length(lM)) + lM;
+  lD := DupeString('0', 2 - Length(lD)) + lD;
+  if ADateKind = dkSolar then
+    Result := lY + '/' + lM + '/' + lD
+  else
+  begin
+    if ADay > DaysOfMonths[ADateKind, AMonth] then
+      lD := IntToStr(DaysOfMonths[ADateKind, AMonth]);
+    Result := DateToStr(EncodeDate(StrToInt(lY), StrToInt(lM), StrToInt(lD)));
+  end;
+  Result := Trim(Result);
+end;
+
+class procedure TPublicUtils.SeparateYMD(ADate: string; var Year, Month, Day: word; ADateKind: TDateKind);
+var
+  sTemp: String;
+  dTemp: TDateTime;
+begin
+  if Length(Trim(ADate)) <> 0 then
+  begin
+    if ADateKind = dkSolar then
+    begin
+      sTemp := ADate;
+      Year := StrToIntDef(Copy(sTemp, 1, Pos('/', sTemp) - 1), 0);
+      if Length(IntToStr(Year)) < 4 then
+        Year := 0;
+      Delete(sTemp, 1, Pos('/', sTemp));
+      Month := StrToIntDef(Copy(sTemp, 1, Pos('/', sTemp) - 1), 0);
+      if Month > 12 then
+        Month := 0;
+      Delete(sTemp, 1, Pos('/', sTemp));
+      Day := StrToIntDef(sTemp, 0);
+      if Day > 31 then
+        Day := 0;
+    end
+    else
+    begin
+      if TryStrToDate(ADate, dTemp) then
+        DecodeDate(dTemp, Year, Month, Day)
+      else
+      begin
+        try
+          Year := StrToInt(Copy(ADate, 1, 4));
+          Month := StrToInt(Copy(ADate, 6, 2));
+          Day := StrToInt(Copy(ADate, 9, 2));
+        except
+        end;
+      end;
+    end;
+  end
+  else
+  begin
+    Year := 0;
+    Month := 0;
+    Day := 0;
+  end;
+end;
+
+class function TPublicUtils.SolarToGregorian(ASolarDate: string): string;
+var
+  dYear, dMonth, dDay: word;
+begin
+  SeparateYMD(ASolarDate, dYear, dMonth, dDay, dkSolar);
+  SolarToGregorian(dYear, dMonth, dDay);
+  Result := ConcatenateDate(dYear, dMonth, dDay, dkGregorian);
+end;
+class function TPublicUtils.GetWeekOfTheYear(ADate: string; DateKind: TDateKind): word;
+var
+  Year, Month, Day: word;
+  iSum: integer;
+  iCounter: integer;
+begin
+  SeparateYMD(ADate, Year, Month, Day, DateKind);
+  if DateKind = dkGregorian then
+  begin
+    Result := DateUtils.WeekOfTheYear(DateUtils.EncodeDateTime(Year, Month, Day, 0, 0, 0, 0));
+  end
+  else
+  begin
+    iSum := Day;
+    for iCounter := 1 to Pred(Month) do
+      iSum := iSum + DaysOfMonths[DateKind, iCounter];
+    if (iSum mod 7) > 0 then
+      Result := (iSum div 7) + 1
+    else
+      Result := (iSum div 7);    
+  end;
+end;
+
+class function TPublicUtils.IncYear(ADate: string; DateKind: TDateKind; ANumberOfYear: integer = 1): string;
+var
+  Year, Month, Day: word;
+begin
+  SeparateYMD(ADate, Year, Month, Day, DateKind);
+  Inc(Year, ANumberOfYear);
+  Result := ConcatenateDate(Year, Month, Day, DateKind);
+end;
+
+class function TPublicUtils.IncMonth(ADate: string; DateKind: TDateKind; ANumberOfMonth: integer = 1): string;
+var
+  Year, Month, Day: word;
+begin
+  SeparateYMD(ADate, Year, Month, Day, DateKind);
+  Inc(Year, (ANumberOfMonth div 12));
+  Inc(Month, (ANumberOfMonth mod 12));
+  if Month > 12 then
+  begin
+    Inc(Year);
+    Month := Month mod 12;
+  end;
+  if Day > DaysOfMonths[DateKind, Month] then
+    Day := DaysOfMonths[DateKind, Month];
+  Result := ConcatenateDate(Year, Month, Day, DateKind);
+end;
+
+class function TPublicUtils.IncDay(ADate: string; DateKind: TDateKind; ANumberOfDay: integer = 1): string;
+var
+  Year, Month, Day: word;
+begin
+  SeparateYMD(ADate, Year, Month, Day, DateKind);
+  if DateKind = dkSolar then
+    SolarToGregorian(Year, Month, Day);
+  DecodeDate(DateUtils.IncDay(EncodeDate(Year, Month, Day), ANumberOfDay), Year, Month, Day);
+  if DateKind = dkSolar then
+    GregorianToSolar(Year, Month, Day);
+  Result := ConcatenateDate(Year, Month, Day, DateKind);
+end;
+
+class function TPublicUtils.DecYear(ADate: string; DateKind: TDateKind; ANumberOfYear: integer = 1): string;
+var
+  Year, Month, Day: word;
+begin
+  SeparateYMD(ADate, Year, Month, Day, DateKind);
+  Dec(Year, ANumberOfYear);
+  Result := ConcatenateDate(Year, Month, Day, DateKind);
+end;
+
+class function TPublicUtils.DecMonth(ADate: string; DateKind: TDateKind; ANumberOfMonth: integer = 1): string;
+var
+  Year, Month, Day: word;
+  lMonth: integer;
+begin
+  SeparateYMD(ADate, Year, Month, Day, DateKind);
+  lMonth := Month;
+  Dec(Year, (ANumberOfMonth div 12));
+  Dec(lMonth, (ANumberOfMonth mod 12));
+  if lMonth < 1 then
+  begin
+    Dec(Year);
+    Month := 12;
+  end
+  else
+    Month := lMonth;
+  if Day > DaysOfMonths[DateKind, Month] then
+    Day := DaysOfMonths[DateKind, Month];
+  Result := ConcatenateDate(Year, Month, Day, DateKind);
+end;
+class function TPublicUtils.DecDay(ADate: string; DateKind: TDateKind; ANumberOfDay: integer = 1): string;
+var
+  Year, Month, Day: word;
+  TS: TTimeStamp;
+  TempTime: Comp;
+begin
+  SeparateYMD(ADate, Year, Month, Day, DateKind);
+  if DateKind = dkSolar then
+    SolarToGregorian(Year, Month, Day);
+  TS := DateTimeToTimeStamp(EncodeDate(Year, Month, Day));
+  TempTime := TimeStampToMSecs(TS);
+  TempTime := TempTime - (ANumberOfDay * (24 * 60 * 60 * 1000));
+  TS := MSecsToTimeStamp(TempTime);
+  DecodeDate(TimeStampToDateTime(TS), Year, Month, Day);
+  if DateKind = dkSolar then
+    GregorianToSolar(Year, Month, Day);
+  Result := ConcatenateDate(Year, Month, Day, DateKind);
+end;
+
+class function TPublicUtils.GotoYear(ADate: string; AYear: integer; DateKind: TDateKind): string;
+var
+  Year, Month, Day: word;
+begin
+  SeparateYMD(ADate, Year, Month, Day, DateKind);
+  Year := AYear;
+  Result := ConcatenateDate(Year, Month, Day, DateKind);
+end;
+
+class function TPublicUtils.GregorianToSolar(AMiladiDate: string): string;
+var
+  dYear, dMonth, dDay: word;
+begin
+   SeparateYMD(AMiladiDate, dYear, dMonth, dDay, dkGregorian);
+  if IsValidDate(dYear, dMonth, dDay) then
+  begin
+    GregorianToSolar(dYear, dMonth, dDay);
+    Result := ConcatenateDate(dYear, dMonth, dDay, dkSolar);
+  end;
+end;
+class function TPublicUtils.GregorianToSolar(ADate: TDate): string;
+var
+  dYear, dMonth, dDay: word;
+begin
+  DecodeDate(ADate, dYear, dMonth, dDay);
+  GregorianToSolar(dYear, dMonth, dDay);
+  Result := ConcatenateDate(dYear, dMonth, dDay, dkSolar);
+end;
+
+class function TPublicUtils.FillDate(ADateKind: TDateKind): string;
+begin
+  if ADateKind = dkSolar then
+    Result := GregorianToSolar(Now)
+  else
+   Result := MiladiDate(Now);
+end;
+
+class function TPublicUtils.FixGregorianDate(ADate: string): string;
+var
+  date: TDateTime;
+begin
+  result := ADate;
+  if TryStrToDate(ADate, date) then
+    result := FormatDateTime('yyyy/mm/dd', date);
+end;
+class function TPublicUtils.GotoMonth(ADate: string; AMonth: byte; DateKind: TDateKind): string;
+var
+  Year, Month, Day: word;
+begin
+  SeparateYMD(ADate, Year, Month, Day, DateKind);
+  if AMonth in [1..12] then
+    Month := AMonth;
+  Result := ConcatenateDate(Year, Month, Day, DateKind);
+end;
+
+class function TPublicUtils.GotoDay(ADate: string; ADay: byte; DateKind: TDateKind): string;
+var
+  Year, Month, Day: word;
+begin
+  SeparateYMD(ADate, Year, Month, Day, DateKind);
+  if ADay in [1..DaysOfMonths[DateKind, Month]] then
+    Day := ADay;
+  Result := ConcatenateDate(Year, Month, Day, DateKind);
+end;
+
+class procedure TPublicUtils.ResetYMD(Date: string; var Year, Month, Day: word; ADateKind: TDateKind);
+begin
+  SeparateYMD(Date, Year, Month, Day, ADateKind);
+  if Length(Trim(Date)) = 0 then
+  begin
+    Year := 0;
+    Month := 0;
+    Day := 0;
+  end
+  else
+  if (Year = 0) or (Month = 0) or (Day = 0) then
+  begin
+    Year := 0;
+    Month := 0;
+    Day := 0;
+  end;
+{  else
+  if Length(Date) < 10 then
+    ResetYMD(Date, Year, Month, Day);}
+end;
+
+class function TPublicUtils.IsLeapYear(DateKind: TDateKind; Year: Word): Boolean;
+begin
+  if DateKind = dkSolar then
+    Result := (Year mod 33) in [1, 5, 9, 13, 17, 22, 26, 30]
+  else
+    Result := ((Year mod 4) = 0) and (((Year mod 100) <> 0) or ((Year mod 400) = 0));
+end;
+
+class function TPublicUtils.DaysOfMonth(DateKind: TDateKind; Year, Month: Word): Word;
+begin
+  if (Year <> 0) and (Month in [1..12]) then
+  begin
+    Result := DaysOfMonths[DateKind, Month];
+    if (Month = LeapMonth[DateKind]) and IsLeapYear(DateKind, Year) then
+      Inc(Result);
+  end
+  else
+    Result := 0;
+end;
+class function TPublicUtils.IsDateValid(DateKind: TDateKind; Year, Month, Day: Word): Boolean;
+begin
+  Result := (Year <> 0) and (Month >= 1) and (Month <= 12) and
+            (Day >= 1) and (Day <= DaysOfMonth(DateKind, Year, Month));
+end;
+class function TPublicUtils.IsDateValid(DateKind: TDateKind; ADate: string): Boolean;
+var
+  wYear: word;
+  wMonth: word;
+  wDay: word;
+begin
+  SeparateYMD(ADate, wYear, wMonth, wDay, DateKind);
+  Result := (wYear <> 0) and (wMonth >= 1) and (wMonth <= 12) and
+            (wDay >= 1) and (wDay <= DaysOfMonth(DateKind, wYear, wMonth));
+end;
+class function TPublicUtils.DaysToDate(DateKind: TDateKind; Year, Month, Day: Word): Word;
+begin
+  if IsDateValid(DateKind, Year, Month, Day) then
+  begin
+    Result := DaysToMonth[DateKind, Month] + Day;
+    if (Month > LeapMonth[DateKind]) and IsLeapYear(DateKind, Year) then
+      Inc(Result);
+  end
+  else
+    Result := 0;
+end;
+
+class function TPublicUtils.DateOfDay(DateKind: TDateKind; Days, Year: Word; var Month, Day: Word): Boolean;
+var
+  LeapDay, m: Integer;
+begin
+  LeapDay := 0;
+  Month := 0;
+  Day := 0;
+  for m := 2 to 13 do
+  begin
+    if (m > LeapMonth[DateKind]) and IsLeapYear(DateKind, Year) then
+      LeapDay := 1;
+    if Days <= (DaysToMonth[DateKind, m] + LeapDay) then
+    begin
+      Month := m - 1;
+      if Month <= LeapMonth[DateKind] then LeapDay := 0;
+      Day := Days - (DaysToMonth[DateKind, Month] + LeapDay);
+      Break;
+    end;
+  end;
+  Result := IsDateValid(DateKind, Year, Month, Day);
+end;
+class function TPublicUtils.GregorianToSolar(var Year, Month, Day: Word): Boolean;
+var
+  GregorianYear: integer;
+  Days: Integer;
+begin
+  Result := False; // مقدار پیش‌فرض برای نتیجه در صورتی که تاریخ نامعتبر باشد
+
+  if IsDateValid(dkGregorian, Year, Month, Day) then
+  begin
+    Result := True; // اگر تاریخ معتبر باشد، نتیجه را True تنظیم می‌کنیم
+
+    if Month > 2 Then
+      GregorianYear := (Year + 1)
+    else
+      GregorianYear := Year;
+
+    Days := 355666 + (365 * Year) + ((GregorianYear + 3) Div 4) - ((GregorianYear + 99) Div 100);
+
+    Days := Days + ((GregorianYear + 399) Div 400) + Day + DaysToMonth[dkGregorian, Month];
+    Year := -1595 + (33 * (Days Div 12053));
+    Days := Days Mod 12053;
+    Year := Year + (4 * (Days Div 1461));
+    Days := Days Mod 1461;
+
+    if Days > 365 Then
+    begin
+      Year := Year + ((Days - 1) Div 365);
+      Days := (Days - 1) Mod 365;
+    end;
+
+    if Days < 186 Then
+    begin
+      Month := 1 + (Days Div 31);
+      Day := 1 + (Days Mod 31);
+    end
+    else
+    begin
+      Month := 7 + ((Days - 186) Div 30);
+      Day := 1 + ((Days - 186) Mod 30);
+    end;
+
+    // اینجا نتیجه‌گیری در مورد تاریخ را انجام دهید
+    // Result := DateOfDay(dkSolar, Days, Year, Month, Day);
+  end;
+end;
+
+class function TPublicUtils.SolarToGregorian(var Year, Month, Day: Word): Boolean;
+var
+    LeapDay, Days: integer;
+    iCounter: integer;
+begin
+    Result := False; // مقدار پیش‌فرض برای نتیجه در صورتی که تاریخ نامعتبر باشد
+
+    if IsDateValid(dkSolar, Year, Month, Day) then
+    begin
+        Result := True; // اگر تاریخ معتبر باشد، نتیجه را True تنظیم می‌کنیم
+
+        Year := Year + 1595;
+        Days := -355668 + (365 * Year) + ((Year Div 33) * 8) + (((Year Mod 33) + 3) Div 4) + Day;
+
+        if Month < 7 Then
+            Days := Days + ((Month - 1) * 31)
+        else
+            Days := Days + ((Month - 7) * 30) + 186;
+
+        Year := 400 * (Days Div 146097);
+        Days := Days Mod 146097;
+
+        if Days > 36524 Then
+        begin
+             Days := Days - 1;
+             Year := Year + (100 * (Days Div 36524));
+             Days := Days Mod 36524;
+
+             if Days >= 365 Then Days := Days + 1;
+        end;
+
+        Year := Year + (4 * (Days Div 1461));
+        Days := Days Mod 1461;
+
+        if Days > 365 Then
+        begin
+             Year := Year + ((Days - 1) Div 365);
+             Days := (Days - 1) Mod 365;
+        end;
+
+        Day := Days + 1;
+        Month := 1;
+
+        if ((((Year Mod 4) = 0) And ((Year Mod 100) <> 0)) Or ((Year Mod 400) = 0)) Then
+            LeapDay := 29
+        else
+            LeapDay := 28;
+
+        for iCounter := 1 to 12 do
+        begin
+            if ((iCounter = 2) and (Day <= LeapDay)) or
+               ((iCounter <> 2) and (Day <= DaysOfMonths[dkGregorian, iCounter])) Then
+                break;
+
+            Month := Month + 1;
+
+            if iCounter <> 2 then
+                Day := Day - DaysOfMonths[dkGregorian, iCounter]
+            else
+                Day := Day - LeapDay;
+        end;
+    end;
+end;
+
+class function TPublicUtils.IntGetWeekRemainDays(Date: string; DateKind: TDateKind): integer;
+var
+  Year, Month, Day, TempDay: Word;
+begin
+  Result := 0;
+  SeparateYMD(Date, Year, Month, Day, DateKind);
+  if DateKind = dkSolar then
+  begin
+    SolarToGregorian(Year, Month, Day);
+    TempDay := DayOfWeek(EncodeDate(Year, Month, Day));
+    if TempDay in [1..5] then
+      Result := 7 - (TempDay + 2)
+    else
+    if TempDay = 6 then
+      Result := 6 //7 - 1
+    else
+    if TempDay = 7 then
+      Result := 5 //7 - 2;
+  end
+  else
+  begin
+    TempDay := DayOfWeek(EncodeDate(Year, Month, Day));
+    Result := 7 - TempDay;
+  end;
+end;
+
+class function TPublicUtils.IntGetYearRemainDays(Date: string; DateKind: TDateKind): integer;
+var
+  Year, Month, Day, TempDay: Word;
+  iCounter, iSum: integer;
+begin
+//  Result := 0;
+  SeparateYMD(Date, Year, Month, Day, DateKind);
+  if DateKind = dkSolar then
+  begin
+    iSum := DaysOfMonths[DateKind, Month] - Day;
+    for iCounter := (Month + 1) to 12 do
+      iSum := iSum + DaysOfMonths[DateKind, iCounter];
+    Result := iSum;
+  end
+  else
+  begin
+    TempDay := DayOfTheYear(EncodeDate(Year, Month, Day));
+      
+    if SysUtils.IsLeapYear(Year) then
+      Result := 366 - TempDay
+    else
+      Result := 365 - TempDay;
+  end;
+  
+end;
+
+class function TPublicUtils.IntDayOfWeek(Date: string; DateKind: TDateKind): integer;
+var
+  Year, Month, Day: Word;
+begin
+  SeparateYMD(Date, Year, Month, Day, DateKind);
+  if DateKind = dkSolar then
+  begin
+    SolarToGregorian(Year, Month, Day);
+    Result := DayOfWeek(EncodeDate(Year, Month, Day)) + 1;
+  end
+  else
+    Result := DayOfWeek(EncodeDate(Year, Month, Day));
+end;
+
+class function TPublicUtils.IntGetMonthRemainDay(Date: string; DateKind: TDateKind): integer;
+var
+  Year, Month, Day: Word;
+begin
+  SeparateYMD(Date, Year, Month, Day, DateKind);
+  Result := DaysOfMonths[DateKind, Month] - Day;
+end;
+
+class function TPublicUtils.ConvertDate(ADate: string; DateKind: TDateKind): string;
+var
+  Year, Month, Day: word;
+begin
+  SeparateYMD(ADate, Year, Month, Day, DateKind);
+  if DateKind = dkSolar then
+    SolarToGregorian(Year, Month, Day)
+  else
+    GregorianToSolar(Year, Month, Day);
+  if DateKind = dkSolar then
+    DateKind := dkGregorian
+  else
+    DateKind := dkSolar;
+  Result := ConcatenateDate(Year, Month, Day, DateKind);
+end;
+
+class function TPublicUtils.ConvertYear(ADate: string; DateKind: TDateKind): integer;
+var
+  Year, Month, Day: word;
+begin
+  SeparateYMD(ADate, Year, Month, Day, DateKind);
+  if DateKind = dkSolar then
+    SolarToGregorian(Year, Month, Day)
+  else
+    GregorianToSolar(Year, Month, Day);
+  Result := Year;
+end;
+class function TPublicUtils.ConvertMonth(ADate: string; DateKind: TDateKind): integer;
+var
+  Year, Month, Day: word;
+begin
+  SeparateYMD(ADate, Year, Month, Day, DateKind);
+  if DateKind = dkSolar then
+    SolarToGregorian(Year, Month, Day)
+  else
+    GregorianToSolar(Year, Month, Day);
+  Result := Month;
+end;
+
+class function TPublicUtils.DaysBetween(ANow, AThen: string; DateKind: TDateKind): integer;
+var
+  Year, Month, Day: word;
+  NextYear, NextMonth, NextDay: word;
+begin
+  SeparateYMD(ANow, Year, Month, Day, DateKind);
+  SeparateYMD(AThen, NextYear, NextMonth, NextDay, DateKind);
+  if DateKind = dkSolar then
+  begin
+    SolarToGregorian(Year, Month, Day);
+    SolarToGregorian(NextYear, NextMonth, NextDay);
+  end;
+  Result := DateUtils.DaysBetween(EncodeDate(Year, Month, Day), EncodeDate(NextYear, NextMonth, NextDay));
+end;
+end.
+

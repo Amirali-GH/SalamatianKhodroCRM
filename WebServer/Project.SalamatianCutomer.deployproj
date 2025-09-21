@@ -1,0 +1,99 @@
+﻿<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+    <Import Condition="Exists('$(BDS)\bin\CodeGear.Deployment.targets')" Project="$(BDS)\bin\CodeGear.Deployment.targets"/>
+    <ProjectExtensions>
+        <ProjectFileVersion>12</ProjectFileVersion>
+    </ProjectExtensions>
+    <PropertyGroup>
+        <DeviceId Condition="'$(Platform)'=='Android'"/>
+        <DeviceId Condition="'$(Platform)'=='Android64'"/>
+        <DeviceId Condition="'$(Platform)'=='iOSDevice64'"/>
+        <DeviceId Condition="'$(Platform)'=='iOSSimARM64'"/>
+    </PropertyGroup>
+    <ItemGroup Condition="'$(Platform)'=='OSX64'"/>
+    <ItemGroup Condition="'$(Platform)'=='Win32'">
+        <DeployFile Include="..\Website\WWW_V1\styles\style.css" Condition="'$(Config)'=='Debug'">
+            <RemoteDir>Project.SalamatianCutomer\WWW\style\</RemoteDir>
+            <RemoteName>style.css</RemoteName>
+            <DeployClass>File</DeployClass>
+            <Operation>0</Operation>
+            <LocalCommand/>
+            <RemoteCommand/>
+            <Overwrite>True</Overwrite>
+        </DeployFile>
+        <DeployFile Include="..\Website\WWW_V1\scripts\script.js" Condition="'$(Config)'=='Debug'">
+            <RemoteDir>Project.SalamatianCutomer\WWW\scripts\</RemoteDir>
+            <RemoteName>script.js</RemoteName>
+            <DeployClass>File</DeployClass>
+            <Operation>0</Operation>
+            <LocalCommand/>
+            <RemoteCommand/>
+            <Overwrite>True</Overwrite>
+        </DeployFile>
+        <DeployFile Include="FDConnectionDefs.ini" Condition="'$(Config)'=='Debug'">
+            <RemoteDir>Project.SalamatianCutomer\</RemoteDir>
+            <RemoteName>FDConnectionDefs.ini</RemoteName>
+            <DeployClass>File</DeployClass>
+            <Operation>0</Operation>
+            <LocalCommand/>
+            <RemoteCommand/>
+            <Overwrite>True</Overwrite>
+        </DeployFile>
+        <DeployFile Include="Win32\Debug\.env" Condition="'$(Config)'=='Debug'">
+            <RemoteDir>Project.SalamatianCutomer\</RemoteDir>
+            <RemoteName>.env</RemoteName>
+            <DeployClass>File</DeployClass>
+            <Operation>0</Operation>
+            <LocalCommand/>
+            <RemoteCommand/>
+            <Overwrite>True</Overwrite>
+        </DeployFile>
+        <DeployFile Include="..\MainWebSite\Project.SalamatianCutomer.exe" Condition="'$(Config)'=='Debug'">
+            <RemoteDir>Project.SalamatianCutomer\</RemoteDir>
+            <RemoteName>Project.SalamatianCutomer.exe</RemoteName>
+            <DeployClass>ProjectOutput</DeployClass>
+            <Operation>0</Operation>
+            <LocalCommand/>
+            <RemoteCommand/>
+            <Overwrite>True</Overwrite>
+            <Required>True</Required>
+        </DeployFile>
+        <DeployFile Include="..\Website\WWW_V1\index.html" Condition="'$(Config)'=='Debug'">
+            <RemoteDir>Project.SalamatianCutomer\WWW\</RemoteDir>
+            <RemoteName>index.html</RemoteName>
+            <DeployClass>File</DeployClass>
+            <Operation>0</Operation>
+            <LocalCommand/>
+            <RemoteCommand/>
+            <Overwrite>True</Overwrite>
+        </DeployFile>
+    </ItemGroup>
+    <ItemGroup Condition="'$(Platform)'=='Android64'"/>
+    <ItemGroup Condition="'$(Platform)'=='Android'"/>
+    <ItemGroup Condition="'$(Platform)'=='OSXARM64'"/>
+    <ItemGroup Condition="'$(Platform)'=='Win64'"/>
+    <ItemGroup Condition="'$(Platform)'=='iOSDevice64'"/>
+    <ItemGroup Condition="'$(Platform)'=='iOSSimARM64'"/>
+    <ItemGroup Condition="'$(Platform)'=='Win64x'"/>
+    <ItemGroup Condition="'$(Platform)'=='Linux64'">
+        <DeployFile Include="Linux64\Release\Project.SalamatianCutomer" Condition="'$(Config)'=='Release'">
+            <RemoteDir>Project.SalamatianCutomer\</RemoteDir>
+            <RemoteName>Project_SalamatianCutomer</RemoteName>
+            <DeployClass>ProjectOutput</DeployClass>
+            <Operation>1</Operation>
+            <LocalCommand/>
+            <RemoteCommand/>
+            <Overwrite>True</Overwrite>
+            <Required>True</Required>
+        </DeployFile>
+        <DeployFile Include="Linux64\Debug\Project.SalamatianCutomer" Condition="'$(Config)'=='Debug'">
+            <RemoteDir>Project.SalamatianCutomer\</RemoteDir>
+            <RemoteName>Project_SalamatianCutomer</RemoteName>
+            <DeployClass>ProjectOutput</DeployClass>
+            <Operation>1</Operation>
+            <LocalCommand/>
+            <RemoteCommand/>
+            <Overwrite>True</Overwrite>
+            <Required>True</Required>
+        </DeployFile>
+    </ItemGroup>
+</Project>

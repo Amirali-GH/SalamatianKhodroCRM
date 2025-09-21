@@ -1,0 +1,17 @@
+Unit Utils;
+
+Interface
+
+Implementation
+
+Function TrimNonDigits(const S: string): string;
+Var
+    i: Integer;
+Begin
+  Result := '';
+  for i := 1 to S.Length do
+    if S.Chars[i-1].IsDigit then
+      Result := Result + S.Chars[i-1];
+End;
+
+End.

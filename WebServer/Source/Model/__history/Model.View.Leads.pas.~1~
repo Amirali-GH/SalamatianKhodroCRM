@@ -1,0 +1,75 @@
+unit Model.View.Leads;
+
+interface
+
+uses
+  MVCFramework.ActiveRecord,
+  MVCFramework.Nullables,
+  MVCFramework.Serializer.Commons,
+  System.Generics.Collections;
+
+type
+    [MVCNameCase(ncLowerCase)]
+    [MVCTable('vw_list_of_the_leads')]
+    [MVCEntityActions([eaRetrieve])]
+    TVW_List_Of_The_Leads = class(TMVCActiveRecord)
+    private
+      [MVCTableField('Phone')]
+      FPhone: NullableString;
+
+      [MVCTableField('FullName')]
+      FFullName: NullableString;
+
+      [MVCTableField('NationalID')]
+      FNationalID: NullableString;
+
+      [MVCTableField('RequestedCarName')]
+      FRequestedCarName: NullableString;
+
+      [MVCTableField('BranchName')]
+      FBranchName: NullableString;
+
+      [MVCTableField('SaleAgentName')]
+      FSaleAgentName: NullableString;
+
+      [MVCTableField('LastContactDate_Shams')]
+      FLastContactDate_Shams: NullableString;
+
+      [MVCTableField('CustomerStatus')]
+      FCustomerStatus: NullableString;
+
+      [MVCTableField('Notes1')]
+      FNotes1: NullableString;
+
+      [MVCTableField('Notes2')]
+      FNotes2: NullableString;
+
+      [MVCTableField('Notes3')]
+      FNotes3: NullableString;
+
+      [MVCTableField('PotentialCode')]
+      FPotentialCode: NullableString;
+
+      [MVCTableField('CampaignCode')]
+      FCampaignCode: NullableString;
+
+    public
+        property Phone: NullableString read FPhone write FPhone;
+        property FullName: NullableString read FFullName write FFullName;
+        property NationalID: NullableString read FNationalID write FNationalID;
+        property RequestedCarName: NullableString read FRequestedCarName write FRequestedCarName;
+        property BranchName: NullableString read FBranchName write FBranchName;
+        property SaleAgentName: NullableString read FSaleAgentName write FSaleAgentName;
+        property LastContactDate_Shams: NullableString read FLastContactDate_Shams write FLastContactDate_Shams;
+        property CustomerStatus: NullableString read FCustomerStatus write FCustomerStatus;
+        property Notes1: NullableString read FNotes1 write FNotes1;
+        property Notes2: NullableString read FNotes2 write FNotes2;
+        property Notes3: NullableString read FNotes3 write FNotes3;
+        property PotentialCode: NullableString read FPotentialCode write FPotentialCode;
+        property CampaignCode: NullableString read FCampaignCode write FCampaignCode;
+    end;
+
+implementation
+
+end.
+

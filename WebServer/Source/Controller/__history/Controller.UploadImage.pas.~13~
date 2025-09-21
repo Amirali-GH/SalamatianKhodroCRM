@@ -1,0 +1,112 @@
+﻿Unit Controller.UploadImage;
+
+Interface
+
+Uses
+    System.SysUtils,
+    System.JSON,
+    MVCFramework,
+    MVCFramework.Commons,
+    Service.Interfaces,
+    Web.ReqFiles,
+    WebModule.SalamtCRM;
+
+Type
+    [MVCPath(BASE_API_V1+'/upload')]
+    TUploadImageController = Class(TMVCController)
+    Public
+        [MVCPath('/images')]
+        [MVCHTTPMethods([httpPost])]
+        Procedure UploadImages(Const [MVCInject] AImageUploadService: IImageUploadService);
+
+        [MVCPath('/images/by-branch')]
+        [MVCHTTPMethods([httpGet])]
+        Procedure GetImagesByBranch(
+            Const [MVCInject] AImageQueryService: IInterface // جایگزین با IImageQueryService واقعی
+        );
+    End;
+
+Implementation
+
+Uses
+    MVCFramework.Logger;
+
+{ TUploadImageController }
+
+//________________________________________________________________________________________
+Procedure TUploadImageController.UploadImages(
+    Const AImageUploadService: IImageUploadService);
+Var
+    LFiles: TWebRequestFiles;
+    LUserID: String;
+Begin
+    // دریافت مجموعه فایل‌ها از درخواست
+    LFiles := Context.Request.Files As TWebRequestFiles;
+
+    If (LFiles = Nil) Or (LFiles.Count = 0) Then
+    Begin
+        Raise EMVCException.Create(HTTP_STATUS.NoContent, 'هیچ فایلی ارسال نشده است');
+    End;
+
+    // گرفتن شناسه کاربر (مطابق الگوی پروژه شما)
+    LUserID := Context.LoggedUser.CustomData.Items['userid'];
+
+    Try
+        If Not AImageUploadService.SaveUploadedImages(LFiles, LUserID) Then
+            Raise EMVCException.Create(HTTP_STATUS.InternalServerError, 'ذخیره‌سازی تصاویر با مشکل مواجه شد');
+
+        Render(HTTP_STATUS.OK, 'تصاویر با موفقیت ذخیره و تخصیص داده شدند.');
+    Except
+        On E: EMVCException Do
+            Raise;
+        On E: Exception Do
+            Raise EMVCException.CreateFmt(HTTP_STATUS.InternalServerError,
+              'خطا در پردازش تصاویر: %s', [E.Message]);
+    End;
+End;
+//________________________________________________________________________________________
+Procedure TUploadImageController.GetImagesByBranch(
+    Const AImageQueryService: IInterface);
+Var
+    BranchIdStr: String;
+    BranchID: Int64;
+    Page, PageSize: Integer;
+    LService: IInterface;
+    LJson: TJSONObject;
+Begin
+    // خواندن پارامترها
+    BranchIdStr := Context.Request.QueryStringParam('branchId');
+    If BranchIdStr.IsEmpty Then
+        Raise EMVCException.Create(HTTP_STATUS.BadRequest, 'پارامتر branchId ارسال نشده است');
+
+    BranchID := StrToInt64Def(BranchIdStr, 0);
+    If BranchID <= 0 Then
+        Raise EMVCException.Create(HTTP_STATUS.BadRequest, 'branchId معتبر نیست');
+
+    Page := StrToIntDef(Context.Request.QueryStringParam('page'), 1);
+    PageSize := StrToIntDef(Context.Request.QueryStringParam('pageSize'), 20);
+    If Page <= 0 Then Page := 1;
+    If PageSize <= 0 Then PageSize := 20;
+
+    // تبدیل اینترفیس تزریق‌شده به اینترفیس واقعی (یا cast مناسب)
+    // در پروژه‌ات ممکن است نام اینترفیس IImageQueryService باشد؛ اینجا فقط الگوست.
+    LService := AImageQueryService;
+
+    // فراخوانی سرویس برای گرفتن JSON خروجی
+    // فرض: سرویس تابع GetImagesByBranch(BranchID, Page, PageSize): TJSONObject دارد
+    LJson := (LService As IUnknown) as TJSONObject; // <-- این خط صرفا الگو است؛ در واقع باید cast درست به IImageQueryService انجام شود
+
+    // در عمل باید کد زیر باشد (اگر سرویس اینترفیس صحیح دارد):
+    // LJson := (AImageQueryService As IImageQueryService).GetImagesByBranch(BranchID, Page, PageSize);
+
+    // ارسال پاسخ JSON
+    Context.Response.ContentType := TMVCMediaType.APPLICATION_JSON;
+    Try
+        Render(HTTP_STATUS.OK, LJson.ToJSON);
+    Finally
+        LJson.Free;
+    End;
+End;
+
+End.
+

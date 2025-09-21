@@ -1,0 +1,158 @@
+﻿unit Service.Novinhub;
+
+interface
+
+uses
+  System.SysUtils,
+  System.Classes,
+  System.Generics.Collections,
+  MVCFramework.ActiveRecord,
+  Model.Customer.Assignment,
+  Model.Branch.Branch,
+  Service.Interfaces;
+
+type
+  TNovinhubService = class(TInterfacedObject, INovinhubService)
+  private
+    function DownloadFile: string;
+    class function CleanPhone(const APhone: string): string; static;
+  public
+    procedure ImportAssignmentsFromExcel;
+  end;
+
+implementation
+
+uses
+  System.IOUtils,
+  System.Net.HttpClient,
+  Math,
+  FireDAC.Stan.Intf,
+  FireDAC.Stan.Option,
+  FireDAC.Stan.Param,
+  FireDAC.Stan.Error,
+  FireDAC.DatS,
+  FireDAC.Phys.Intf,
+  FireDAC.DApt.Intf,
+  FireDAC.Stan.Async,
+  FireDAC.DApt,
+  FireDAC.Comp.Client,
+  FireDAC.Comp.DataSet,
+  System.Net.HttpClientComponent;
+
+{ TNovinhubService }
+
+function TNovinhubService.DownloadFile: string;
+var
+  LHttpClient: TNetHTTPClient;
+  LSavePath: string;
+  LUrl: string;
+begin
+  // TODO: آدرس API واقعی
+  LUrl := 'https://api.your-novinhub.com/export/excel';
+  LSavePath := TPath.Combine(TPath.GetTempPath, 'novinhub_data_' + GUIDToString(TGUID.NewGuid) + '.csv');
+
+  LHttpClient := TNetHTTPClient.Create(nil);
+  try
+    //LHttpClient.Get(LUrl, LSavePath);
+    Result := './expor.csv'; // برای تست
+  finally
+    LHttpClient.Free;
+  end;
+end;
+
+procedure TNovinhubService.ImportAssignmentsFromExcel;
+var
+  LBranches: TObjectList<TBranch>;
+  LBranchIndex, i: Integer;
+  LCsvFile: TStringList;
+  LRow, LPhone, LUserName: string;
+  LRowData: TArray<string>;
+  LFDConnection: TFDConnection;
+  LFDQuery: TFDQuery;
+begin
+  LBranches := TMVCActiveRecord.Where<TBranch>('IsActive = ?', [True]);
+  try
+    if LBranches.Count = 0 then
+      raise Exception.Create('هیچ شعبه فعالی برای تخصیص یافت نشد.');
+
+    LCsvFile := TStringList.Create;
+    try
+      // دقت کن، با UTF8 بخونیم که کاراکتر خراب نیاد
+      LCsvFile.LoadFromFile(DownloadFile, TEncoding.UTF8);
+
+      if LCsvFile.Count <= 1 then
+        Exit; // هیچ داده‌ای نیست
+
+      LFDConnection := TFDConnection(TMVCActiveRecord.CurrentConnection.CloneConnection);
+      LFDQuery := TFDQuery.Create(nil);
+      try
+        LFDQuery.Connection := LFDConnection;
+        LFDConnection.StartTransaction;
+        try
+          LBranchIndex := 0;
+          for i := 1 to LCsvFile.Count - 1 do
+          begin
+            LRow := Trim(LCsvFile[i]);
+            if LRow = '' then
+              Continue;
+
+            // جداکننده فایل شما ESC (#27)
+            LRowData := LRow.Split([#27]);
+
+            if Length(LRowData) < 2 then
+              Continue;
+
+            LPhone := CleanPhone(Trim(LRowData[0]));
+            LUserName := Trim(LRowData[1]);
+
+            if LPhone = '' then
+              Continue;
+
+            if Length(LPhone) > 11 then
+              LPhone := Copy(LPhone, 1, 11);
+
+            LFDQuery.SQL.Text :=
+              'INSERT INTO customer_assignment (Phone, BranchID, SourceCollectingDataID, UserName) ' +
+              'VALUES (:Phone, :BranchID, :SourceCollectingDataID, :UserName)';
+
+            LFDQuery.ParamByName('Phone').AsString := LPhone;
+            LFDQuery.ParamByName('BranchID').AsInteger := LBranches[LBranchIndex].BranchID;
+            LFDQuery.ParamByName('SourceCollectingDataID').AsInteger := 1;
+            LFDQuery.ParamByName('UserName').AsString := LUserName;
+
+            LFDQuery.ExecSQL;
+
+            Inc(LBranchIndex);
+            if LBranchIndex >= LBranches.Count then
+              LBranchIndex := 0;
+          end;
+
+
+          LFDConnection.Commit;
+        except
+          LFDConnection.Rollback;
+          raise;
+        end;
+      finally
+        LFDQuery.Free;
+      end;
+    finally
+      LCsvFile.Free;
+    end;
+  finally
+    LBranches.Free;
+  end;
+end;
+
+class function TNovinhubService.CleanPhone(const APhone: string): string;
+var
+  C: Char;
+begin
+  Result := '';
+  for C in APhone do
+    if C in ['0'..'9'] then
+      Result := Result + C;
+end;
+
+end.
+

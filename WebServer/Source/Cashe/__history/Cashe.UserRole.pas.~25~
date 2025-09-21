@@ -1,0 +1,92 @@
+﻿Unit Cashe.UserRole;
+
+Interface
+
+Uses
+    System.SysUtils,
+    System.Generics.Collections,
+    SyncObjs,
+    MVCFramework.ActiveRecord;
+
+Type
+    TRoleRecord = Record
+        UserRoleID: Integer;
+        Code: String;
+        MainName: String;
+        SecondName: String;
+    End;
+
+
+//---------------------------------- Functions -------------------------------------------
+Procedure InitializeRoles();
+Function GetRoleNameByID(Const AUserRoleID: Integer): String;
+//----------------------------------------------------------------------------------------
+
+Var
+    GUserRoles: TDictionary<Integer, TRoleRecord>;
+    GUserRolesLock: TCriticalSection;
+
+
+
+Implementation
+
+Uses Model.UserRole;
+
+//----------------------------------------------------------------------------------------
+Procedure InitializeRoles;
+Var
+    LUserRoles: TObjectList<TUserRole>;
+    LRole: TUserRole;
+    LRole_RRecord: TRoleRecord;
+Begin
+    GUserRolesLock.Enter;
+    Try
+        GUserRoles.Clear;
+        LUserRoles := TMVCActiveRecord.All<TUserRole>;
+        try
+            For LRole in LUserRoles do
+            Begin
+                LRole_RRecord.UserRoleID   := LRole.UserRoleID;
+                LRole_RRecord.Code := LRole.Code.ValueOrDefault;
+                LRole_RRecord.Name := LRole.MainName;
+
+                GUserRoles.Add(LRole_RRecord.UserRoleID, LRole_RRecord);
+            End;
+        finally
+            LRoles.Free;
+        end;
+    Finally
+        GUserRolesLock.Leave;
+    End;
+End;
+//----------------------------------------------------------------------------------------
+function GetRoleNameByID(Const AUserRoleID: Integer): string;
+var
+    R: TRoleRecord;
+begin
+    Result := 'user'; // پیش‌فرض
+    GUserRolesLock.Enter;
+    try
+      if GUserRoles.TryGetValue(ARoleID, R) then
+        Result := R.Name;
+    finally
+      GUserRolesLock.Leave;
+    end;
+end;
+//----------------------------------------------------------------------------------------
+
+Initialization
+Begin
+    GUserRoles := TDictionary<Integer, TRoleRecord>.Create;
+    GUserRolesLock := TCriticalSection.Create;
+End;
+
+Finalization
+Begin
+    GUserRoles.Free;
+    GUserRolesLock.Free;
+End;
+
+
+End.
+

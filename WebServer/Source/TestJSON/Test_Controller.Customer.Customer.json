@@ -1,0 +1,15 @@
+﻿{
+    "customerid": 1,
+    "firstname": "علی",
+    "lastname": "رضایی",
+    "phone": "09123456789",
+    "nationalid": "1234567890",
+    "email": "ali.rezaei@example.com",
+    "address": "تهران، خیابان اصلی، پلاک 123",
+    "budget": 5000000.00,
+    "campaignid": 101,
+    "createdbyuserid": 1001,
+    "isactive": true,
+    "issystemic": false,
+    "description": "مشتری بالقوه برای کمپین فروش پاییزه"
+}
