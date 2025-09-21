@@ -38,8 +38,6 @@ export async function handleLogin(e) {
                 currentState.token = data.token;
                 currentState.user = user;
                 await loadPage('dashboard'); // فقط loadPage را فراخوانی کنید
-                // fetchLeads(); // این تابع بهتر است بعد از لود شدن صفحه داشبورد فراخوانی شود
-                // getUserInfo(); // این فراخوانی از اینجا حذف می‌شود
             } else {
                 showLoginError("توکن دریافت نشد");
             }

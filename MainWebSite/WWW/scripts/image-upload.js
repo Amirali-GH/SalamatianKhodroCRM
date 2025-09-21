@@ -107,7 +107,7 @@ export async function uploadImages() {
 
     try {
         const apiBaseUrl = window.location.origin;
-        const response = await fetch(`${apiBaseUrl}/api/v1/upload/images`, {
+        const response = await fetch(`${apiBaseUrl}/api/v1/images/upload`, {
             method: 'POST',
             body: formData,
             headers: {

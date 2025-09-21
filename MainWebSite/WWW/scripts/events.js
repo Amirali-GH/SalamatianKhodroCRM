@@ -12,7 +12,7 @@ import {
     closeAssignmentModal, 
     saveAssignment,
     openAssignmentModal,
-    deleteAssignment,
+    deleteAssignment,initAssignmentTabs,
     fetchLeads } from './leads.js';
 import { currentState } from './state.js';
 
@@ -177,12 +177,11 @@ export function setupAssignedNumbersListner() {
 
     if (addAssignmentBtn) {
         if (currentState.user && currentState.user.userrolename === 'admin') {
-            branchFilter.classList.remove('hidden');
+            addAssignmentBtn.classList.remove('hidden');
+            addAssignmentBtn.addEventListener('click', () => openAssignmentModal());
         } else {
-            branchFilter.classList.add('hidden');
-        }
-      
-        addAssignmentBtn.addEventListener('click', () => openAssignmentModal());
+            addAssignmentBtn.classList.add('hidden');
+        }  
     }
 
     if (assignmentForm) {
@@ -217,6 +216,11 @@ export function setupAssignedNumbersListner() {
     // --- Initial Data Load ---
     loadBranchesInLeads().then(() => {
         fetchLeads();
+        
+        // مطمئن شوید که DOM کاملاً لود شده قبل از مقداردهی تب‌ها
+        setTimeout(() => {
+            initAssignmentTabs();
+        }, 100);
     });
 }
 

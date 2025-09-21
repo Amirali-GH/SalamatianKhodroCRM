@@ -3,14 +3,9 @@
 Interface
 
 Uses
-    System.SysUtils,
-    System.Classes,
-    System.JSON,
-    System.Generics.Collections,
-    MVCFramework.ActiveRecord,
-    FireDAC.Comp.Client,
     Web.ReqFiles,
-    Service.Interfaces;
+    Service.Interfaces,
+    System.JSON;
 
 Type
     TImageUploadService = Class(TInterfacedObject, IImageUploadService)
@@ -26,8 +21,13 @@ Uses
     System.DateUtils,
     System.Math,
     System.StrUtils,
-    MVCFramework.Logger,
+    System.SysUtils,
+    System.Classes,
+    System.NetEncoding,
+    System.Generics.Collections,
+    MVCFramework.ActiveRecord,
     FireDac.Stan.Param,
+    FireDAC.Comp.Client,
     Data.DB;
 
 { TImageUploadService }
@@ -86,7 +86,6 @@ Begin
     LBranchIDs := TList<Int64>.Create;
     LQuery := TFDQuery.Create(Nil);
     LMem := Nil;
-    BranchCounts := Nil;
 
     Try
         Try
@@ -288,122 +287,124 @@ Function TImageUploadService.GetImagesByBranch(
     Const BranchID: Int64; Const Page, PageSize: Integer): TJSONObject;
 Var
     LConn: TFDConnection;
-    LQuery: TFDQuery;
-    LCountQuery: TFDQuery;
+    LQuery, LCountQuery: TFDQuery;
     LOffset: Integer;
     LTotal: Int64;
     LArr: TJSONArray;
     LObj: TJSONObject;
-    LImageGuid, LOrigName, LContentType: String;
-    LImagePhoneID: Int64;
-    LUploadDate: TDateTime;
-    LFileSizeKB: Integer;
-    LWidth, LHeight: Integer;
-    // helper
-    Function MakeSavedFileName(Const AGuid, AOrig: String): String;
-    Var
-        ext: String;
-    Begin
-        ext := ExtractFileExt(AOrig);
-        If ext = '' Then
-            ext := '.bin';
-        Result := AGuid + ext;
-    End;
+    LImageName: string;
+    LProgramPath, LUploadsPath: string;
+    LFileNameOnly: string;
 Begin
-    Result := Nil;
-    LQuery := TFDQuery.Create(Nil);
-    LCountQuery := TFDQuery.Create(Nil);
+
+    // prepare queries
+    LQuery := TFDQuery.Create(nil);
+    LCountQuery := TFDQuery.Create(nil);
+    LConn := TFDConnection(TMVCActiveRecord.CurrentConnection.CloneConnection);
     Try
-        LConn := TMVCActiveRecord.CurrentConnection As TFDConnection;
         If LConn = Nil Then
-            Raise Exception.Create('No active DB connection');
+          raise Exception.Create('No active DB connection');
+
+        LQuery.Connection := LConn;
+        LCountQuery.Connection := LConn;
 
         // محاسبه offset
         LOffset := (Max(1, Page) - 1) * Max(1, PageSize);
 
-        // 1) گرفتن تعداد کل (distinct)
-        //    برای اینکه از هر دو منبع (customer_assignment و mapping table) استفاده شود،
-        //    از JOIN روی customer_assign_image_phone و شرط وجود در assignment یا mapping استفاده می‌کنیم
-        LCountQuery.Connection := LConn;
+        // 1) شمارش کل (distinct یا ساده بر اساس assignment)
         LCountQuery.SQL.Text :=
-          'SELECT COUNT(DISTINCT p.ImagePhoneID) AS total' + sLineBreak +
-          'FROM customer_assign_image_phone p' + sLineBreak +
-          'LEFT JOIN customer_assignment a ON p.ImagePhoneID = a.ImagePhoneID AND a.BranchID = :b' + sLineBreak +
-          'LEFT JOIN customer_assign_image_phone_branch m ON p.ImagePhoneID = m.ImagePhoneID AND m.BranchID = :b' + sLineBreak +
-          'WHERE a.AssignmentID IS NOT NULL OR m.ImagePhoneID IS NOT NULL';
+          'SELECT COUNT(DISTINCT Asg.AssignmentID) AS total ' + sLineBreak +
+          'FROM customer_assignment Asg ' + sLineBreak +
+          'INNER JOIN customer_assign_image_phone Img ON Img.ImagePhoneID = Asg.ImagePhoneID ' + sLineBreak +
+          'WHERE (Img.ImagePhoneID IS NOT NULL) AND ((:b = 0) OR (Asg.BranchID = :b))';
         LCountQuery.ParamByName('b').AsLargeInt := BranchID;
         LCountQuery.Open;
         Try
-            LTotal := LCountQuery.FieldByName('total').AsLargeInt;
+          LTotal := LCountQuery.FieldByName('total').AsLargeInt;
         Finally
-            LCountQuery.Close;
+          LCountQuery.Close;
         End;
 
-        // 2) گرفتن داده‌ها با LIMIT / OFFSET (MySQL)
-        LQuery.Connection := LConn;
+        // 2) گرفتن لیست image guids با pagination
+        // توجه: فرض شده که UploadDate در جدول image (Img) ذخیره شده است
         LQuery.SQL.Text :=
-          'SELECT DISTINCT p.ImagePhoneID, p.ImageGuid, p.OriginalFileName, p.UploadDate, p.FileSizeKB, p.ContentType, p.Width, p.Height' + sLineBreak +
-          'FROM customer_assign_image_phone p' + sLineBreak +
-          'LEFT JOIN customer_assignment a ON p.ImagePhoneID = a.ImagePhoneID AND a.BranchID = :b' + sLineBreak +
-          'LEFT JOIN customer_assign_image_phone_branch m ON p.ImagePhoneID = m.ImagePhoneID AND m.BranchID = :b' + sLineBreak +
-          'WHERE a.AssignmentID IS NOT NULL OR m.ImagePhoneID IS NOT NULL' + sLineBreak +
-          'ORDER BY p.UploadDate DESC' + sLineBreak +
+          'SELECT Img.ImagePhoneID, Img.ImageGuid AS ImageName, Img.OriginalFileName AS FileName, ' +
+          'Img.UploadDate FROM customer_assign_image_phone AS Img ' +
+          'INNER JOIN customer_assignment AS Asg ON Img.ImagePhoneID = Asg.ImagePhoneID ' +
+          'WHERE (Img.ImagePhoneID IS NOT NULL) AND ((:b = 0) OR (Asg.BranchID = :b)) ' +
+          'ORDER BY Img.UploadDate DESC ' + sLineBreak +
           'LIMIT :off, :ps';
         LQuery.ParamByName('b').AsLargeInt := BranchID;
         LQuery.ParamByName('off').AsInteger := LOffset;
         LQuery.ParamByName('ps').AsInteger := PageSize;
         LQuery.Open;
 
+        // آماده‌سازی مسیر uploads (پوشه کنار exe)
+        LProgramPath := ExtractFilePath(ParamStr(0));
+        LUploadsPath := TPath.Combine(LProgramPath, 'uploads');
+
         // ساخت JSON خروجی
+        Result := TJSONObject.Create;
+        Result.AddPair('total', TJSONNumber.Create(LTotal));
+        Result.AddPair('page', TJSONNumber.Create(Max(1, Page)));
+        Result.AddPair('pageSize', TJSONNumber.Create(Max(1, PageSize)));
+
         LArr := TJSONArray.Create;
         Try
-            While Not LQuery.Eof Do
+            while not LQuery.Eof do
             Begin
-                LImagePhoneID := LQuery.FieldByName('ImagePhoneID').AsLargeInt;
-                LImageGuid := LQuery.FieldByName('ImageGuid').AsString;
-                LOrigName := LQuery.FieldByName('OriginalFileName').AsString;
-                LUploadDate := LQuery.FieldByName('UploadDate').AsDateTime;
-                LFileSizeKB := LQuery.FieldByName('FileSizeKB').AsInteger;
-                LContentType := LQuery.FieldByName('ContentType').AsString;
-                LWidth := LQuery.FieldByName('Width').AsInteger;
-                LHeight := LQuery.FieldByName('Height').AsInteger;
+                LImageName := LQuery.FieldByName('ImageName').AsString;
+
+                LFileNameOnly := '';
+                If (LQuery.FindField('FileName') <> nil) then
+                Begin
+                    LFileNameOnly := LQuery.FieldByName('FileName').AsString;
+                End;
+
 
                 LObj := TJSONObject.Create;
-                LObj.AddPair('ImagePhoneID', TJSONNumber.Create(LImagePhoneID));
-                LObj.AddPair('ImageGuid', TJSONString.Create(LImageGuid));
-                LObj.AddPair('OriginalFileName', TJSONString.Create(LOrigName));
-                LObj.AddPair('SavedFileName', TJSONString.Create(MakeSavedFileName(LImageGuid, LOrigName)));
-                LObj.AddPair('UploadDate', TJSONString.Create(DateTimeToStr(LUploadDate)));
-                LObj.AddPair('FileSizeKB', TJSONNumber.Create(LFileSizeKB));
-                LObj.AddPair('ContentType', TJSONString.Create(LContentType));
-                LObj.AddPair('Width', TJSONNumber.Create(LWidth));
-                LObj.AddPair('Height', TJSONNumber.Create(LHeight));
+                If (LImageName <> '') AND FileExists(TPath.Combine(LUploadsPath, LImageName + ExtractFileExt(LFileNameOnly))) then
+                Begin
+                    LObj.AddPair('fileName', TJSONString.Create(LFileNameOnly));
+                    LObj.AddPair('url', TJSONString.Create('/images/' + LImageName));
+                    LObj.AddPair('exists', TJSONBool.Create(True));
+                End
+                Else
+                Begin
+                    LObj.AddPair('fileName', TJSONString.Create(''));
+                    LObj.AddPair('url', TJSONString.Create(''));
+                    LObj.AddPair('exists', TJSONBool.Create(False));
+                End;
 
-                LArr.Add(LObj);
+                LArr.AddElement(LObj);
                 LQuery.Next;
             End;
 
-            // assemble final JSON
-            Result := TJSONObject.Create;
-            Result.AddPair('data', LArr);
-            // meta object
-            Result.AddPair('meta', TJSONObject.Create);
-            (Result.GetValue('meta') As TJSONObject).AddPair('page', TJSONNumber.Create(Page));
-            (Result.GetValue('meta') As TJSONObject).AddPair('pageSize', TJSONNumber.Create(PageSize));
-            (Result.GetValue('meta') As TJSONObject).AddPair('total', TJSONNumber.Create(LTotal));
-
-            // NOTE: LArr now owned by Result (do not free separately)
+            Result.AddPair('items', LArr);
         Except
             LArr.Free;
-            Raise;
+            raise;
         End;
 
     Finally
-        FreeAndNil(LQuery);
-        FreeAndNil(LCountQuery);
+        If Assigned(LQuery) then
+        Begin
+            If LQuery.Active then LQuery.Close;
+            FreeAndNil(LQuery);
+        End;
+        If Assigned(LCountQuery) then
+        Begin
+            If LCountQuery.Active then LCountQuery.Close;
+            FreeAndNil(LCountQuery);
+        End;
+
+        If Assigned(LConn) then
+        Begin
+            FreeAndNil(LConn);
+        End;
     End;
 End;
-
+//________________________________________________________________________________________
 
 End.
 

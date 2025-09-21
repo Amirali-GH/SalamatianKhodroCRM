@@ -1,21 +1,38 @@
+<div class="tabs-wrapper bg-white rounded-xl shadow-md p-4 mb-6">
+    <div class="tabs-container relative">
+        <div id="tabs" role="tablist" aria-label="تب‌های مدیریت" class="tabs flex border-b border-gray-200">
+            <button id="tab-assignments" role="tab" aria-selected="true" 
+                    class="tab-item active relative px-6 py-3 transition-all duration-300 ease-out flex items-center" 
+                    tabindex="0">
+                <i class="material-icons ml-2 text-sm">assignment</i>
+                تخصیص‌ها
+            </button>
+
+            <button id="tab-gallery" role="tab" aria-selected="false" 
+                    class="tab-item relative px-6 py-3 transition-all duration-300 ease-out flex items-center" 
+                    tabindex="-1">
+                <i class="material-icons ml-2 text-sm">photo_library</i>
+                تصاویر شماره ها
+            </button>
+        </div>
+
+        <!-- اندیکاتور متحرک -->
+        <div id="tab-indicator" aria-hidden="true" class="tab-indicator absolute bottom-0 h-1 bg-purple-600 rounded-full transition-all duration-300 ease-out"></div>
+    </div>
+</div>
+
+
 <div class="bg-white rounded-xl shadow-md p-6">
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-6">
-        <h2 class="text-xl font-bold text-gray-800 mb-4 md:mb-0 flex items-center">
-            <i class="material-icons mr-2">groups</i>
-            مشتریان تخصیص یافته
-        </h2>
-        <div class="flex flex-wrap gap-3">
-            <div class="relative">
-                <select id="branch-filter" class="w-full md:w-48 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent hidden">
-                    <option value="">در حال بارگذاری شعب...</option>
-                </select>
-            </div>
-            
-            <div class="relative">
-                <input type="text" id="search-input" placeholder="جستجو..." class="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent hidden">
-                <i class="material-icons absolute left-3 top-2.5 text-gray-400">search</i>
-            </div>
-            
+    <div class="flex items-center justify-between mb-6">
+        <div class="relative">
+            <select id="branch-filter"
+                    class="w-full md:w-48 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent hidden">
+                <option value="">در حال بارگذاری شعب...</option>
+            </select>
+        </div>
+
+        <!-- دکمه‌ها سمت راست -->
+        <div id="button-box-assignment" class="flex items-center gap-3 hidden">
             <button id="add-assignment-btn" class="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700 flex items-center">
                 <i class="material-icons mr-2">add</i> افزودن شماره
             </button>
@@ -26,55 +43,91 @@
         </div>
     </div>
 
-    <div class="overflow-x-auto">
-        <table class="min-w-full border border-gray-200">
-            <thead class="bg-gray-50">
-                <tr>
-                    <th class="py-3 px-4 border-b w-12">
-                        <input type="checkbox" id="select-all"
-                            class="rounded text-purple-600 focus:ring-purple-500">
-                    </th>
-                    <th class="py-3 px-4 border-b sortable-header" data-sort="phone">شماره تماس</th>
-                    <th class="py-3 px-4 border-b sortable-header" data-sort="name">نام کاربری</th>
-                    <th class="py-3 px-4 border-b sortable-header" data-sort="status">منبع</th>
-                    <th class="py-3 px-4 border-b">عملیات</th>
-                </tr>
-            </thead>
-            <tbody id="leads-table-body">
-                <tr>
-                    <td colspan="5" class="py-8 text-center text-gray-500">
-                        <i class="material-icons text-4xl mb-2">hourglass_empty</i>
-                        <p>در حال بارگذاری داده‌ها...</p>
-                    </td>
-                </tr>
-            </tbody>
-        </table>
+
+    <!-- ASSIGNMENTS CONTENT (default visible) -->
+    <div id="assignments-panel">
+        <div class="overflow-x-auto">
+            <table class="min-w-full border border-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="py-3 px-4 border-b w-12">
+                            <input type="checkbox" id="select-all" class="rounded text-purple-600 focus:ring-purple-500">
+                        </th>
+                        <th class="py-3 px-4 border-b sortable-header" data-sort="phone">شماره تماس</th>
+                        <th class="py-3 px-4 border-b sortable-header" data-sort="name">نام کاربری</th>
+                        <th class="py-3 px-4 border-b sortable-header" data-sort="status">منبع</th>
+                        <th class="py-3 px-4 border-b">عملیات</th>
+                    </tr>
+                </thead>
+                <tbody id="leads-table-body">
+                    <tr>
+                        <td colspan="5" class="py-8 text-center text-gray-500">
+                            <i class="material-icons text-4xl mb-2">hourglass_empty</i>
+                            <p>در حال بارگذاری داده‌ها...</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-center justify-between mt-6">
+            <div class="mb-4 sm:mb-0 text-sm text-gray-600">
+                نمایش <span id="current-page">1</span> از <span id="total-pages">1</span> صفحه
+            </div>
+            <div class="flex items-center">
+                <button id="prev-page" class="pagination-btn border border-gray-300 mr-1 disabled:opacity-50">
+                    <i class="material-icons">chevron_right</i>
+                </button>
+
+                <div id="pagination-numbers" class="flex"></div>
+
+                <button id="next-page" class="pagination-btn border border-gray-300 ml-1 disabled:opacity-50">
+                    <i class="material-icons">chevron_left</i>
+                </button>
+            </div>
+            <div class="mt-4 sm:mt-0"></div>
+        </div>
     </div>
 
-    <div class="flex flex-col sm:flex-row items-center justify-between mt-6">
-        <div class="mb-4 sm:mb-0 text-sm text-gray-600">
-            نمایش <span id="current-page">1</span> از <span id="total-pages">1</span> صفحه
+    <!-- GALLERY CONTENT (hidden by default) -->
+    <div id="gallery-panel" class="hidden">
+        <div class="mb-4 flex items-center justify-between">
+            <h3 class="text-lg font-semibold">گالری تصاویر شعب</h3>
+            <div class="flex items-center gap-2">
+                <label class="text-sm text-gray-600 ml-2">نمایش در هر صفحه:</label>
+                <select id="gallery-page-size" class="border rounded px-2 py-1">
+                    <option value="5" selected>5</option>
+                    <option value="10">10</option>
+                </select>
+            </div>
         </div>
-        <div class="flex items-center">
-            <button id="prev-page"
-                class="pagination-btn border border-gray-300 mr-1 disabled:opacity-50">
-                <i class="material-icons">chevron_right</i>
-            </button>
 
-            <div id="pagination-numbers" class="flex">
-                </div>
-
-            <button id="next-page"
-                class="pagination-btn border border-gray-300 ml-1 disabled:opacity-50">
-                <i class="material-icons">chevron_left</i>
-            </button>
+        <div id="gallery-container" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
+            <!-- thumbnails added dynamically -->
         </div>
-        <div class="mt-4 sm:mt-0">
 
+        <div class="flex items-center justify-center gap-3 mt-6">
+            <div id="gallery-pagination" class="flex items-center gap-2"></div>
+        </div>
+
+        <div class="text-center text-sm text-gray-500 mt-2">
+            صفحه <span id="gallery-current-page">1</span> از <span id="gallery-total-pages">1</span>
         </div>
     </div>
 </div>
 
+<!-- Lightbox modal for gallery -->
+<div id="image-lightbox" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
+    <div class="relative max-w-4xl w-full mx-4">
+        <button id="lightbox-close" class="absolute top-2 left-2 bg-white rounded-full p-1 shadow z-50">
+            <i class="material-icons">close</i>
+        </button>
+        <img id="lightbox-image" src="" alt="تصویر" class="w-full h-auto rounded-lg shadow-lg" />
+        <div id="lightbox-meta" class="mt-2 text-right text-sm text-white pr-2"></div>
+    </div>
+</div>
+
+<!-- Assignment modal remains unchanged (keep your existing modal markup below) -->
 <div id="assignment-modal" class="modal-overlay hidden">
     <div class="modal-content">
         <div class="flex justify-between items-center mb-4">

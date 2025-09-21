@@ -58,7 +58,8 @@ Implementation
 
 Uses
     MVCFramework.Serializer.Commons,
-    System.JSON, FireDAC.Stan.Error;
+    System.JSON, FireDAC.Stan.Error,
+    System.StrUtils;
 
 { TPhoneAssignmentController }
 
@@ -88,7 +89,8 @@ Begin
                     LPageArrayData := GetPaginationData(lCurrPage.ToInteger,
                                                         LAssignmentList.Count,
                                                         PAGE_SIZE,
-                                                        BASE_API_V1 + '/phoneassignment?page=($page)')
+                                                        BASE_API_V1 + '/phoneassignment?branchid=' + IfThen(LBranchID.IsEmpty, '0', LBranchID) +
+                                                                      '&page=($page)')
                                                       .ToString.Split([';']);
                     For LPageData in LPageArrayData do
                     Begin

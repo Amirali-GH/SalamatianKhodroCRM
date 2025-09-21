@@ -12,22 +12,27 @@ Uses
     WebModule.SalamtCRM;
 
 Type
-    [MVCPath(BASE_API_V1+'/upload')]
+    [MVCPath(BASE_API_V1+'/images')]
     TUploadImageController = Class(TMVCController)
     Public
-        [MVCPath('/images')]
+        [MVCPath('/upload')]
         [MVCHTTPMethods([httpPost])]
         Procedure UploadImages(Const [MVCInject] AImageUploadService: IImageUploadService);
 
-        [MVCPath('/images/by-branch')]
+        [MVCPath('/by-branch')]
         [MVCHTTPMethods([httpGet])]
         Procedure GetImagesByBranch(Const [MVCInject] AImageUploadService: IImageUploadService);
+
+
+        [MVCPath('/($AGUID)')]
+        [MVCHTTPMethods([httpGet])]
+        Procedure GetImageByGuid(Const AGUID: TGUID);
     End;
 
 Implementation
 
 Uses
-    MVCFramework.Logger;
+    MVCFramework.Logger, System.Classes, IOUtils;
 
 { TUploadImageController }
 
@@ -68,42 +73,107 @@ Var
     BranchIdStr: String;
     BranchID: Int64;
     Page, PageSize: Integer;
-    LService: IInterface;
     LJson: TJSONObject;
 Begin
-    // خواندن پارامترها
-    BranchIdStr := Context.Request.QueryStringParam('branchId');
-    If BranchIdStr.IsEmpty Then
-        Raise EMVCException.Create(HTTP_STATUS.BadRequest, 'پارامتر branchId ارسال نشده است');
-
-    BranchID := StrToInt64Def(BranchIdStr, 0);
-    If BranchID <= 0 Then
-        Raise EMVCException.Create(HTTP_STATUS.BadRequest, 'branchId معتبر نیست');
+    BranchIdStr := Context.Request.QueryStringParam('branchid');
+    If (BranchIdStr.IsEmpty) Then
+    Begin
+        Raise EMVCException.Create(HTTP_STATUS.BadRequest, 'پارامتر branchId ارسال نشده است')
+    End
+    Else
+    Begin
+        BranchID := StrToInt64Def(BranchIdStr, -1);
+        If (BranchID < 0) Then
+        Begin
+            Raise EMVCException.Create(HTTP_STATUS.BadRequest, 'branchId معتبر نیست');
+        End;
+    End;
 
     Page := StrToIntDef(Context.Request.QueryStringParam('page'), 1);
     PageSize := StrToIntDef(Context.Request.QueryStringParam('pageSize'), 20);
     If Page <= 0 Then Page := 1;
     If PageSize <= 0 Then PageSize := 20;
 
-    // تبدیل اینترفیس تزریق‌شده به اینترفیس واقعی (یا cast مناسب)
-    // در پروژه‌ات ممکن است نام اینترفیس IImageQueryService باشد؛ اینجا فقط الگوست.
-    LService := AImageUploadService;
-
-    // فراخوانی سرویس برای گرفتن JSON خروجی
-    // فرض: سرویس تابع GetImagesByBranch(BranchID, Page, PageSize): TJSONObject دارد
-    LJson := (LService As IUnknown) as TJSONObject; // <-- این خط صرفا الگو است؛ در واقع باید cast درست به IImageQueryService انجام شود
-
-    // در عمل باید کد زیر باشد (اگر سرویس اینترفیس صحیح دارد):
-    // LJson := (AImageQueryService As IImageQueryService).GetImagesByBranch(BranchID, Page, PageSize);
-
-    // ارسال پاسخ JSON
-    Context.Response.ContentType := TMVCMediaType.APPLICATION_JSON;
+    LJson := AImageUploadService.GetImagesByBranch(BranchID, Page, PageSize);
     Try
-        Render(HTTP_STATUS.OK, LJson.ToString);
+        Context.Response.ContentType := 'application/json; charset=utf-8';
+        Render(LJson.ToJSON);
     Finally
-        LJson.Free;
+        FreeAndNil(LJson);
     End;
 End;
+//________________________________________________________________________________________
+Procedure TUploadImageController.GetImageByGuid(Const AGUID: TGUID);
+Var
+    ProgramPath: string;
+    UploadsPath: string;
+    Files: TArray<string>;
+    f, LGUID: string;
+    FoundFile: string;
+    FileExt: string;
+    ContentType: string;
+    FS: TFileStream;
+Begin
+    If AGUID.IsEmpty Then
+        Raise EMVCException.Create(HTTP_STATUS.BadRequest, 'شناسه تصویر (guid) ارسال نشده است');
+
+    ProgramPath := ExtractFilePath(ParamStr(0));
+    UploadsPath := TPath.Combine(ProgramPath, 'uploads');
+
+    If Not TDirectory.Exists(UploadsPath) Then
+        Raise EMVCException.Create(HTTP_STATUS.NotFound, 'پوشه uploads وجود ندارد');
+
+    FoundFile := '';
+    LGUID := GUIDToString(AGUID);
+    Files := TDirectory.GetFiles(UploadsPath);
+    For f In Files Do
+    Begin
+        // نام فایل بدون پسوند === GUID ؟
+        If SameText(TPath.GetFileNameWithoutExtension(f), LGUID) Then
+        Begin
+            FoundFile := f;
+            Break;
+        End;
+    End;
+
+    If FoundFile = '' Then
+        Raise EMVCException.Create(HTTP_STATUS.NotFound, 'تصویر یافت نشد');
+
+    FileExt := LowerCase(ExtractFileExt(FoundFile));
+    ContentType := 'application/octet-stream';
+    If (FileExt = '.jpg') Or (FileExt = '.jpeg') Then
+        ContentType := 'image/jpeg'
+    Else If FileExt = '.png' Then
+        ContentType := 'image/png'
+    Else If FileExt = '.gif' Then
+        ContentType := 'image/gif'
+    Else If FileExt = '.webp' Then
+        ContentType := 'image/webp'
+    Else If FileExt = '.bmp' Then
+        ContentType := 'image/bmp';
+
+    // آماده‌سازی stream فایل
+    FS := TFileStream.Create(FoundFile, fmOpenRead or fmShareDenyNone);
+    Try
+        // اگر DMVC نسخه‌ی جدید دارید: از RenderResponseStream استفاده کنید (ساده‌تر)
+        {$IFDEF HAS_RENDERRESPONSESTREAM}
+        // این ifdef فقط در صورتی که در پروژه‌ات تعریفش کنی فعال خواهد شد.
+        RenderResponseStream(FS, ContentType);
+        {$ELSE}
+        // راهِ عمومی: از RawWebResponse استفاده می‌کنیم
+
+        Context.Response.ContentType := ContentType;
+        Context.Response.SetCustomHeader('Cache-Control', 'public, max-age=86400');
+        Context.Response.SetCustomHeader('Content-Disposition', 'inline; filename="' +
+                                          ExtractFileName(FoundFile) + '"');
+
+        Render(FS, False);
+        {$ENDIF}
+    Finally
+        FreeAndNil(FS);
+    End;
+End;
+//________________________________________________________________________________________
 
 End.
 

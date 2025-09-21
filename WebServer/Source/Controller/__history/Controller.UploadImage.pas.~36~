@@ -1,0 +1,179 @@
+﻿Unit Controller.UploadImage;
+
+Interface
+
+Uses
+    System.SysUtils,
+    System.JSON,
+    MVCFramework,
+    MVCFramework.Commons,
+    Service.Interfaces,
+    Web.ReqFiles,
+    WebModule.SalamtCRM;
+
+Type
+    [MVCPath(BASE_API_V1+'/images')]
+    TUploadImageController = Class(TMVCController)
+    Public
+        [MVCPath('/upload')]
+        [MVCHTTPMethods([httpPost])]
+        Procedure UploadImages(Const [MVCInject] AImageUploadService: IImageUploadService);
+
+        [MVCPath('/by-branch')]
+        [MVCHTTPMethods([httpGet])]
+        Procedure GetImagesByBranch(Const [MVCInject] AImageUploadService: IImageUploadService);
+
+
+        [MVCPath('/($AGUID)')]
+        [MVCHTTPMethods([httpGet])]
+        Procedure GetImageByGuid(Const AGUID: TGUID);
+    End;
+
+Implementation
+
+Uses
+    MVCFramework.Logger, System.Classes, IOUtils;
+
+{ TUploadImageController }
+
+//________________________________________________________________________________________
+Procedure TUploadImageController.UploadImages(
+    Const AImageUploadService: IImageUploadService);
+Var
+    LFiles: TWebRequestFiles;
+    LUserID: String;
+Begin
+    // دریافت مجموعه فایل‌ها از درخواست
+    LFiles := Context.Request.Files As TWebRequestFiles;
+
+    If (LFiles = Nil) Or (LFiles.Count = 0) Then
+    Begin
+        Raise EMVCException.Create(HTTP_STATUS.NoContent, 'هیچ فایلی ارسال نشده است');
+    End;
+
+    // گرفتن شناسه کاربر (مطابق الگوی پروژه شما)
+    LUserID := Context.LoggedUser.CustomData.Items['userid'];
+
+    Try
+        If Not AImageUploadService.SaveUploadedImages(LFiles, LUserID) Then
+            Raise EMVCException.Create(HTTP_STATUS.InternalServerError, 'ذخیره‌سازی تصاویر با مشکل مواجه شد');
+
+        Render(HTTP_STATUS.OK, 'تصاویر با موفقیت ذخیره و تخصیص داده شدند.');
+    Except
+        On E: EMVCException Do
+            Raise;
+        On E: Exception Do
+            Raise EMVCException.CreateFmt(HTTP_STATUS.InternalServerError,
+              'خطا در پردازش تصاویر: %s', [E.Message]);
+    End;
+End;
+//________________________________________________________________________________________
+Procedure TUploadImageController.GetImagesByBranch(Const AImageUploadService: IImageUploadService);
+Var
+    BranchIdStr: String;
+    BranchID: Int64;
+    Page, PageSize: Integer;
+    LJson: TJSONObject;
+Begin
+    BranchIdStr := Context.Request.QueryStringParam('branchid');
+    If (BranchIdStr.IsEmpty) Then
+    Begin
+        Raise EMVCException.Create(HTTP_STATUS.BadRequest, 'پارامتر branchId ارسال نشده است')
+    End
+    Else
+    Begin
+        BranchID := StrToInt64Def(BranchIdStr, 0);
+        If (BranchID <= 0) Then
+        Begin
+            Raise EMVCException.Create(HTTP_STATUS.BadRequest, 'branchId معتبر نیست');
+        End;
+    End;
+
+    Page := StrToIntDef(Context.Request.QueryStringParam('page'), 1);
+    PageSize := StrToIntDef(Context.Request.QueryStringParam('pageSize'), 20);
+    If Page <= 0 Then Page := 1;
+    If PageSize <= 0 Then PageSize := 20;
+
+    LJson := AImageUploadService.GetImagesByBranch(BranchID, Page, PageSize);
+    Try
+        Context.Response.ContentType := 'application/json; charset=utf-8';
+        Render(LJson.ToJSON);
+    Finally
+        FreeAndNil(LJson);
+    End;
+End;
+//________________________________________________________________________________________
+Procedure TUploadImageController.GetImageByGuid(Const AGUID: TGUID);
+Var
+    ProgramPath: string;
+    UploadsPath: string;
+    Files: TArray<string>;
+    f, LGUID: string;
+    FoundFile: string;
+    FileExt: string;
+    ContentType: string;
+    FS: TFileStream;
+Begin
+    If AGUID.IsEmpty Then
+        Raise EMVCException.Create(HTTP_STATUS.BadRequest, 'شناسه تصویر (guid) ارسال نشده است');
+
+    ProgramPath := ExtractFilePath(ParamStr(0));
+    UploadsPath := TPath.Combine(ProgramPath, 'uploads');
+
+    If Not TDirectory.Exists(UploadsPath) Then
+        Raise EMVCException.Create(HTTP_STATUS.NotFound, 'پوشه uploads وجود ندارد');
+
+    FoundFile := '';
+    LGUID := GUIDToString(AGUID);
+    Files := TDirectory.GetFiles(UploadsPath);
+    For f In Files Do
+    Begin
+        // نام فایل بدون پسوند === GUID ؟
+        If SameText(TPath.GetFileNameWithoutExtension(f), guid) Then
+        Begin
+            FoundFile := f;
+            Break;
+        End;
+    End;
+
+    If FoundFile = '' Then
+        Raise EMVCException.Create(HTTP_STATUS.NotFound, 'تصویر یافت نشد');
+
+    FileExt := LowerCase(ExtractFileExt(FoundFile));
+    ContentType := 'application/octet-stream';
+    If (FileExt = '.jpg') Or (FileExt = '.jpeg') Then
+        ContentType := 'image/jpeg'
+    Else If FileExt = '.png' Then
+        ContentType := 'image/png'
+    Else If FileExt = '.gif' Then
+        ContentType := 'image/gif'
+    Else If FileExt = '.webp' Then
+        ContentType := 'image/webp'
+    Else If FileExt = '.bmp' Then
+        ContentType := 'image/bmp';
+
+    // آماده‌سازی stream فایل
+    FS := TFileStream.Create(FoundFile, fmOpenRead or fmShareDenyNone);
+    Try
+        // اگر DMVC نسخه‌ی جدید دارید: از RenderResponseStream استفاده کنید (ساده‌تر)
+        {$IFDEF HAS_RENDERRESPONSESTREAM}
+        // این ifdef فقط در صورتی که در پروژه‌ات تعریفش کنی فعال خواهد شد.
+        RenderResponseStream(FS, ContentType);
+        {$ELSE}
+        // راهِ عمومی: از RawWebResponse استفاده می‌کنیم
+
+        Context.Response.ContentType := ContentType;
+        Context.Response.SetCustomHeader('Cache-Control', 'public, max-age=86400');
+        Context.Response.SetCustomHeader('Content-Disposition', 'inline; filename="' +
+                                          ExtractFileName(FoundFile) + '"');
+
+        Render(FS, False);
+        {$ENDIF}
+    Finally
+        FreeAndNil(FS);
+    End;
+End;
+//________________________________________________________________________________________
+
+End.
+

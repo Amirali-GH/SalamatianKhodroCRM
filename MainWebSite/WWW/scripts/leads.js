@@ -147,17 +147,17 @@ export function renderLeadsTable() {
 }
 
 export async function fetchLeads() {
+    const tableBody = document.getElementById('leads-table-body');
+    showLoading(tableBody); // نمایش لودینگ
+
     try {
-        // بررسی صریح محدوده صفحه
         const totalPages = Math.max(1, parseInt(currentState.totalPages) || 1);
         if (currentState.currentPage < 1 || currentState.currentPage > totalPages) {
             currentState.currentPage = Math.min(Math.max(1, currentState.currentPage), totalPages);
-            console.warn(`صفحه ${currentState.currentPage} خارج از محدوده است، تنظیم به صفحه معتبر`);
         }
 
         const apiBaseUrl = window.location.origin;
         const token = localStorage.getItem('authToken');
-
         if (!token) {
             showNotification('لطفاً ابتدا وارد سیستم شوید');
             return;
@@ -166,18 +166,26 @@ export async function fetchLeads() {
         const urlObj = new URL('/api/v1/phoneassignment', apiBaseUrl);
         const params = new URLSearchParams();
         params.set('page', currentState.currentPage);
+        params.set('page_size', currentState.pageSize);
 
-        if (currentState.user && currentState.user.userrolename !== 'admin' && currentState.user.branchid) {
-            params.set('branchid', currentState.user.branchid);
+        let branchIdForQuery;
+        if (currentState.user && currentState.user.userrolename === 'admin') {
+            branchIdForQuery = currentState.selectedBranch;
+            if (branchIdForQuery === '') { // "" به معنی "همه شعب"
+                branchIdForQuery = '0';
+            }
+        } else {
+            // اگر ادمین نیست => فقط شعبه خودش
+            branchIdForQuery = currentState.user?.branchid;
         }
+
+        if (branchIdForQuery) {
+            params.set('branchid', branchIdForQuery);
+        }
+
         if (currentState.searchQuery) {
             params.set('search', currentState.searchQuery);
         }
-        if (currentState.selectedBranch) {
-            params.set('branchid', currentState.selectedBranch);
-        }
-        // افزودن pageSize به درخواست اگر API پشتیبانی می‌کند
-        params.set('page_size', currentState.pageSize);
 
         urlObj.search = params.toString();
         const url = urlObj.toString();
@@ -186,8 +194,8 @@ export async function fetchLeads() {
             headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }
         });
 
-        if (!response.ok) throw new showNotification(`خطا در دریافت داده‌ها: ${response.status}`, 'error');
-
+        if (!response.ok) throw new Error(`خطا در دریافت داده‌ها: ${response.status}`);
+        
         const data = await response.json();
         if (data.meta && data.meta.is_success) {
             const mappedData = (data.data || []).map(item => ({
@@ -196,23 +204,29 @@ export async function fetchLeads() {
                 name: item.username || '',
                 status: item.sourcename || ''
             }));
-
             currentState.leads = mappedData;
             currentState.currentPage = parseInt(data.meta.page.page_num) || currentState.currentPage;
-            currentState.nextPageUri = data.meta.page.next_page_uri || null;
-            currentState.prevPageUri = data.meta.page.prev_page_uri || null;
             currentState.totalRecords = data.meta.page.total_size;
             currentState.pageSize = parseInt(data.meta.page.page_size) || currentState.pageSize;
             currentState.totalPages = Math.ceil(currentState.totalRecords / currentState.pageSize) || 1;
-
             renderLeadsTable();
             renderPagination();
         } else {
-            showNotification('خطا در دریافت داده‌ها از سرور یا پاسخ ناموفق', 'error');
+            showNotification('خطا در دریافت داده‌ها از سرور', 'error');
+            renderLeadsTable(); // جدول را خالی نشان می‌دهد
         }
     } catch (error) {
         console.error('Error fetching leads:', error);
         showNotification('خطا در ارتباط با سرور: ' + (error.message || error), 'error');
+    } finally {
+        // در هر صورت (موفقیت یا خطا) لودینگ را پنهان می‌کنیم
+        // با یک تاخیر کوچک تا کاربر متوجه تغییر شود
+        setTimeout(() => {
+            hideLoading(tableBody);
+            if (currentState.leads.length === 0) {
+                renderLeadsTable(); // برای نمایش پیام "موردی یافت نشد"
+            }
+        }, 300);
     }
 }
 
@@ -254,8 +268,6 @@ export async function loadBranchesInLeads() {
         }
     }
 }
-
-// --- New Functions for CRUD Operations ---
 
 export function closeAssignmentModal() {
     document.getElementById('assignment-modal').classList.add('hidden');
@@ -366,17 +378,23 @@ export async function deleteAssignment(assignmentId) {
     }
 }
 
-// --- Other existing functions ---
-
 export function handleSort(field) {
     showNotification('مرتب سازی در این نسخه پشتیبانی نمی شود.');
 }
 
 export function handleBranchChange(e) {
     currentState.selectedBranch = e.target.value;
+
+    // اطمینان از اینکه gallery تعریف شده
+    ensureGalleryState();
+
+    currentState.gallery.currentPage = 1;
     currentState.currentPage = 1;
+    
+    fetchBranchImages();
     fetchLeads();
 }
+
 
 export function toggleSelectAll(e) {
     const isChecked = e.target.checked;
@@ -401,8 +419,6 @@ export function changePage(direction) {
     }
 }
 
-
-// خروجی اکسل
 export async function exportLeads() {
     try {
         const apiBaseUrl = window.location.origin;
@@ -413,15 +429,20 @@ export async function exportLeads() {
         }
 
         // تعیین branchid (اولویت به فیلتر انتخاب‌شده، در غیر اینصورت branch کاربر)
-        const branchId = currentState.selectedBranch || (currentState.user && currentState.user.branchid);
-        if (!branchId) {
-            showNotification('برای خروجی گرفتن، شناسه شعبه (branchid) لازم است.',  'error');
-            return;
+        let branchId;
+        if (currentState.user && currentState.user.userrolename === 'admin') {
+            branchId = currentState.selectedBranch;
+            if (branchId === '') { // "" به معنی "همه شعب"
+                branchId = '0';
+            }
+        } else {
+            // اگر ادمین نیست => فقط شعبه خودش
+            branchId = currentState.user?.branchid;
         }
 
         // نقطه شروع درخواست (بدون page => طبق گفته شما سرور کل مخزن را برمی‌فرستد)
         let requestUrl = `${apiBaseUrl}/api/v1/phoneassignment?branchid=${encodeURIComponent(branchId)}`;
-
+console.log(requestUrl);
         // اگر خواستید فیلتر جستجو را هم اعمال کنید:
         if (currentState.searchQuery) {
             requestUrl += `&context=${encodeURIComponent(currentState.searchQuery)}`;
@@ -497,3 +518,352 @@ export async function exportLeads() {
         showNotification('خطا هنگام خروجی گرفتن: ' + (error.message || error), 'error');
     }
 }
+
+
+
+//-- :) -------------------------------------------------------------------------------------------
+
+export function ensureGalleryState() {
+    if (!currentState.gallery) {
+        currentState.gallery = {
+            currentPage: 1,
+            pageSize: 5,
+            totalPages: 1,
+            totalRecords: 0,
+            items: []
+        };
+    }
+}
+
+export function setupTabIndicator() {
+    const tabs = document.querySelectorAll('.tab-item');
+    const indicator = document.getElementById('tab-indicator');
+    
+    if (!indicator || tabs.length === 0) return;
+
+    function updateIndicator() {
+        const activeTab = document.querySelector('.tab-item.active');
+        if (!activeTab) return;
+
+        const rect = activeTab.getBoundingClientRect();
+        const parentRect = activeTab.parentElement.getBoundingClientRect();
+        
+        indicator.style.width = `${rect.width}px`;
+        indicator.style.left = `${rect.left - parentRect.left}px`;
+    }
+
+    // ابتدا موقعیت اندیکاتور را تنظیم کنید
+    updateIndicator();
+    
+    // هنگام تغییر سایز پنجره موقعیت را به روز کنید
+    window.addEventListener('resize', updateIndicator);
+}
+
+export function initAssignmentTabs() {
+    const tabAssignments = document.getElementById('tab-assignments');
+    const tabGallery = document.getElementById('tab-gallery');
+    const assignmentsPanel = document.getElementById('assignments-panel');
+    const galleryPanel = document.getElementById('gallery-panel');
+    const buttonBoxAssignment = document.getElementById('button-box-assignment');
+
+    if (!tabAssignments || !tabGallery || !assignmentsPanel || !galleryPanel) return;
+
+    // تابع برای تغییر تب‌ها
+    function switchTab(tabName) {
+        if (tabName === 'assignments') {
+            assignmentsPanel.classList.remove('hidden');
+            galleryPanel.classList.add('hidden');
+            tabAssignments.classList.add('active');
+            tabGallery.classList.remove('active');
+            buttonBoxAssignment.classList.remove('hidden');
+        } else {
+            assignmentsPanel.classList.add('hidden');
+            galleryPanel.classList.remove('hidden');
+            tabAssignments.classList.remove('active');
+            tabGallery.classList.add('active');
+            buttonBoxAssignment.classList.add('hidden');
+            
+            // فقط زمانی که تب گالری فعال است تصاویر را لود کنید
+            if (tabName === 'gallery') {
+                ensureGalleryState();
+                currentState.gallery.currentPage = 1;
+                fetchBranchImages().catch(error => {
+                    console.error('Error loading gallery:', error);
+                    showNotification('خطا در بارگذاری گالری', 'error');
+                });
+            }
+        }
+        setupTabIndicator();
+    }
+
+    // رویداد کلیک برای تب‌ها
+    tabAssignments.addEventListener('click', () => switchTab('assignments'));
+    tabGallery.addEventListener('click', () => switchTab('gallery'));
+
+    // مقداردهی اولیه
+    switchTab('assignments');
+    
+    // Lightbox events
+    const lightbox = document.getElementById('image-lightbox');
+    const lightboxClose = document.getElementById('lightbox-close');
+    if (lightboxClose) lightboxClose.addEventListener('click', closeLightbox);
+    if (lightbox) lightbox.addEventListener('click', (e) => {
+        if (e.target === lightbox) closeLightbox();
+    });
+}
+
+export async function fetchBranchImages(page = null) {
+    const galleryContainer = document.getElementById('gallery-container');
+    showLoading(galleryContainer); // نمایش لودینگ
+
+    ensureGalleryState();
+    const g = currentState.gallery;
+    const token = localStorage.getItem('authToken');
+    const apiBaseUrl = window.location.origin;
+
+    if (page !== null) g.currentPage = page;
+    const pageNum = g.currentPage || 1;
+    const pageSize = g.pageSize || 5;
+
+    // --- شروع اصلاح منطق Branch ID ---
+    let branchIdForQuery;
+    if (currentState.user && currentState.user.userrolename === 'admin') {
+        branchIdForQuery = currentState.selectedBranch;
+        if (branchIdForQuery === '') { // "" به معنی "همه شعب"
+            branchIdForQuery = '0';
+        }
+    } else {
+        // اگر ادمین نیست => فقط شعبه خودش
+        branchIdForQuery = currentState.user.branchid;
+    }
+    
+    if (!branchIdForQuery) {
+        showNotification('شناسه شعبه یافت نشد.', 'error');
+        hideLoading(galleryContainer);
+        galleryContainer.innerHTML = '<div>لطفا یک شعبه انتخاب کنید.</div>';
+        return;
+    }
+    // --- پایان اصلاح منطق Branch ID ---
+
+    try {
+        const url = new URL('/api/v1/images/by-branch', apiBaseUrl);
+        url.searchParams.set('branchid', branchIdForQuery);
+        url.searchParams.set('page', pageNum);
+        url.searchParams.set('pageSize', pageSize);
+
+        const resp = await fetch(url.toString(), {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!resp.ok) throw new Error(`خطا در دریافت تصاویر: ${resp.status}`);
+        const json = await resp.json();
+
+        if (!json.items) throw new Error('پاسخ سرور برای تصاویر ساختار معتبری ندارد.');
+        
+        g.items = (json.items || []).map(item => {
+            const guid = item.url.replace('/images/', '').replace(/[{}]/g, '');
+            const finalImageUrl = `${apiBaseUrl}/api/v1/images/${guid}`;
+            return { url: finalImageUrl, filename: item.fileName };
+        });
+
+        g.currentPage = parseInt(json.page) || pageNum;
+        g.pageSize = parseInt(json.pageSize) || pageSize;
+        g.totalRecords = parseInt(json.total) || 0;
+        g.totalPages = Math.max(1, Math.ceil(g.totalRecords / g.pageSize));
+        
+        renderGallery();
+    } catch (err) {
+        console.error('fetchBranchImages error:', err);
+        showNotification(err.message || 'خطا در دریافت تصاویر', 'error');
+    } finally {
+        setTimeout(() => {
+            hideLoading(galleryContainer);
+            if (g.items.length === 0) {
+                renderGallery(); // برای نمایش پیام "هیچ تصویری یافت نشد"
+            }
+        }, 300);
+    }
+}
+
+/** render gallery thumbnails + pagination */
+export function renderGallery() {
+    ensureGalleryState();
+    const g = currentState.gallery;
+    const container = document.getElementById('gallery-container');
+    const paginationEl = document.getElementById('gallery-pagination');
+    const currentPageSpan = document.getElementById('gallery-current-page');
+    const totalPagesSpan = document.getElementById('gallery-total-pages');
+
+    if (!container || !paginationEl || !currentPageSpan || !totalPagesSpan) return;
+
+    container.innerHTML = '';
+    paginationEl.innerHTML = '';
+
+    if (!g.items || g.items.length === 0) {
+        container.innerHTML = `<div class="col-span-full text-center text-gray-500 py-8">
+            <i class="material-icons text-4xl mb-2">photo_library</i>
+            <div>هیچ تصویری یافت نشد</div>
+        </div>`;
+        currentPageSpan.textContent = '0';
+        totalPagesSpan.textContent = '0';
+        return;
+    }
+
+    g.items.forEach(img => {
+        const col = document.createElement('div');
+        col.className = 'relative bg-gray-100 rounded-lg overflow-hidden cursor-pointer shadow-sm';
+        col.style.minHeight = '180px';
+
+        const imgEl = document.createElement('img');
+        imgEl.src = img.url; // اکنون URL کامل است
+        imgEl.alt = img.filename || 'تصویر';
+        imgEl.className = 'w-full h-44 object-cover';
+        col.appendChild(imgEl);
+
+        const meta = document.createElement('div');
+        meta.className = 'p-2 text-right';
+        
+        // --- شروع اصلاحات ---
+        // حذف نمایش تاریخ آپلود چون در پاسخ API وجود ندارد
+        meta.innerHTML = `<div class="text-sm text-gray-700 font-medium">${img.filename || ''}</div>`;
+        // --- پایان اصلاحات ---
+
+        col.appendChild(meta);
+        col.addEventListener('click', () => openImageLightbox(img));
+        container.appendChild(col);
+    });
+
+    // بخش صفحه‌بندی بدون تغییر باقی می‌ماند...
+    const startPage = Math.max(1, g.currentPage - 2);
+    const endPage = Math.min(g.totalPages, g.currentPage + 2);
+
+    if (g.currentPage > 1) {
+        const btn = document.createElement('button');
+        btn.className = 'px-2 py-1 border rounded';
+        btn.textContent = '«';
+        btn.onclick = () => changeGalleryPage(-1);
+        paginationEl.appendChild(btn);
+    }
+
+    for (let p = startPage; p <= endPage; p++) {
+        const btn = document.createElement('button');
+        btn.className = 'px-3 py-1 border rounded mx-1';
+        if (p === g.currentPage) {
+            btn.classList.add('bg-purple-500', 'text-white');
+            btn.disabled = true;
+        } else {
+            btn.onclick = () => fetchBranchImages(p);
+        }
+        btn.textContent = p;
+        paginationEl.appendChild(btn);
+    }
+
+    if (g.currentPage < g.totalPages) {
+        const btn = document.createElement('button');
+        btn.className = 'px-2 py-1 border rounded';
+        btn.textContent = '»';
+        btn.onclick = () => changeGalleryPage(1);
+        paginationEl.appendChild(btn);
+    }
+
+    currentPageSpan.textContent = String(g.currentPage);
+    totalPagesSpan.textContent = String(g.totalPages);
+}
+
+/** change page by delta (±1) */
+export function changeGalleryPage(delta) {
+    ensureGalleryState();
+    const g = currentState.gallery;
+    const newPage = Math.min(Math.max(1, g.currentPage + delta), g.totalPages);
+    if (newPage === g.currentPage) return;
+    fetchBranchImages(newPage);
+}
+
+/** open lightbox */
+export function openImageLightbox(imgObj) {
+    const lb = document.getElementById('image-lightbox');
+    const lbImg = document.getElementById('lightbox-image');
+    const lbMeta = document.getElementById('lightbox-meta');
+
+    if (!lb || !lbImg) return;
+
+    lbImg.src = imgObj.url;
+    lbImg.alt = imgObj.filename || 'تصویر';
+    if (lbMeta) {
+        // --- شروع اصلاحات ---
+        // حذف نمایش تاریخ آپلود
+        lbMeta.innerHTML = `<div>${imgObj.filename || ''}</div>`;
+        // --- پایان اصلاحات ---
+    }
+    lb.classList.remove('hidden');
+}
+
+/** close lightbox */
+export function closeLightbox() {
+    const lb = document.getElementById('image-lightbox');
+    const lbImg = document.getElementById('lightbox-image');
+    if (lb) lb.classList.add('hidden');
+    if (lbImg) lbImg.src = '';
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// leads.js
+
+// --- توابع جدید برای نمایش لودینگ ---
+function showLoading(containerElement) {
+    if (!containerElement) return;
+    const loadingHtml = `
+        <div class="loading-spinner col-span-full flex items-center justify-center py-16">
+            <style>
+                .spinner {
+                    border: 4px solid rgba(0, 0, 0, 0.1);
+                    width: 36px;
+                    height: 36px;
+                    border-radius: 50%;
+                    border-left-color: #6d28d9; /* purple-700 */
+                    animation: spin 1s ease infinite;
+                }
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            </style>
+            <div class="spinner"></div>
+        </div>
+    `;
+    // برای جدول، محتوا را در tbody قرار می‌دهیم
+    if (containerElement.tagName.toLowerCase() === 'tbody') {
+        containerElement.innerHTML = `<tr><td colspan="5">${loadingHtml}</td></tr>`;
+    } else { // برای گالری، محتوا را مستقیم در کانتینر قرار می‌دهیم
+        containerElement.innerHTML = loadingHtml;
+    }
+}
+
+function hideLoading(containerElement) {
+    if (!containerElement) return;
+    const spinner = containerElement.querySelector('.loading-spinner');
+    if (spinner) {
+        // اگر در جدول بود، کل ردیف را پاک کن
+        if (containerElement.tagName.toLowerCase() === 'tbody') {
+            containerElement.innerHTML = '';
+        } else {
+            spinner.remove();
+        }
+    }
+}
+// --- پایان توابع لودینگ ---
